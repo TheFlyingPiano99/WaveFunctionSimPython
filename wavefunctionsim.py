@@ -135,17 +135,6 @@ for x in range(0, N):
     for y in range(0, N):
         for z in range(0, N):
             k = np.array([x, y, z]) / np.array([N, N, N]) / delta_x
-            if (x > N / 2):
-                #k[0] = -((N - x) / N / delta_x)
-                k[0] = 0.0
-            if (y > N / 2):
-                #k[1] = -((N - y) / N / delta_x)
-                k[1] = 0.0
-            if (z > N / 2):
-                #k[2] = -((N - z) / N / delta_x)
-                k[2] = 0.0
-            if (x > N / 2 or y > N / 2 or z > N / 2):
-                k = np.array([0.0, 0.0, 0.0])
 
             angle = np.dot(k, k) * delta_time / 4.0
             P_kinetic[x, y, z] = exp_i(angle)
