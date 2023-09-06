@@ -36,20 +36,20 @@ def init_potential_box(N, delta_x, wall_thickness_bohr_radii, potential_wall_hei
                 V[x, y, z] = 0.0  # Zero in the middle
                 # Barriers:
                 # X-axis:
-                if abs(r[0] - 0.0) < wall_thickness_bohr_radii:
-                    V[x, y, z] = potential_wall_height_hartree * (wall_thickness_bohr_radii - abs(r[0] - 0.0)) / wall_thickness_bohr_radii
-                if abs(r[0] - 1.0) < wall_thickness_bohr_radii:
-                    V[x, y, z] = potential_wall_height_hartree * (wall_thickness_bohr_radii - abs(r[0] - delta_x * N)) / wall_thickness_bohr_radii
+                if r[0] < wall_thickness_bohr_radii:
+                    V[x, y, z] = potential_wall_height_hartree * (wall_thickness_bohr_radii - r[0]) / wall_thickness_bohr_radii
+                if N * delta_x - r[0] < wall_thickness_bohr_radii:
+                    V[x, y, z] = potential_wall_height_hartree * (wall_thickness_bohr_radii - (delta_x * N - r[0])) / wall_thickness_bohr_radii
                 # Y-axis:
-                if abs(r[1] - 0.0) < wall_thickness_bohr_radii:
-                    V[x, y, z] = potential_wall_height_hartree * (wall_thickness_bohr_radii - abs(r[1] - 0.0)) / wall_thickness_bohr_radii
-                if abs(r[1] - 1.0) < wall_thickness_bohr_radii:
-                    V[x, y, z] = potential_wall_height_hartree * (wall_thickness_bohr_radii - abs(r[1] - delta_x * N)) / wall_thickness_bohr_radii
+                if r[1] < wall_thickness_bohr_radii:
+                    V[x, y, z] = potential_wall_height_hartree * (wall_thickness_bohr_radii - r[1]) / wall_thickness_bohr_radii
+                if N * delta_x - r[1] < wall_thickness_bohr_radii:
+                    V[x, y, z] = potential_wall_height_hartree * (wall_thickness_bohr_radii - (delta_x * N - r[1])) / wall_thickness_bohr_radii
                 # Z-axis:
-                if abs(r[2] - 0.0) < wall_thickness_bohr_radii:
-                    V[x, y, z] = potential_wall_height_hartree * (wall_thickness_bohr_radii - abs(r[2] - 0.0)) / wall_thickness_bohr_radii
-                if abs(r[2] - 1.0) < wall_thickness_bohr_radii:
-                    V[x, y, z] = potential_wall_height_hartree * (wall_thickness_bohr_radii - abs(r[2] - delta_x * N)) / wall_thickness_bohr_radii
+                if r[2] < wall_thickness_bohr_radii:
+                    V[x, y, z] = potential_wall_height_hartree * (wall_thickness_bohr_radii - (r[2])) / wall_thickness_bohr_radii
+                if N * delta_x - r[2] < wall_thickness_bohr_radii:
+                    V[x, y, z] = potential_wall_height_hartree * (wall_thickness_bohr_radii - (delta_x * N - r[2])) / wall_thickness_bohr_radii
     return V
 
 
@@ -71,13 +71,13 @@ def init_zero_potential(N):
     V = np.zeros(shape=(N, N, N), dtype=float)
     return V
 
-def init_gaussian_wave_packet(N, delta_x, a, r_0, k_0):
+def init_gaussian_wave_packet(N, delta_x_bohr_radii, a, r_0_bohr_radii_3, k_0_hartree):
     wave_tensor = np.zeros(shape=(N, N, N), dtype=np.complex_)
     for x in range(0, N):
         for y in range(0, N):
             for z in range(0, N):
-                r = np.array([x, y, z]) * delta_x
-                wave_tensor[x, y, z] = (2.0 / math.pi / a**2)**(3.0/4.0) * exp_i(np.dot(k_0, r)) * math.exp(- np.dot(r - r_0, r - r_0) / a**2)
+                r = np.array([x, y, z]) * delta_x_bohr_radii
+                wave_tensor[x, y, z] = (2.0 / math.pi / a**2) ** (3.0/4.0) * exp_i(np.dot(k_0_hartree, r)) * math.exp(- np.dot(r - r_0_bohr_radii_3, r - r_0_bohr_radii_3) / a ** 2)
     return wave_tensor
 
 def init_kinetic_operator(N, delta_x, delta_time):
@@ -85,7 +85,15 @@ def init_kinetic_operator(N, delta_x, delta_time):
     for x in range(0, N):
         for y in range(0, N):
             for z in range(0, N):
-                k = np.array([x, y, z]) / np.array([N, N, N]) / delta_x
+                f = np.array([x, y, z]) / np.array([N, N, N])
+                # Fix numpy fftn-s "negative frequency in second half issue"
+                if (f[0] > 0.5):
+                    f[0] = 1.0 - f[0]
+                if (f[1] > 0.5):
+                    f[1] = 1.0 - f[1]
+                if (f[2] > 0.5):
+                    f[2] = 1.0 - f[2]
+                k = f / delta_x
 
                 angle = np.dot(k, k) * delta_time / 4.0
                 P_kinetic[x, y, z] = exp_i(angle)
@@ -120,9 +128,9 @@ def save_potential_image(V, volume_width):
         z=z.flatten(),
         value=V.flatten(),
         isomin=0.0,
-        isomax=10000.0,
+        isomax=10.0,
         opacity=0.3,
-        surface_count=100,
+        surface_count=20,
         colorscale='Viridis',
         colorbar_title='V [hartree]'
     ))
@@ -154,7 +162,7 @@ def save_probability_density_image(probability_density, volume_width, i : int):
         z=z.flatten(),
         value = probability_density.flatten(),
         isomin=0.0,
-        isomax=0.002,
+        isomax= 0.01 / (volume_width * volume_width * volume_width),
         opacity=0.3,
         surface_count=50,
         colorscale='Viridis',
@@ -196,14 +204,14 @@ def sim():
     de_broglie_wave_length_bohr_radii = angstrom_to_bohr_radii(5.5)
     print(f"Current  de Broglie wavelength is {de_broglie_wave_length_bohr_radii} Bohr radii.")
 
-    volume_width_bohr_radii = 12.0
-    print(f"Width of simulated volume is w = {volume_width_bohr_radii} Bohr radii.")
+    simulated_volume_width_bohr_radii = 30.0
+    print(f"Width of simulated volume is w = {simulated_volume_width_bohr_radii} Bohr radii.")
 
     N = 32
     print(f"Number of discrete space chunks per axis is N = {N}.")
 
     # Space resolution
-    delta_x_bohr_radii = volume_width_bohr_radii / N
+    delta_x_bohr_radii = simulated_volume_width_bohr_radii / N
     print(f"Space resolution is delta_x = {delta_x_bohr_radii} Bohr radii.")
 
     # The maximum allowed delta_time
@@ -217,10 +225,10 @@ def sim():
     print("***************************************************************************************")
 
     print("Initializing wave-tensor")
-    packet_width_bohr_radii = 2.0
+    packet_width_bohr_radii = 4.0
     a = packet_width_bohr_radii * 2.0
-    wave_tensor = init_gaussian_wave_packet(N=N, delta_x=delta_x_bohr_radii, a=a, r_0=np.array([N, N, N]) / 2.0,
-                                            k_0=np.array([0, 0, 0.25 * 2.0 * math.pi]))
+    wave_tensor = init_gaussian_wave_packet(N=N, delta_x_bohr_radii=delta_x_bohr_radii, a=a, r_0_bohr_radii_3=np.array([N, N, N]) / 2.0 * delta_x_bohr_radii,
+                                            k_0_hartree=np.array([0, 0, electron_volt_to_hartree(5)]))
 
     # Normalize:
     probability_density = np.square(np.abs(wave_tensor))
@@ -234,10 +242,10 @@ def sim():
     print("Initializing kinetic energy operator")
     kinetic_operator = init_kinetic_operator(N=N, delta_x=delta_x_bohr_radii, delta_time=delta_time_h_per_hartree)
     print("Initializing potential energy operator")
-    V = init_potential_box(N=N, delta_x=delta_x_bohr_radii, wall_thickness_bohr_radii=3.0, potential_wall_height_hartree=100.0)
+    V = init_potential_box(N=N, delta_x=delta_x_bohr_radii, wall_thickness_bohr_radii=4.0, potential_wall_height_hartree=10.0)
     # V = init_zero_potential(N)
     potential_operator = init_potential_operator(V=V, N=N, delta_time=delta_time_h_per_hartree)
-    save_potential_image(V=V, volume_width=volume_width_bohr_radii)
+    save_potential_image(V=V, volume_width=simulated_volume_width_bohr_radii)
 
     print("***************************************************************************************")
     print("Starting simulation")
@@ -248,7 +256,7 @@ def sim():
         wave_tensor = time_evolution(wave_tensor= wave_tensor, kinetic_operator=kinetic_operator, potential_operator=potential_operator)
         probability_density = np.square(np.abs(wave_tensor))
         print(f"Integral of probability density P = {np.sum(probability_density)}.")
-        save_probability_density_image(probability_density=probability_density, volume_width=volume_width_bohr_radii, i=i)
+        save_probability_density_image(probability_density=probability_density, volume_width=simulated_volume_width_bohr_radii, i=i)
 
     print("Simulation has finished.")
 
