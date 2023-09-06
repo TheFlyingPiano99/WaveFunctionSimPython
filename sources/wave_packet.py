@@ -20,11 +20,11 @@ def wave_0_y(y):
 def wave_packet(x, y):
     return wave_0_x(x) * wave_0_y(y)
 
-def init_gaussian_wave_packet(N, delta_x_bohr_radii, a, r_0_bohr_radii_3, k_0_hartree):
+def init_gaussian_wave_packet(N, delta_x_bohr_radii, a, r_0_bohr_radii_3, initial_momentum_h_per_bohr_radius_3):
     wave_tensor = np.zeros(shape=(N, N, N), dtype=np.complex_)
     for x in range(0, N):
         for y in range(0, N):
             for z in range(0, N):
                 r = np.array([x, y, z]) * delta_x_bohr_radii
-                wave_tensor[x, y, z] = (2.0 / math.pi / a**2) ** (3.0/4.0) * math_utils.exp_i(np.dot(k_0_hartree, r)) * math.exp(- np.dot(r - r_0_bohr_radii_3, r - r_0_bohr_radii_3) / a ** 2)
+                wave_tensor[x, y, z] = (2.0 / math.pi / a**2) ** (3.0/4.0) * math_utils.exp_i(np.dot(initial_momentum_h_per_bohr_radius_3, r)) * math.exp(- np.dot(r - r_0_bohr_radii_3, r - r_0_bohr_radii_3) / a ** 2)
     return wave_tensor

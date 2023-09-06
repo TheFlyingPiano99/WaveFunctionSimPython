@@ -36,8 +36,8 @@ def plot_potential_image(V, volume_width):
     fig.write_image(f"images/potential_energy.jpeg")
 
 
-def plot_probability_density_image(probability_density, volume_width, i : int):
-    x, y, z = np.mgrid[:volume_width, :volume_width, :volume_width]
+def plot_probability_density_image(probability_density, delta_time_h_per_hartree, N, i : int):
+    x, y, z = np.mgrid[:N, :N, :N]
     fig = go.Figure()
     fig.add_trace(go.Volume(
         x=x.flatten(),
@@ -45,16 +45,16 @@ def plot_probability_density_image(probability_density, volume_width, i : int):
         z=z.flatten(),
         value = probability_density.flatten(),
         isomin=0.0,
-        isomax= 1.0 / (volume_width * volume_width * volume_width),
+        isomax= 20 / (N * N * N),
         opacity=0.3,
-        surface_count=50,
+        surface_count=25,
         colorscale='Viridis',
         colorbar_title='Probability density'
     ))
 
     # Set the layout of the figure
     fig.update_layout(
-        title='Probability density (time step = {})'.format(i),
+        title='Probability density ({}. time step;\nElapsed time = {} h-bar / hartree)'.format(i, delta_time_h_per_hartree * i),
         scene=dict(
             xaxis=dict(title='X'),
             yaxis=dict(title='Y'),
