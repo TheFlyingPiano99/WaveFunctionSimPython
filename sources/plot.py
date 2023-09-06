@@ -2,8 +2,8 @@ import plotly.graph_objects as go
 import numpy as np
 import math
 
-def plot_potential_image(V, volume_width):
-    x, y, z = np.mgrid[:volume_width, :volume_width, :volume_width]
+def plot_potential_image(V, N, delta_x):
+    x, y, z = np.mgrid[0:N, 0:N, 0:N]
     fig = go.Figure()
     fig.add_trace(go.Volume(
         x=x.flatten(),
@@ -22,9 +22,9 @@ def plot_potential_image(V, volume_width):
     fig.update_layout(
         title='Potential energy',
         scene=dict(
-            xaxis=dict(title='X'),
-            yaxis=dict(title='Y'),
-            zaxis=dict(title='Z')
+            xaxis=dict(title=f'x [{delta_x:.2f} Bohr radii]'),
+            yaxis=dict(title=f'y [{delta_x:.2f} Bohr radii]'),
+            zaxis=dict(title=f'z [{delta_x:.2f} Bohr radii]'),
         ),
         scene_camera_eye=dict(
             x=2.0 * math.sin(0),
@@ -32,12 +32,13 @@ def plot_potential_image(V, volume_width):
             z=1.0
         )
     )
+
     # Show the figure
     fig.write_image(f"images/potential_energy.jpeg")
 
 
-def plot_probability_density_image(probability_density, delta_time_h_per_hartree, N, i : int):
-    x, y, z = np.mgrid[:N, :N, :N]
+def plot_probability_density_image(probability_density, delta_time_h_per_hartree, delta_x, N, i : int):
+    x, y, z = np.mgrid[0:N, 0:N, 0:N]
     fig = go.Figure()
     fig.add_trace(go.Volume(
         x=x.flatten(),
@@ -54,11 +55,12 @@ def plot_probability_density_image(probability_density, delta_time_h_per_hartree
 
     # Set the layout of the figure
     fig.update_layout(
-        title='Probability density ({}. time step;\nElapsed time = {} h-bar / hartree)'.format(i, delta_time_h_per_hartree * i),
+        title="Probability density ({}. time step; Elapsed time = {:.2f} h-bar / hartree)".format(i, delta_time_h_per_hartree * i),
         scene=dict(
-            xaxis=dict(title='X'),
-            yaxis=dict(title='Y'),
-            zaxis=dict(title='Z')
+            xaxis=dict(title=f'x [{delta_x:.2f} Bohr radii]'),
+            yaxis=dict(title=f'y [{delta_x:.2f} Bohr radii]'),
+            zaxis=dict(title=f'z [{delta_x:.2f} Bohr radii]'),
+
         ),
         scene_camera_eye=dict(
             x=2.0 * math.sin(i / 200.0 * math.pi),
@@ -66,5 +68,6 @@ def plot_probability_density_image(probability_density, delta_time_h_per_hartree
             z=1.0
         )
     )
+
     # Show the figure
     fig.write_image(f"images/probability_density{i:03d}.jpeg")

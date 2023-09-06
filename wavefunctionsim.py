@@ -100,9 +100,9 @@ def sim():
     print("Initializing kinetic energy operator")
     kinetic_operator = init_kinetic_operator(N=N, delta_x=delta_x_bohr_radii, delta_time=delta_time_h_per_hartree)
     print("Initializing potential energy operator")
-    V = potential.init_potential_box(N=N, delta_x=delta_x_bohr_radii, wall_thickness_bohr_radii=4.0, potential_wall_height_hartree=10.0)
+    V = potential.init_potential_box(N=N, delta_x=delta_x_bohr_radii, wall_thickness_bohr_radii=2.0, potential_wall_height_hartree=10.0)
     potential_operator = init_potential_operator(V=V, N=N, delta_time=delta_time_h_per_hartree)
-    plot.plot_potential_image(V=V, volume_width=N)
+    plot.plot_potential_image(V=V, N=N, delta_x=delta_x_bohr_radii)
 
     print("***************************************************************************************")
     print("Starting simulation")
@@ -113,7 +113,7 @@ def sim():
         wave_tensor = time_evolution(wave_tensor= wave_tensor, kinetic_operator=kinetic_operator, potential_operator=potential_operator)
         probability_density = np.square(np.abs(wave_tensor))
         print(f"Integral of probability density P = {np.sum(probability_density)}.")
-        plot.plot_probability_density_image(probability_density=probability_density, delta_time_h_per_hartree=delta_time_h_per_hartree, N=N, i=i)
+        plot.plot_probability_density_image(probability_density=probability_density, delta_time_h_per_hartree=delta_time_h_per_hartree, delta_x=delta_x_bohr_radii, N=N, i=i)
 
     print("Simulation has finished.")
 
