@@ -2,11 +2,13 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-N = 64
+N = 32
 array = np.zeros(shape=[N], dtype=np.complex_)
 
+f = 5
+
 for i in range(N):
-    array[i] = math.cos(10 * i / 64.0 * 2.0 * math.pi) + 1j * math.sin(10 * i / 64.0 * 2.0 * math.pi)
+    array[i] = math.cos(f * i / float(N) * 2.0 * math.pi) + 1j * math.sin(f * i / float(N) * 2.0 * math.pi)
 
 print(array)
 
@@ -37,9 +39,11 @@ plt.show()
 #-------------------------------------------------------------------------------------------
 
 array = np.zeros(shape=[N, N], dtype=np.complex_)
+f = 0.25 / 2.0 * 2.0 * math.pi
+print(f"Freq: {f}")
 for x in range(N):
     for y in range(N):
-        array[x, y] = math.cos(0.75 * x * 2.0 * math.pi) + 1j * math.sin(0.75 * x * 2.0 * math.pi)
+        array[x, y] = math.cos(f * x) + 1j * math.sin(f * x)
 
 magnitude = np.abs(array)
 
