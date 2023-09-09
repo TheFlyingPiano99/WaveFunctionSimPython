@@ -2,7 +2,8 @@ import numpy as np
 import sources.math_utils as math_utils
 import sources.wave_packet as wp
 import sources.potential as potential
-import sources.plot as plot
+import volume_visualization
+import animation
 
 def init_kinetic_operator(N, delta_x, delta_time):
     P_kinetic = np.zeros(shape=(N, N, N), dtype=np.complex_)
@@ -17,8 +18,7 @@ def init_kinetic_operator(N, delta_x, delta_time):
                     f[1] = 1.0 - f[1]
                 if (f[2] > 0.5):
                     f[2] = 1.0 - f[2]
-                k = f / delta_x
-
+                k = 2.0 * np.pi * f / delta_x
                 angle = np.dot(k, k) * delta_time / 4.0
                 P_kinetic[x, y, z] = math_utils.exp_i(angle)
     return P_kinetic
@@ -49,7 +49,7 @@ def sim():
     # Maximal kinetic energy
 
     particle_mass = math_utils.electron_rest_mass
-    initial_velocity = 10.0
+    initial_velocity = 5.0
 
     print(f"Mass of the particle is {particle_mass} electron rest mass.\n"
           f"Initial velocity of the particle is {initial_velocity} Bohr radius hartree / h-bar")
@@ -72,12 +72,14 @@ def sim():
         print("WARNING: delta_x exceeds de Broglie wavelength!")
 
     # The maximum allowed delta_time
-    max_delta_time_h_per_hartree = 4.0 / np.pi * (3.0 * delta_x_bohr_radii * delta_x_bohr_radii) / 3.0 # Based on reasoning from the Web-Schrödinger paper
-    print(f"The maximal viable time resolution < {max_delta_time_h_per_hartree} h-bar / hartree")
+    upper_limit_on_delta_time_h_per_hartree = 4.0 / np.pi * (3.0 * delta_x_bohr_radii * delta_x_bohr_radii) / 3.0 # Based on reasoning from the Web-Schrödinger paper
+    print(f"The maximal viable time resolution < {upper_limit_on_delta_time_h_per_hartree} h-bar / hartree")
 
     # Time increment of simulation
-    delta_time_h_per_hartree = 0.75 * max_delta_time_h_per_hartree
-    print(f"Time resolution is delta = {delta_time_h_per_hartree} h-bar / hartree.")
+    delta_time_h_bar_per_hartree = 0.1 * upper_limit_on_delta_time_h_per_hartree
+    print(f"Time resolution is delta = {delta_time_h_bar_per_hartree} h-bar / hartree.")
+
+    initial_position_bohr_radii_3 = np.array([N, N, N]) / 2.0 * delta_x_bohr_radii #- np.array([0, 0, 3.0])
 
     print("***************************************************************************************")
 
@@ -85,8 +87,8 @@ def sim():
     packet_width_bohr_radii = 1.0
     print(f"Wave packet width is {packet_width_bohr_radii} bohr radii.")
     a = packet_width_bohr_radii * 2.0
-    wave_tensor = wp.init_gaussian_wave_packet(N=N, delta_x_bohr_radii=delta_x_bohr_radii, a=a, r_0_bohr_radii_3=np.array([N, N, N]) / 2.0 * delta_x_bohr_radii,
-                                            initial_momentum_h_per_bohr_radius_3=np.array([0, 0, particle_momentum_h_per_bohr_radius]))
+    wave_tensor = wp.init_gaussian_wave_packet(N=N, delta_x_bohr_radii=delta_x_bohr_radii, a=a, r_0_bohr_radii_3=initial_position_bohr_radii_3,
+                                            initial_momentum_h_per_bohr_radius_3=np.array([0, particle_momentum_h_per_bohr_radius, 0]))
 
     # Normalize:
     probability_density = np.square(np.abs(wave_tensor))
@@ -98,14 +100,20 @@ def sim():
     print(f"Sum of probabilities after normalization = {sum_probability}")
     # Operators:
     print("Initializing kinetic energy operator")
-    kinetic_operator = init_kinetic_operator(N=N, delta_x=delta_x_bohr_radii, delta_time=delta_time_h_per_hartree)
+    kinetic_operator = init_kinetic_operator(N=N, delta_x=delta_x_bohr_radii, delta_time=delta_time_h_bar_per_hartree)
     print("Initializing potential energy operator")
-    V = potential.init_potential_box(N=N, delta_x=delta_x_bohr_radii, wall_thickness_bohr_radii=2.0, potential_wall_height_hartree=10.0)
-    potential_operator = init_potential_operator(V=V, N=N, delta_time=delta_time_h_per_hartree)
-    plot.plot_potential_image(V=V, N=N, delta_x=delta_x_bohr_radii)
+    V = potential.init_potential_box(N=N, delta_x=delta_x_bohr_radii, wall_thickness_bohr_radii=2.0, potential_wall_height_hartree=1000.0)
+    potential_operator = init_potential_operator(V=V, N=N, delta_time=delta_time_h_bar_per_hartree)
+
+    #plot.plot_potential_image(V=V, N=N, delta_x=delta_x_bohr_radii)
 
     print("***************************************************************************************")
     print("Starting simulation")
+    canvas = volume_visualization.VolumeCanvas(probability_density)
+    animation_writer = animation.AnimationWriter("images/probability_density_time_development.gif")
+
+    animation_frame_step_interval = 1
+    png_step_interval = 100
 
     # Run simulation
     for i in range(1000):
@@ -113,8 +121,13 @@ def sim():
         wave_tensor = time_evolution(wave_tensor= wave_tensor, kinetic_operator=kinetic_operator, potential_operator=potential_operator)
         probability_density = np.square(np.abs(wave_tensor))
         print(f"Integral of probability density P = {np.sum(probability_density)}.")
-        plot.plot_probability_density_image(probability_density=probability_density, delta_time_h_per_hartree=delta_time_h_per_hartree, delta_x=delta_x_bohr_radii, N=N, i=i)
+        canvas.update(probability_density)
+        if (i % animation_frame_step_interval == 0):
+            animation_writer.add_frame(canvas)
+        if (i % png_step_interval == 0):
+            canvas.save_to_png(f"images/probability_density_{i:3d}.png")
 
+    animation_writer.finish()
     print("Simulation has finished.")
 
 
