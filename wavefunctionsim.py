@@ -2,8 +2,8 @@ import numpy as np
 import sources.math_utils as math_utils
 import sources.wave_packet as wp
 import sources.potential as potential
-import volume_visualization
-import animation
+from sources import volume_visualization, animation
+
 
 def init_kinetic_operator(N, delta_x, delta_time):
     P_kinetic = np.zeros(shape=(N, N, N), dtype=np.complex_)
@@ -49,7 +49,7 @@ def sim():
     # Maximal kinetic energy
 
     particle_mass = math_utils.electron_rest_mass
-    initial_velocity = 5.0
+    initial_velocity = 10.0
 
     print(f"Mass of the particle is {particle_mass} electron rest mass.\n"
           f"Initial velocity of the particle is {initial_velocity} Bohr radius hartree / h-bar")
@@ -59,17 +59,17 @@ def sim():
     de_broglie_wave_length_bohr_radii = math_utils.get_de_broglie_wave_length_bohr_radii(particle_momentum_h_per_bohr_radius)
     print(f"De Broglie wavelength associated with the particle is {de_broglie_wave_length_bohr_radii} Bohr radii.")
 
-    simulated_volume_width_bohr_radii = 16.0
+    simulated_volume_width_bohr_radii = 30.0
     print(f"Width of simulated volume is w = {simulated_volume_width_bohr_radii} Bohr radii.")
 
-    N = 32
+    N = 128
     print(f"Number of samples per axis is N = {N}.")
 
     # Space resolution
     delta_x_bohr_radii = simulated_volume_width_bohr_radii / N
     print(f"Space resolution is delta_x = {delta_x_bohr_radii} Bohr radii.")
-    if (delta_x_bohr_radii >= de_broglie_wave_length_bohr_radii):
-        print("WARNING: delta_x exceeds de Broglie wavelength!")
+    if (delta_x_bohr_radii >= de_broglie_wave_length_bohr_radii / 2.0):
+        print("WARNING: delta_x exceeds half of de Broglie wavelength!")
 
     # The maximum allowed delta_time
     upper_limit_on_delta_time_h_per_hartree = 4.0 / np.pi * (3.0 * delta_x_bohr_radii * delta_x_bohr_radii) / 3.0 # Based on reasoning from the Web-Schrödinger paper
@@ -79,7 +79,7 @@ def sim():
     delta_time_h_bar_per_hartree = 0.1 * upper_limit_on_delta_time_h_per_hartree
     print(f"Time resolution is delta = {delta_time_h_bar_per_hartree} h-bar / hartree.")
 
-    initial_position_bohr_radii_3 = np.array([N, N, N]) / 2.0 * delta_x_bohr_radii #- np.array([0, 0, 3.0])
+    initial_position_bohr_radii_3 = np.array([N, N, N]) / 2.0 * delta_x_bohr_radii - np.array([0, 0, 7.0])
 
     print("***************************************************************************************")
 
@@ -88,7 +88,7 @@ def sim():
     print(f"Wave packet width is {packet_width_bohr_radii} bohr radii.")
     a = packet_width_bohr_radii * 2.0
     wave_tensor = wp.init_gaussian_wave_packet(N=N, delta_x_bohr_radii=delta_x_bohr_radii, a=a, r_0_bohr_radii_3=initial_position_bohr_radii_3,
-                                            initial_momentum_h_per_bohr_radius_3=np.array([0, particle_momentum_h_per_bohr_radius, 0]))
+                                            initial_momentum_h_per_bohr_radius_3=np.array([0, 0, -particle_momentum_h_per_bohr_radius]))
 
     # Normalize:
     probability_density = np.square(np.abs(wave_tensor))
@@ -102,7 +102,8 @@ def sim():
     print("Initializing kinetic energy operator")
     kinetic_operator = init_kinetic_operator(N=N, delta_x=delta_x_bohr_radii, delta_time=delta_time_h_bar_per_hartree)
     print("Initializing potential energy operator")
-    V = potential.init_potential_box(N=N, delta_x=delta_x_bohr_radii, wall_thickness_bohr_radii=2.0, potential_wall_height_hartree=1000.0)
+    V = potential.init_potential_box(N=N, delta_x=delta_x_bohr_radii, wall_thickness_bohr_radii=3.0, potential_wall_height_hartree=1000.0)
+    V = potential.add_wall(V=V, delta_x=delta_x_bohr_radii, center_bohr_radii=15.0, thickness_bohr_radii=1.0, height_hartree=1000.0)
     potential_operator = init_potential_operator(V=V, N=N, delta_time=delta_time_h_bar_per_hartree)
 
     #plot.plot_potential_image(V=V, N=N, delta_x=delta_x_bohr_radii)
@@ -112,8 +113,8 @@ def sim():
     canvas = volume_visualization.VolumeCanvas(probability_density)
     animation_writer = animation.AnimationWriter("images/probability_density_time_development.gif")
 
-    animation_frame_step_interval = 1
-    png_step_interval = 100
+    animation_frame_step_interval = 5
+    png_step_interval = 10
 
     # Run simulation
     for i in range(1000):

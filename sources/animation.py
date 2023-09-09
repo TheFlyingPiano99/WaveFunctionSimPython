@@ -1,5 +1,6 @@
 import imageio
-import volume_visualization
+from sources import volume_visualization
+
 
 class AnimationWriter:
     def __init__(self, save_path):

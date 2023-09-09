@@ -27,7 +27,6 @@ def init_potential_box(N, delta_x, wall_thickness_bohr_radii, potential_wall_hei
                     V[x, y, z] = potential_wall_height_hartree * (wall_thickness_bohr_radii - (delta_x * N - r[2])) / wall_thickness_bohr_radii
     return V
 
-
 def init_potential_sphere(N, delta_x, wall_thickness, potential_wall_hight):
     V = np.zeros(shape=(N, N, N), dtype=float)
     for x in range(0, N):
@@ -44,4 +43,15 @@ def init_potential_sphere(N, delta_x, wall_thickness, potential_wall_hight):
 
 def init_zero_potential(N):
     V = np.zeros(shape=(N, N, N), dtype=float)
+    return V
+
+def add_wall(V, delta_x, center_bohr_radii, thickness_bohr_radii, height_hartree):
+    for x in range(0, V.shape[0]):
+        for y in range(0, V.shape[1]):
+            for z in range(0, V.shape[2]):
+                r = np.array([x, y, z]) * delta_x
+                if(r[2] > center_bohr_radii - thickness_bohr_radii / 2.0 and r[2] < center_bohr_radii + thickness_bohr_radii / 2.0):
+                    v = height_hartree * (1.0 - abs(center_bohr_radii - r[2]) / thickness_bohr_radii * 2.0)
+                    V[x, y, z] += v
+
     return V
