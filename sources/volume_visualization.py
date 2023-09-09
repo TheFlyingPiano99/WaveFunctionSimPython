@@ -10,7 +10,7 @@ import vispy.io as io
 
 class VolumeCanvas:
 
-    def __init__(self, volume_data):
+    def __init__(self, volume_data, secondary_data):
         # Prepare canvas
         self.canvas = scene.SceneCanvas(keys='interactive', bgcolor='black', size=(800, 600), show=False)
 
@@ -18,7 +18,8 @@ class VolumeCanvas:
         self.view = self.canvas.central_widget.add_view()
 
         # Create the volume visuals
-        self.volume = scene.visuals.Volume(volume_data, parent=self.view.scene, method='translucent', gamma=1.0)
+        self.volume = scene.visuals.Volume(volume_data.astype(np.float32), parent=self.view.scene, method='translucent', gamma=1.0)
+        self.secondary_volume = scene.visuals.Volume(secondary_data.astype(np.float32), parent=self.view.scene, method='translucent', gamma=1.0)
 
         fov = 60.
         cam = scene.cameras.TurntableCamera(parent=self.view.scene, fov=fov,
@@ -42,7 +43,15 @@ class VolumeCanvas:
                 return vec4(pow(tScaled, 0.5), tScaled, tScaled*tScaled, max(0, tScaled*1.05 - 0.05));
             }
             """
+        class SecundaryColorMap(BaseColormap):
+            glsl_map = """
+            vec4 translucent_fire(float t) {
+                float tScaled = min(t * 0.1, 1.0);
+                return vec4(tScaled, pow(tScaled, 0.5), tScaled*tScaled, max(0, tScaled*1.05 - 0.05));
+            }
+            """
         self.volume.cmap = CustomColorMap()
+        self.secondary_volume.cmap = SecundaryColorMap()
 
         """
         # Implement axis connection with cam2

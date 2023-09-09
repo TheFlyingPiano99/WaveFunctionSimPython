@@ -50,8 +50,20 @@ def add_wall(V, delta_x, center_bohr_radii, thickness_bohr_radii, height_hartree
         for y in range(0, V.shape[1]):
             for z in range(0, V.shape[2]):
                 r = np.array([x, y, z]) * delta_x
-                if(r[2] > center_bohr_radii - thickness_bohr_radii / 2.0 and r[2] < center_bohr_radii + thickness_bohr_radii / 2.0):
+                if r[2] > center_bohr_radii - thickness_bohr_radii / 2.0 and r[2] < center_bohr_radii + thickness_bohr_radii / 2.0:
                     v = height_hartree * (1.0 - abs(center_bohr_radii - r[2]) / thickness_bohr_radii * 2.0)
+                    V[x, y, z] += v
+
+    return V
+
+
+def add_single_slit(V, delta_x, center_bohr_radii, thickness_bohr_radii, height_hartree, slit_size_bohr_radii):
+    for x in range(0, V.shape[0]):
+        for y in range(0, V.shape[1]):
+            for z in range(0, V.shape[2]):
+                r = np.array([x, y, z]) * delta_x
+                if r[2] > center_bohr_radii - thickness_bohr_radii / 2.0 and r[2] < center_bohr_radii + thickness_bohr_radii / 2.0:
+                    v = height_hartree * max(0.0, 1.0 - abs(center_bohr_radii - r[2]) / thickness_bohr_radii * 2.0 - max(0.0, 1.0 - abs(center_bohr_radii - r[1]) / slit_size_bohr_radii * 2.0))
                     V[x, y, z] += v
 
     return V

@@ -6,6 +6,10 @@ from sources import volume_visualization, animation
 
 
 def init_kinetic_operator(N, delta_x, delta_time):
+    try:
+        return np.load(file='cache/kinetic_operator.npy')
+    except OSError:
+        print('No cached kinetic_operator.npy found.')
     P_kinetic = np.zeros(shape=(N, N, N), dtype=np.complex_)
     for x in range(0, N):
         for y in range(0, N):
@@ -21,6 +25,7 @@ def init_kinetic_operator(N, delta_x, delta_time):
                 k = 2.0 * np.pi * f / delta_x
                 angle = np.dot(k, k) * delta_time / 4.0
                 P_kinetic[x, y, z] = math_utils.exp_i(angle)
+    np.save(file='cache/kinetic_operator.npy', arr=P_kinetic)
     return P_kinetic
 
 def init_potential_operator(V, N, delta_time):
@@ -102,15 +107,24 @@ def sim():
     print("Initializing kinetic energy operator")
     kinetic_operator = init_kinetic_operator(N=N, delta_x=delta_x_bohr_radii, delta_time=delta_time_h_bar_per_hartree)
     print("Initializing potential energy operator")
-    V = potential.init_potential_box(N=N, delta_x=delta_x_bohr_radii, wall_thickness_bohr_radii=3.0, potential_wall_height_hartree=1000.0)
-    V = potential.add_wall(V=V, delta_x=delta_x_bohr_radii, center_bohr_radii=15.0, thickness_bohr_radii=1.0, height_hartree=1000.0)
-    potential_operator = init_potential_operator(V=V, N=N, delta_time=delta_time_h_bar_per_hartree)
+    try:
+        V = np.load(file='cache/localized_potential.npy')
+    except OSError:
+        print('No cached localized_potential.npy found.')
+        V = potential.init_potential_box(N=N, delta_x=delta_x_bohr_radii, wall_thickness_bohr_radii=3.0, potential_wall_height_hartree=1000.0)
+        V = potential.add_single_slit(V=V, delta_x=delta_x_bohr_radii, center_bohr_radii=15.0, thickness_bohr_radii=1.0, height_hartree=1000.0, slit_size_bohr_radii=1.5)
+        np.save(file='cache/localized_potential.npy', arr=V)
 
-    #plot.plot_potential_image(V=V, N=N, delta_x=delta_x_bohr_radii)
+    try:
+        potential_operator = np.load(file='cache/potential_operator.npy')
+    except OSError:
+        print('No cached potential_operator.npy found.')
+        potential_operator = init_potential_operator(V=V, N=N, delta_time=delta_time_h_bar_per_hartree)
+        np.save(file='cache/potential_operator.npy', arr=potential_operator)
 
     print("***************************************************************************************")
     print("Starting simulation")
-    canvas = volume_visualization.VolumeCanvas(probability_density)
+    canvas = volume_visualization.VolumeCanvas(volume_data=probability_density, secondary_data=V)
     animation_writer = animation.AnimationWriter("images/probability_density_time_development.gif")
 
     animation_frame_step_interval = 5
