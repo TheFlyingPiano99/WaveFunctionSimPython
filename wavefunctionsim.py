@@ -1,9 +1,6 @@
 import numpy as np
 import sources.math_utils as math_utils
-import sources.wave_packet as wp
-import sources.potential as potential
-from sources import volume_visualization, animation
-
+from sources import wave_packet, volume_visualization, animation, measurement, potential
 
 def init_kinetic_operator(N, delta_x, delta_time):
     try:
@@ -67,7 +64,7 @@ def sim():
     simulated_volume_width_bohr_radii = 30.0
     print(f"Width of simulated volume is w = {simulated_volume_width_bohr_radii} Bohr radii.")
 
-    N = 128
+    N = 180
     print(f"Number of samples per axis is N = {N}.")
 
     # Space resolution
@@ -92,7 +89,7 @@ def sim():
     packet_width_bohr_radii = 1.0
     print(f"Wave packet width is {packet_width_bohr_radii} bohr radii.")
     a = packet_width_bohr_radii * 2.0
-    wave_tensor = wp.init_gaussian_wave_packet(N=N, delta_x_bohr_radii=delta_x_bohr_radii, a=a, r_0_bohr_radii_3=initial_position_bohr_radii_3,
+    wave_tensor = wave_packet.init_gaussian_wave_packet(N=N, delta_x_bohr_radii=delta_x_bohr_radii, a=a, r_0_bohr_radii_3=initial_position_bohr_radii_3,
                                             initial_momentum_h_per_bohr_radius_3=np.array([0, 0, -particle_momentum_h_per_bohr_radius]))
 
     # Normalize:
@@ -112,7 +109,7 @@ def sim():
     except OSError:
         print('No cached localized_potential.npy found.')
         V = potential.init_potential_box(N=N, delta_x=delta_x_bohr_radii, wall_thickness_bohr_radii=3.0, potential_wall_height_hartree=1000.0)
-        V = potential.add_single_slit(V=V, delta_x=delta_x_bohr_radii, center_bohr_radii=15.0, thickness_bohr_radii=1.0, height_hartree=1000.0, slit_size_bohr_radii=1.5)
+        V = potential.add_single_slit(V=V, delta_x=delta_x_bohr_radii, center_bohr_radii=15.0, thickness_bohr_radii=1.0, height_hartree=1000.0, slit_size_bohr_radii=2.0)
         np.save(file='cache/localized_potential.npy', arr=V)
 
     try:
@@ -126,9 +123,10 @@ def sim():
     print("Starting simulation")
     canvas = volume_visualization.VolumeCanvas(volume_data=probability_density, secondary_data=V)
     animation_writer = animation.AnimationWriter("images/probability_density_time_development.gif")
-
+    measurement_plane = measurement.MeasurementPlane(wave_tensor=wave_tensor, delta_x=delta_x_bohr_radii, location_bohr_radii=25.0)
     animation_frame_step_interval = 5
     png_step_interval = 10
+    measurement_plane_capture_interval = 10
 
     # Run simulation
     for i in range(1000):
@@ -137,13 +135,17 @@ def sim():
         probability_density = np.square(np.abs(wave_tensor))
         print(f"Integral of probability density P = {np.sum(probability_density)}.")
         canvas.update(probability_density)
+        measurement_plane.integrate(wave_tensor=wave_tensor, delta_time=delta_time_h_bar_per_hartree)
         if (i % animation_frame_step_interval == 0):
             animation_writer.add_frame(canvas)
         if (i % png_step_interval == 0):
             canvas.save_to_png(f"images/probability_density_{i:3d}.png")
+        if (i % measurement_plane_capture_interval == 0):
+            measurement_plane.save(probability_save_path=f'images/measurement_plane_probability_{i:3d}.png', dwell_time_save_path=f'images/measurement_plane_dwell_time_{i:3d}.png')
 
     animation_writer.finish()
     print("Simulation has finished.")
 
 
-sim()
+if __name__=="__main__":
+    sim()

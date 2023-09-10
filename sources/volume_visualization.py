@@ -43,15 +43,15 @@ class VolumeCanvas:
                 return vec4(pow(tScaled, 0.5), tScaled, tScaled*tScaled, max(0, tScaled*1.05 - 0.05));
             }
             """
-        class SecundaryColorMap(BaseColormap):
+        class SecondaryColorMap(BaseColormap):
             glsl_map = """
             vec4 translucent_fire(float t) {
-                float tScaled = min(t * 0.1, 1.0);
-                return vec4(tScaled, pow(tScaled, 0.5), tScaled*tScaled, max(0, tScaled*1.05 - 0.05));
+                float tScaled = min(t * 1.0, 1.0);
+                return vec4(tScaled, pow(tScaled, 0.5), tScaled*tScaled, max(0, tScaled*1.05 - 0.05) * 0.1);
             }
             """
         self.volume.cmap = CustomColorMap()
-        self.secondary_volume.cmap = SecundaryColorMap()
+        self.secondary_volume.cmap = SecondaryColorMap()
 
         """
         # Implement axis connection with cam2
@@ -70,10 +70,6 @@ class VolumeCanvas:
 
         """
 
-        # for testing performance
-        # @canvas.connect
-        # def on_draw(ev):
-        # canvas.update()
 
     def update(self, volume_data):
         self.volume.set_data(volume_data)
