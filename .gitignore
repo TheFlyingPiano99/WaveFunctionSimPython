@@ -2,3 +2,6 @@
 *.jpg
 *.png
 *.zip
+sources/__pycache__/*
+cache/*
+
