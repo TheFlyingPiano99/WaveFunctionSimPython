@@ -1,6 +1,0 @@
-
-Oscillating blob
-
-Stable oscillation around a potential wall.
-Unphysical interference patterns due to the simulation space boundaries.
-

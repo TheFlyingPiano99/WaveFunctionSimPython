@@ -34,7 +34,7 @@ def plot_potential_image(V, N, delta_x):
     )
 
     # Show the figure
-    fig.write_image(f"images/potential_energy.jpeg")
+    fig.write_image(f"output/potential_energy.jpeg")
 
 
 def plot_probability_density_image(probability_density, delta_time_h_per_hartree, delta_x, N, i : int):
@@ -70,4 +70,4 @@ def plot_probability_density_image(probability_density, delta_time_h_per_hartree
     )
 
     # Show the figure
-    fig.write_image(f"images/probability_density{i:03d}.jpeg")
+    fig.write_image(f"output/probability_density{i:03d}.jpeg")

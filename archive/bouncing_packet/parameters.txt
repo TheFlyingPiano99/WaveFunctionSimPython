@@ -1,0 +1,17 @@
+Wave function simulation
+Mass of the particle is 1.0 electron rest mass.
+Initial velocity of the particle is 10.0 Bohr radius hartree / h-bar
+Initial momentum of particle is 10.0 h-bar / Bohr radius
+De Broglie wavelength associated with the particle is 0.6283185307179586 Bohr radii.
+Width of simulated volume is w = 16.0 Bohr radii.
+Number of samples per axis is N = 32.
+Space resolution is delta_x = 0.5 Bohr radii.
+The maximal viable time resolution < 0.3183098861837907 h-bar / hartree
+Time resolution is delta = 0.238732414637843 h-bar / hartree.
+***************************************************************************************
+Initializing wave packet
+Wave packet width is 1.0 bohr radii.
+Sum of probabilities = 7.999999999999939
+Sum of probabilities after normalization = 1.0
+Initializing kinetic energy operator
+Initializing potential energy operator

@@ -1,6 +1,7 @@
 import numpy as np
 import sources.math_utils as math_utils
 from sources import wave_packet, volume_visualization, animation, measurement, potential
+import toml
 
 def init_kinetic_operator(N, delta_x, delta_time):
     try:
@@ -48,10 +49,14 @@ def sim():
     print("Wave function simulation")
     # We use hartree atomic unit system
 
+    with open("config/parameters.toml") as f:
+        config = toml.load(f)
+
+
     # Maximal kinetic energy
 
-    particle_mass = math_utils.electron_rest_mass
-    initial_velocity = 10.0
+    particle_mass = config['particle_mass']
+    initial_velocity = config['initial_velocity']
 
     print(f"Mass of the particle is {particle_mass} electron rest mass.\n"
           f"Initial velocity of the particle is {initial_velocity} Bohr radius hartree / h-bar")
@@ -61,10 +66,10 @@ def sim():
     de_broglie_wave_length_bohr_radii = math_utils.get_de_broglie_wave_length_bohr_radii(particle_momentum_h_per_bohr_radius)
     print(f"De Broglie wavelength associated with the particle is {de_broglie_wave_length_bohr_radii} Bohr radii.")
 
-    simulated_volume_width_bohr_radii = 30.0
+    simulated_volume_width_bohr_radii = config['simulated_volume_width_bohr_radii']
     print(f"Width of simulated volume is w = {simulated_volume_width_bohr_radii} Bohr radii.")
 
-    N = 180
+    N = config['number_of_samples_per_axis']
     print(f"Number of samples per axis is N = {N}.")
 
     # Space resolution
@@ -86,7 +91,7 @@ def sim():
     print("***************************************************************************************")
 
     print("Initializing wave packet")
-    packet_width_bohr_radii = 1.0
+    packet_width_bohr_radii = config['packet_width_bohr_radii']
     print(f"Wave packet width is {packet_width_bohr_radii} bohr radii.")
     a = packet_width_bohr_radii * 2.0
     wave_tensor = wave_packet.init_gaussian_wave_packet(N=N, delta_x_bohr_radii=delta_x_bohr_radii, a=a, r_0_bohr_radii_3=initial_position_bohr_radii_3,
@@ -122,7 +127,7 @@ def sim():
     print("***************************************************************************************")
     print("Starting simulation")
     canvas = volume_visualization.VolumeCanvas(volume_data=probability_density, secondary_data=V)
-    animation_writer = animation.AnimationWriter("images/probability_density_time_development.gif")
+    animation_writer = animation.AnimationWriter("output/probability_density_time_development.gif")
     measurement_plane = measurement.MeasurementPlane(wave_tensor=wave_tensor, delta_x=delta_x_bohr_radii, location_bohr_radii=25.0)
     animation_frame_step_interval = 5
     png_step_interval = 10
@@ -139,9 +144,9 @@ def sim():
         if (i % animation_frame_step_interval == 0):
             animation_writer.add_frame(canvas)
         if (i % png_step_interval == 0):
-            canvas.save_to_png(f"images/probability_density_{i:3d}.png")
+            canvas.save_to_png(f"output/probability_density_{i:3d}.png")
         if (i % measurement_plane_capture_interval == 0):
-            measurement_plane.save(probability_save_path=f'images/measurement_plane_probability_{i:3d}.png', dwell_time_save_path=f'images/measurement_plane_dwell_time_{i:3d}.png')
+            measurement_plane.save(probability_save_path=f'output/measurement_plane_probability_{i:3d}.png', dwell_time_save_path=f'output/measurement_plane_dwell_time_{i:3d}.png')
 
     animation_writer.finish()
     print("Simulation has finished.")
