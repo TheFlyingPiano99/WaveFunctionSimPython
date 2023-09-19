@@ -21,3 +21,23 @@ class MeasurementPlane:
         matplotlib.image.imsave(fname=probability_save_path, arr=formatted, cmap='gist_heat', dpi=100)
         formatted = self.plane_dwell_time_density
         matplotlib.image.imsave(fname=dwell_time_save_path, arr=formatted, cmap='gist_heat', dpi=100)
+
+class AAMeasurementVolume:
+
+    def __init__(self, bottom_corner, top_corner, label='Unknown'):
+        self.top_corner = top_corner
+        self.bottom_corner =bottom_corner
+        self.label = label
+        self.probability = 0.0
+        self.probability_evolution = np.empty(shape=0, dtype=np.float64)
+
+
+    def integrate_probability_density(self, probability_density):
+        self.probability = np.sum(probability_density[self.bottom_corner[0]:self.top_corner[0], self.bottom_corner[1]:self.top_corner[1], self.bottom_corner[2]:self.top_corner[2]])
+        self.probability_evolution = np.append(arr=self.probability_evolution, values=self.probability)
+
+    def get_probability(self):
+        return self.probability
+
+    def get_probability_evolution(self):
+        return self.probability_evolution, self.label

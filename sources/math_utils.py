@@ -29,3 +29,6 @@ def relativistic_momentum(rest_mass, velocity):
 
 def relativistic_energy(momentum, rest_mass):
     return ((momentum * speed_of_light)**2 + (rest_mass * speed_of_light)**2)**0.5
+
+def h_bar_per_hartree_to_ns(t):
+    return t * 2.4188843265857 * 10**(-8)

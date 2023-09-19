@@ -2,6 +2,7 @@
 *.jpg
 *.png
 *.zip
+*.gif
 sources/__pycache__/*
 cache/*
 
