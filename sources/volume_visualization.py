@@ -38,18 +38,20 @@ class VolumeCanvas:
             glsl_map = """
             vec4 translucent_green(float t) {
                 float tScaled = min(t * 1.0, 1.0);
-                return vec4(tScaled, pow(tScaled, 0.5), tScaled*tScaled, max(0, tScaled*1.05 - 0.05) * 0.5);
+                return vec4(tScaled, pow(tScaled, 0.5), tScaled*tScaled, max(0, tScaled*1.05 - 0.05) * 0.1);
             }
             """
         self.primary_color_map = ProbabilityDensityColorMap()
         self.secondary_color_map = PotentialColorMap()
         self.clim1 = volume_data.astype(np.float32).min(), volume_data.astype(np.float32).max()
         self.clim2 = secondary_data.astype(np.float32).min(), secondary_data.astype(np.float32).max()
+
         # Create the volume visuals
         self.volume = multi_volume_visual.MultiVolume(volumes=[(volume_data.astype(np.float32), self.clim1, self.primary_color_map),
                                                                      (secondary_data.astype(np.float32), self.clim2, self.secondary_color_map)
                                                                      ],
                                                             parent=self.view.scene, method='translucent')
+
         #self.volume.parent=self.view.scene
         #self.volume.method='translucent'
         #self.volume.gamma=1.0

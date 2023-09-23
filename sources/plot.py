@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 
 def plot_probability_evolution(probability_evolutions, delta_t, index, show_fig=False):
+    plt.clf()   # Clear figure
     plt.grid(True)
     plt.xlabel("Elapsed time [ħ/E]")
     plt.ylabel("Probability")
@@ -14,6 +15,6 @@ def plot_probability_evolution(probability_evolutions, delta_t, index, show_fig=
     for prob_data in probability_evolutions:
         plt.plot(x, prob_data[0], label=prob_data[1])
     plt.legend()
-    plt.savefig(f'output/probability_evolution_{index:4d}.png')
+    plt.savefig(f'output/probability_evolution_{index:04d}.png')
     if show_fig:
         plt.show()

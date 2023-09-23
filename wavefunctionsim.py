@@ -120,9 +120,11 @@ def sim():
     except OSError:
         print('No cached localized_potential.npy found.')
         V = np.zeros(shape=(N, N, N), dtype=float)
-        # V = potential.add_single_slit(V=V, N=N, delta_x=delta_x_bohr_radii, center_bohr_radii=15.0, thickness_bohr_radii=1.0, height_hartree=1000.0, slit_size_bohr_radii=3.0)
+        # V = potential.add_single_slit(V=V, delta_x=delta_x_bohr_radii, center_bohr_radii=15.0, thickness_bohr_radii=1.0, height_hartree=200.0, slit_size_bohr_radii=3.0)
+        V = potential.add_double_slit(V=V, delta_x=delta_x_bohr_radii, center_bohr_radii=np.array([0.0, 15.0, 15.0]), thickness_bohr_radii=1.5, height_hartree=200.0, slit_width_bohr_radii=2, space_between_slits_bohr_radii=0.5)
+        # V = potential.add_wall(V=V, delta_x=delta_x_bohr_radii, center_bohr_radii=15.0, thickness_bohr_radii=1.5, height_hartree=200)
         only_the_obstacle_potential = V.copy()
-        V = potential.init_potential_box(V=V, N=N, delta_x=delta_x_bohr_radii, wall_thickness_bohr_radii=2.0, potential_wall_height_hartree=1000.0)
+        V = potential.init_potential_box(V=V, N=N, delta_x=delta_x_bohr_radii, wall_thickness_bohr_radii=1.5, potential_wall_height_hartree=1000.0)
         np.save(file='cache/localized_potential.npy', arr=V)
         np.save(file='cache/only_the_obstacle_potential.npy', arr=only_the_obstacle_potential)
 
@@ -148,9 +150,10 @@ def sim():
     measurement_plane_capture_interval = config['measurement_plane_capture_interval']
     probability_plot_interval = config['probability_plot_interval']
     elapsed_iter_time = 0.0
+    total_iteration_count = config['total_iteration_count']
 
     # Run simulation
-    for i in range(1001):
+    for i in range(total_iteration_count + 1):
         iter_start_time_s = time.time()
         print("Iteration: ", i, ".")
         probability_density = np.square(np.abs(wave_tensor))
@@ -168,7 +171,7 @@ def sim():
         if (i % animation_frame_step_interval == 0):
             animation_writer.add_frame(canvas)
         if (i % png_step_interval == 0):
-            canvas.save_to_png(f"output/probability_density_{i:4d}.png")
+            canvas.save_to_png(f"output/probability_density_{i:04d}.png")
         if (i % probability_plot_interval == 0):
             plot.plot_probability_evolution([
                 measurement_volume_full.get_probability_evolution(),
@@ -176,7 +179,7 @@ def sim():
                 measurement_volume_second_half.get_probability_evolution(),
             ], delta_t=delta_time_h_bar_per_hartree, index=i, show_fig= i == 1000)
         if (i % measurement_plane_capture_interval == 0):
-            measurement_plane.save(probability_save_path=f'output/measurement_plane_probability_{i:3d}.png', dwell_time_save_path=f'output/measurement_plane_dwell_time_{i:3d}.png')
+            measurement_plane.save(probability_save_path=f'output/measurement_plane_probability_{i:04d}.png', dwell_time_save_path=f'output/measurement_plane_dwell_time_{i:04d}.png')
 
         wave_tensor = time_evolution(wave_tensor= wave_tensor, kinetic_operator=kinetic_operator, potential_operator=potential_operator)
 
@@ -187,7 +190,7 @@ def sim():
     animation_writer.finish()
     print("Simulation has finished.")
     print(f"Total simulation time: {elapsed_iter_time} s")
-    print(f"Average iteration time: {elapsed_iter_time / 1000.0} s")
+    print(f"Average iteration time: {elapsed_iter_time / float(total_iteration_count)} s")
 
 if __name__=="__main__":
     sim()

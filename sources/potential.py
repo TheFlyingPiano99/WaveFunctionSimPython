@@ -50,9 +50,9 @@ def add_wall(V, delta_x, center_bohr_radii, thickness_bohr_radii, height_hartree
     return V
 
 
-def add_single_slit(N, delta_x, center_bohr_radii, thickness_bohr_radii, height_hartree, slit_size_bohr_radii, V=None):
+def add_single_slit(delta_x, center_bohr_radii, thickness_bohr_radii, height_hartree, slit_size_bohr_radii, V=None):
     if V is None:
-        V = np.zeros(shape=(N, N, N), dtype=float)
+        V = np.zeros(shape=V.shape, dtype=float)
     for x in range(0, V.shape[0]):
         for y in range(0, V.shape[1]):
             for z in range(0, V.shape[2]):
@@ -60,5 +60,23 @@ def add_single_slit(N, delta_x, center_bohr_radii, thickness_bohr_radii, height_
                 if r[2] > center_bohr_radii - thickness_bohr_radii / 2.0 and r[2] < center_bohr_radii + thickness_bohr_radii / 2.0:
                     v = height_hartree * max(0.0, 1.0 - abs(center_bohr_radii - r[2]) / thickness_bohr_radii * 2.0 - max(0.0, 1.0 + 0.02 - (((center_bohr_radii - r[1])**2 + (center_bohr_radii - r[0])**2)**0.5 / slit_size_bohr_radii * 2.0)**2.0))
                     V[x, y, z] += v
+
+    return V
+
+def add_double_slit(delta_x, center_bohr_radii, thickness_bohr_radii, height_hartree, space_between_slits_bohr_radii, slit_width_bohr_radii, V=None):
+    if V is None:
+        V = np.zeros(shape=V.shape, dtype=float)
+    for x in range(0, V.shape[0]):
+        for y in range(0, V.shape[1]):
+            for z in range(0, V.shape[2]):
+                r = np.array([x, y, z]) * delta_x
+                if r[2] > center_bohr_radii[2] - thickness_bohr_radii / 2.0 and r[2] < center_bohr_radii[2] + thickness_bohr_radii / 2.0:
+                    v = (
+                            height_hartree * (1.0 - abs(center_bohr_radii[2] - r[2]) / thickness_bohr_radii * 2.0)
+                            * min(1.0, abs(r[1] - (center_bohr_radii[1] + space_between_slits_bohr_radii / 2.0 + slit_width_bohr_radii / 2.0)) / slit_width_bohr_radii * 2.0)
+                            * min(1.0, abs(r[1] - (center_bohr_radii[1] - space_between_slits_bohr_radii / 2.0 - slit_width_bohr_radii / 2.0)) / slit_width_bohr_radii * 2.0)
+                    )
+                    V[x, y, z] += v
+
 
     return V

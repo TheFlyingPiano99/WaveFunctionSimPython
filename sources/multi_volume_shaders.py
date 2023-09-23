@@ -122,6 +122,7 @@ void main() {{
             vec4 color = vec4(0, 0, 0, 0);
 
 {color_calculation}
+
             // Translucent method:            
             float a1 = integrated_color.a;
             float a2 = color.a * (1 - a1);
@@ -166,11 +167,16 @@ def get_shaders(n_volume_max):
     declarations = ""
     color_calculation = ""
 
+    # Here I changed the way alpha value is calculated from different volume sources - Zoltán Simon
+    # Now the source with the highest alpha is preserved in color and not the average of all the sources
     for i in range(n_volume_max):
         declarations += "uniform $sampler_type u_volumetex{0:d};\n".format(i)
-        color_calculation += "if (u_n_tex > {0:d}) color += $cmap{0:d}($sample(u_volumetex{0:d}, loc).g);\n".format(i)
+        color_calculation += ("if (u_n_tex > {0:d}) {{\n\
+                            vec4 current_color = $cmap{0:d}($sample(u_volumetex{0:d}, loc).g);\n\
+                            if (current_color.w > color.w) color = current_color;\n\
+                            }}\n").format(i)
 
-    color_calculation += "color *= 1. / u_n_tex;".format(1. / n_volume_max)
+    # color_calculation += "color *= 1. / u_n_tex;".format(1. / n_volume_max)
 
     color_calculation = textwrap.indent(color_calculation, " " * 12)
 
