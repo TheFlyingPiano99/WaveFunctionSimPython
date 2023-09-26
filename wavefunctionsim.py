@@ -5,12 +5,13 @@ import toml
 import time
 import sources.plot as plot
 
+
 def init_kinetic_operator(N, delta_x, delta_time):
     try:
         return np.load(file='cache/kinetic_operator.npy')
     except OSError:
         print('No cached kinetic_operator.npy found.')
-    P_kinetic = np.zeros(shape=(N, N, N), dtype=np.complex_)
+    P_kinetic = np.zeros(shape=(N, N, N, N, N, N), dtype=np.complex_)
     for x in range(0, N):
         for y in range(0, N):
             for z in range(0, N):
@@ -30,7 +31,7 @@ def init_kinetic_operator(N, delta_x, delta_time):
 
 
 def init_potential_operator(V, N, delta_time):
-    P_potential = np.zeros(shape=(N, N, N), dtype=np.complex_)
+    P_potential = np.zeros(shape=(N, N, N, N, N, N), dtype=np.complex_)
     for x in range(0, N):
         for y in range(0, N):
             for z in range(0, N):
@@ -191,6 +192,7 @@ def sim():
     print("Simulation has finished.")
     print(f"Total simulation time: {elapsed_iter_time} s")
     print(f"Average iteration time: {elapsed_iter_time / float(total_iteration_count)} s")
+
 
 if __name__=="__main__":
     sim()
