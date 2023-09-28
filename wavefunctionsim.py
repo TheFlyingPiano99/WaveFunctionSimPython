@@ -72,6 +72,9 @@ def sim():
     de_broglie_wave_length_bohr_radii = math_utils.get_de_broglie_wave_length_bohr_radii(momentum_magnitude)
     print(f"De Broglie wavelength associated with the particle is {de_broglie_wave_length_bohr_radii} Bohr radii.")
 
+    initial_kinetic_energy_hartree = momentum_magnitude**2 / 2 / particle_mass
+    print(f"Initial mean kinetic energy of the particle is {initial_kinetic_energy_hartree} hartree.")
+
     simulated_volume_width_bohr_radii = config['simulated_volume_width_bohr_radii']
     print(f"Width of simulated volume is w = {simulated_volume_width_bohr_radii} Bohr radii.")
 
