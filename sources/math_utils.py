@@ -4,7 +4,10 @@ planck_constant = 2.0 * math.pi
 electron_rest_mass = 1.0
 reduced_planck_constant = 1.0
 speed_of_light = 137.03599
+from numba import jit
 
+
+@jit(nopython=True)
 def exp_i(angle):
     return math.cos(angle) + 1j * math.sin(angle)
 

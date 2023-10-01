@@ -13,6 +13,7 @@ import sources.multi_volume_visual as multi_volume_visual
 class VolumeCanvas:
 
     def __init__(self, volume_data, secondary_data):
+
         # Prepare canvas
         self.canvas = scene.SceneCanvas(keys='interactive', bgcolor='black', size=(1024, 768), show=False)
         self.view = self.canvas.central_widget.add_view()
