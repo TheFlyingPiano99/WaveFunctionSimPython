@@ -4,10 +4,39 @@ import sources.math_utils
 from numba import jit
 
 
+class DrainPotentialData:
+    boundary_bottom_corner: np.array
+    boundary_top_corner: np.array
+
+
 @jit(nopython=True)
-def init_potential_box(
+def add_potential_box(
     N, delta_x, wall_thickness_bohr_radii, potential_wall_height_hartree, V=None
 ):
+    if V is None:
+        V = np.zeros(shape=(N, N, N), dtype=float)
+    for x in range(0, N):
+        for y in range(0, N):
+            for z in range(0, N):
+                r = np.array([x, y, z]) * delta_x
+                # Barriers:
+                t = max(
+                    0.0,
+                    wall_thickness_bohr_radii - r[0],
+                    wall_thickness_bohr_radii - (delta_x * N - r[0]),
+                    wall_thickness_bohr_radii - r[1],
+                    wall_thickness_bohr_radii - (delta_x * N - r[1]),
+                    wall_thickness_bohr_radii - (r[2]),
+                    wall_thickness_bohr_radii - (delta_x * N - r[2]),
+                )
+                V[x, y, z] += (
+                    potential_wall_height_hartree * t / wall_thickness_bohr_radii
+                )
+    return V
+
+
+@jit(nopython=True)
+def add_draining_potential(N, delta_x, raining_potential: DrainPotentialData, V=None):
     if V is None:
         V = np.zeros(shape=(N, N, N), dtype=float)
     for x in range(0, N):

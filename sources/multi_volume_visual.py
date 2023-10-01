@@ -36,6 +36,7 @@
 # This modified version is released under the BSD license given in the LICENSE
 # file in this repository.
 
+# Modified by Zoltan Simon
 
 from vispy.gloo import Texture3D, TextureEmulated3D, VertexBuffer, IndexBuffer
 from vispy.visuals import Visual
@@ -70,10 +71,16 @@ class MultiVolumeVisual(Visual):
         Absolute maximum number of volumes that can be shown.
     """
 
-    def __init__(self, volumes, clim=None, threshold=None,
-                 relative_step_size=0.8, method='mip',
-                 emulate_texture=False, n_volume_max=10):
-
+    def __init__(
+        self,
+        volumes,
+        clim=None,
+        threshold=None,
+        relative_step_size=0.8,
+        method="mip",
+        emulate_texture=False,
+        n_volume_max=10,
+    ):
         # Choose texture class
         tex_cls = TextureEmulated3D if emulate_texture else Texture3D
 
@@ -93,37 +100,44 @@ class MultiVolumeVisual(Visual):
         # Create gloo objects
         self._vertices = VertexBuffer()
         self._texcoord = VertexBuffer(
-            np.array([
-                [0, 0, 0],
-                [1, 0, 0],
-                [0, 1, 0],
-                [1, 1, 0],
-                [0, 0, 1],
-                [1, 0, 1],
-                [0, 1, 1],
-                [1, 1, 1],
-            ], dtype=np.float32))
+            np.array(
+                [
+                    [0, 0, 0],
+                    [1, 0, 0],
+                    [0, 1, 0],
+                    [1, 1, 0],
+                    [0, 0, 1],
+                    [1, 0, 1],
+                    [0, 1, 1],
+                    [1, 1, 1],
+                ],
+                dtype=np.float32,
+            )
+        )
 
         # Set up textures
         self.textures = []
         for i in range(n_volume_max):
-            self.textures.append(tex_cls((10, 10, 10), interpolation='linear',
-                                          wrapping='clamp_to_edge'))
-            self.shared_program['u_volumetex{0}'.format(i)] = self.textures[i]
-            self.shared_program.frag['cmap{0:d}'.format(i)] = Function(get_colormap('grays').glsl_map)
+            self.textures.append(
+                tex_cls((10, 10, 10), interpolation="linear", wrapping="clamp_to_edge")
+            )
+            self.shared_program["u_volumetex{0}".format(i)] = self.textures[i]
+            self.shared_program.frag["cmap{0:d}".format(i)] = Function(
+                get_colormap("grays").glsl_map
+            )
 
-        self.shared_program['a_position'] = self._vertices
-        self.shared_program['a_texcoord'] = self._texcoord
-        self._draw_mode = 'triangle_strip'
+        self.shared_program["a_position"] = self._vertices
+        self.shared_program["a_texcoord"] = self._texcoord
+        self._draw_mode = "triangle_strip"
         self._index_buffer = IndexBuffer()
 
-        self.shared_program.frag['sampler_type'] = self.textures[0].glsl_sampler_type
-        self.shared_program.frag['sample'] = self.textures[0].glsl_sample
+        self.shared_program.frag["sampler_type"] = self.textures[0].glsl_sampler_type
+        self.shared_program.frag["sample"] = self.textures[0].glsl_sample
 
         # Only show back faces of cuboid. This is required because if we are
         # inside the volume, then the front faces are outside of the clipping
         # box and will not be drawn.
-        self.set_gl_state('translucent', cull_face=False, depth_test=False)
+        self.set_gl_state("translucent", cull_face=False, depth_test=False)
 
         self.relative_step_size = relative_step_size
         self.freeze()
@@ -141,12 +155,15 @@ class MultiVolumeVisual(Visual):
             The number of textures to use
         """
         if len(self.volumes) > len(self.textures):
-            raise ValueError("Number of volumes ({0}) exceeds number of textures ({1})".format(len(self.volumes), len(self.textures)))
+            raise ValueError(
+                "Number of volumes ({0}) exceeds number of textures ({1})".format(
+                    len(self.volumes), len(self.textures)
+                )
+            )
         for index in range(len(self.volumes)):
             self._update_volume(volumes, index)
 
     def _update_volume(self, volumes, index):
-
         data, clim, cmap = volumes[index]
 
         cmap = get_colormap(cmap)
@@ -155,30 +172,36 @@ class MultiVolumeVisual(Visual):
             clim = data.min(), data.max()
         data = data.astype(np.float32)
         if clim[1] == clim[0]:
-            if clim[0] != 0.:
+            if clim[0] != 0.0:
                 data *= 1.0 / clim[0]
         else:
             data -= clim[0]
             data /= clim[1] - clim[0]
 
-        self.shared_program['u_volumetex{0:d}'.format(index)].set_data(data)
-        self.shared_program.frag['cmap{0:d}'.format(index)] = Function(cmap.glsl_map)
+        self.shared_program["u_volumetex{0:d}".format(index)].set_data(data)
+        self.shared_program.frag["cmap{0:d}".format(index)] = Function(cmap.glsl_map)
 
         if self._vol_shape is None:
-            self.shared_program['u_shape'] = data.shape[::-1]
+            self.shared_program["u_shape"] = data.shape[::-1]
             self._vol_shape = data.shape
         elif data.shape != self._vol_shape:
-            raise ValueError("Shape of arrays should be {0} instead of {1}".format(self._vol_shape, data.shape))
+            raise ValueError(
+                "Shape of arrays should be {0} instead of {1}".format(
+                    self._vol_shape, data.shape
+                )
+            )
 
-        self.shared_program['u_n_tex'] = len(self.volumes)
+        self.shared_program["u_n_tex"] = len(self.volumes)
 
-
+    # Helper method that only requires the volume_data to update, and it's index in the multi_volume_visual
     def update_volume_data(self, volume_data, index):
-        self._update_volume([(volume_data, self.volumes[index][1], self.volumes[index][2])], index)
+        self._update_volume(
+            [(volume_data, self.volumes[index][1], self.volumes[index][2])], index
+        )
 
     @property
     def relative_step_size(self):
-        """ The relative step size used during raycasting.
+        """The relative step size used during raycasting.
 
         Larger values yield higher performance at reduced quality. If
         set > 2.0 the ray skips entire voxels. Recommended values are
@@ -191,12 +214,12 @@ class MultiVolumeVisual(Visual):
     def relative_step_size(self, value):
         value = float(value)
         if value < 0.1:
-            raise ValueError('relative_step_size cannot be smaller than 0.1')
+            raise ValueError("relative_step_size cannot be smaller than 0.1")
         self._relative_step_size = value
-        self.shared_program['u_relative_step_size'] = value
+        self.shared_program["u_relative_step_size"] = value
 
     def _create_vertex_data(self):
-        """ Create and set positions and texture coords from the given shape
+        """Create and set positions and texture coords from the given shape
 
         We have six faces with 1 quad (2 triangles) each, resulting in
         6*2*3 = 36 vertices in total.
@@ -209,16 +232,19 @@ class MultiVolumeVisual(Visual):
         y0, y1 = -0.5, shape[1] - 0.5
         z0, z1 = -0.5, shape[0] - 0.5
 
-        pos = np.array([
-            [x0, y0, z0],
-            [x1, y0, z0],
-            [x0, y1, z0],
-            [x1, y1, z0],
-            [x0, y0, z1],
-            [x1, y0, z1],
-            [x0, y1, z1],
-            [x1, y1, z1],
-        ], dtype=np.float32)
+        pos = np.array(
+            [
+                [x0, y0, z0],
+                [x1, y0, z0],
+                [x0, y1, z0],
+                [x1, y1, z0],
+                [x0, y0, z1],
+                [x1, y0, z1],
+                [x0, y1, z1],
+                [x1, y1, z1],
+            ],
+            dtype=np.float32,
+        )
 
         """
           6-------7
@@ -232,8 +258,7 @@ class MultiVolumeVisual(Visual):
 
         # Order is chosen such that normals face outward; front faces will be
         # culled.
-        indices = np.array([2, 6, 0, 4, 5, 6, 7, 2, 3, 0, 1, 5, 3, 7],
-                           dtype=np.uint32)
+        indices = np.array([2, 6, 0, 4, 5, 6, 7, 2, 3, 0, 1, 5, 3, 7], dtype=np.uint32)
 
         # Apply
         self._vertices.set_data(pos)
@@ -244,16 +269,17 @@ class MultiVolumeVisual(Visual):
 
     def _prepare_transforms(self, view):
         trs = view.transforms
-        view.view_program.vert['transform'] = trs.get_transform()
+        view.view_program.vert["transform"] = trs.get_transform()
 
-        view_tr_f = trs.get_transform('visual', 'document')
+        view_tr_f = trs.get_transform("visual", "document")
         view_tr_i = view_tr_f.inverse
-        view.view_program.vert['viewtransformf'] = view_tr_f
-        view.view_program.vert['viewtransformi'] = view_tr_i
+        view.view_program.vert["viewtransformf"] = view_tr_f
+        view.view_program.vert["viewtransformi"] = view_tr_i
 
     def _prepare_draw(self, view):
         if self._need_vertex_update:
             self._create_vertex_data()
             self._need_vertex_update = False
+
 
 MultiVolume = create_visual_node(MultiVolumeVisual)
