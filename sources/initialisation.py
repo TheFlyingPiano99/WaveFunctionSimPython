@@ -125,11 +125,17 @@ def initialize():
         print("No cached localized_potential.npy found.")
         sim_state.V = potential.add_double_slit(
             delta_x=sim_state.delta_x_bohr_radii,
-            center_bohr_radii=np.array([0.0, 15.0, 15.0]),
-            thickness_bohr_radii=1.5,
-            height_hartree=200.0,
-            slit_width_bohr_radii=2,
-            space_between_slits_bohr_radii=0.5,
+            center_bohr_radii=np.array([0.0, 0.0, 0.0]),
+            thickness_bohr_radii=sim_state.config["Potential"][
+                "wall_thickness_bohr_radii"
+            ],
+            height_hartree=sim_state.config["Potential"]["wall_potential_hartree"],
+            slit_width_bohr_radii=sim_state.config["Potential"][
+                "slit_width_bohr_radii"
+            ],
+            space_between_slits_bohr_radii=sim_state.config["Potential"][
+                "distance_between_slits_bohr_radii"
+            ],
             shape=sim_state.tensor_shape,
         )
         # sim_state.V = potential.add_wall(V=sim_state.V, delta_x=delta_x_bohr_radii, center_bohr_radii=15.0, thickness_bohr_radii=1.5, height_hartree=200)

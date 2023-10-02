@@ -105,7 +105,7 @@ class SimState:
 
     def get_view_into_potential(self):
         return math_utils.cut_window(
-            arr=self.only_the_obstacle_potential,
+            arr=np.real(self.only_the_obstacle_potential),
             bottom=self.viewing_window_bottom_corner_voxel,
             top=self.viewing_window_top_corner_voxel,
         )

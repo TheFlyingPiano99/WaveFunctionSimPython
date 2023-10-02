@@ -196,6 +196,9 @@ def add_double_slit(
 ):
     if V is None:
         V = np.zeros(shape=shape, dtype=np.complex_)
+    center_bohr_radii = math_utils.transform_center_origin_to_corner_origin_system(
+        center_bohr_radii, delta_x * shape[0]
+    )
     for x in range(0, shape[0]):
         for y in range(0, V.shape[1]):
             for z in range(0, V.shape[2]):
