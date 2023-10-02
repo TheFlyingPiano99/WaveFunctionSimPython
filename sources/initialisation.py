@@ -1,36 +1,22 @@
+from typing import Dict
+from numba import typeof
 import numpy as np
 import time
 import toml
 import sources.math_utils as math_utils
-from sources import (
-    wave_packet,
-    potential,
-    operators,
-)
-
-
-class SimData:
-    wave_tensor: np.ndarray
-    config: []
-    drain_potential: potential.DrainPotentialData
+from sources import wave_packet, potential, operators, text_writer
+import sources.sim_state as sim_st
 
 
 def initialize():
-    sim_state = SimData()
-
     # We use hartree atomic unit system
     initialisation_start_time_s = time.time()
     with open("config/parameters.toml") as f:
-        sim_state.config = toml.load(f)
+        config = toml.load(f)
+
+    sim_state = sim_st.SimState(config)
 
     # Maximal kinetic energy
-
-    particle_mass = sim_state.config["Wave packet"]["particle_mass"]
-    sim_state.initial_wp_velocity_bohr_radii_hartree_per_h_bar = np.array(
-        sim_state.config["Wave packet"][
-            "initial_wp_velocity_bohr_radii_hartree_per_h_bar"
-        ]
-    )
     velocity_magnitude = (
         np.dot(
             sim_state.initial_wp_velocity_bohr_radii_hartree_per_h_bar,
@@ -39,14 +25,10 @@ def initialize():
         ** 0.5
     )
     print(
-        f"Mass of the particle is {particle_mass} electron rest mass.\n"
+        f"Mass of the particle is {sim_state.particle_mass} electron rest mass.\n"
         f"Initial velocity of the particle is {velocity_magnitude} Bohr radius hartree / h-bar"
     )
 
-    sim_state.initial_wp_momentum_h_per_bohr_radius = math_utils.classical_momentum(
-        mass=particle_mass,
-        velocity=sim_state.initial_wp_velocity_bohr_radii_hartree_per_h_bar,
-    )
     momentum_magnitude = (
         np.dot(
             sim_state.initial_wp_momentum_h_per_bohr_radius,
@@ -57,32 +39,24 @@ def initialize():
     print(
         f"Initial mean momentum of particle is {momentum_magnitude} h-bar / Bohr radius"
     )
-    sim_state.de_broglie_wave_length_bohr_radii = (
-        math_utils.get_de_broglie_wave_length_bohr_radii(momentum_magnitude)
-    )
     print(
         f"De Broglie wavelength associated with the particle is {sim_state.de_broglie_wave_length_bohr_radii} Bohr radii."
     )
 
-    initial_kinetic_energy_hartree = momentum_magnitude**2 / 2 / particle_mass
+    initial_kinetic_energy_hartree = (
+        momentum_magnitude**2 / 2 / sim_state.particle_mass
+    )
     print(
         f"Initial mean kinetic energy of the particle is {initial_kinetic_energy_hartree} hartree."
     )
 
-    sim_state.simulated_volume_width_bohr_radii = sim_state.config["Volume"][
-        "simulated_volume_width_bohr_radii"
-    ]
     print(
         f"Width of simulated volume is w = {sim_state.simulated_volume_width_bohr_radii} Bohr radii."
     )
 
-    sim_state.N = sim_state.config["Volume"]["number_of_samples_per_axis"]
     print(f"Number of samples per axis is N = {sim_state.N}.")
 
     # Space resolution
-    sim_state.delta_x_bohr_radii = (
-        sim_state.simulated_volume_width_bohr_radii / sim_state.N
-    )
     print(f"Space resolution is delta_x = {sim_state.delta_x_bohr_radii} Bohr radii.")
     if (
         sim_state.delta_x_bohr_radii
@@ -91,54 +65,13 @@ def initialize():
         print("WARNING: delta_x exceeds half of de Broglie wavelength!")
 
     # The maximum allowed delta_time
-    upper_limit_on_delta_time_h_per_hartree = (
-        4.0
-        / np.pi
-        * (3.0 * sim_state.delta_x_bohr_radii * sim_state.delta_x_bohr_radii)
-        / 3.0
-    )  # Based on reasoning from the Web-Schrödinger paper
     print(
-        f"The maximal viable time resolution < {upper_limit_on_delta_time_h_per_hartree} h-bar / hartree"
+        f"The maximal viable time resolution < {sim_state.upper_limit_on_delta_time_h_per_hartree} h-bar / hartree"
     )
 
     # Time increment of simulation
-    sim_state.delta_time_h_bar_per_hartree = (
-        0.5 * upper_limit_on_delta_time_h_per_hartree
-    )
     print(
         f"Time resolution is delta = {sim_state.delta_time_h_bar_per_hartree} h-bar / hartree."
-    )
-
-    sim_state.initial_wp_position_bohr_radii_3 = (
-        math_utils.transform_center_origin_to_corner_origin_system(
-            np.array(
-                sim_state.config["Wave packet"]["initial_wp_position_bohr_radii_3"]
-            ),
-            sim_state.simulated_volume_width_bohr_radii,
-        )
-    )
-
-    # Init draining potential
-    sim_state.drain_potential = potential.DrainPotentialData()
-    sim_state.drain_potential.boundary_bottom_corner = (
-        math_utils.transform_center_origin_to_corner_origin_system(
-            np.array(
-                sim_state.config["Volume"][
-                    "viewing_window_boundary_bottom_corner_bohr_radii_3"
-                ]
-            ),
-            sim_state.simulated_volume_width_bohr_radii,
-        )
-    )
-    sim_state.drain_potential.boundary_top_corner = (
-        math_utils.transform_center_origin_to_corner_origin_system(
-            np.array(
-                sim_state.config["Volume"][
-                    "viewing_window_boundary_top_corner_bohr_radii_3"
-                ]
-            ),
-            sim_state.simulated_volume_width_bohr_radii,
-        )
     )
 
     print(
@@ -146,7 +79,7 @@ def initialize():
     )
 
     print("Initializing wave packet")
-    sim_state.wp_width_bohr_radii = sim_state.config["Wave packet"][
+    sim_state.wp_width_bohr_radii = sim_state.config["Wave_packet"][
         "wp_width_bohr_radii"
     ]
     print(f"Wave packet width is {sim_state.wp_width_bohr_radii} bohr radii.")
@@ -235,4 +168,5 @@ def initialize():
         f"Time spent with initialisation: {time.time() - initialisation_start_time_s} s."
     )
 
+    text_writer.write_sim_state(sim_state)
     return sim_state

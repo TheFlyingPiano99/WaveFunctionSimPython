@@ -1,9 +1,5 @@
 import sources.initialisation
-from sources import (
-    volume_visualization,
-    animation,
-    measurement,
-)
+from sources import volume_visualization, animation, measurement, text_writer
 import sources.initialisation as init
 import sources.core_sim as core_sim
 
@@ -58,10 +54,9 @@ def sim():
 
     measurement_tools.animation_writer.finish()
     print("Simulation has finished.")
-    print(f"Total simulation time: {iter_data.elapsed_iter_time} s")
-    print(
-        f"Average iteration time: {iter_data.elapsed_iter_time / float(iter_data.total_iteration_count)} s"
-    )
+    print(f"Total simulation time: {iter_data.elapsed_system_time_s} s")
+    print(f"Average iteration time: {iter_data.average_iteration_system_time_s} s")
+    text_writer.append_iter_data(iter_data)
 
 
 if __name__ == "__main__":

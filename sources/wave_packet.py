@@ -33,13 +33,20 @@ def wave_packet(x, y):
 
 @jit(nopython=True)
 def init_gaussian_wave_packet(
-    N, delta_x_bohr_radii, a, r_0_bohr_radii_3, initial_momentum_h_per_bohr_radius_3
+    N,
+    delta_x_bohr_radii,
+    a,
+    r_0_bohr_radii_3,
+    initial_momentum_h_per_bohr_radius_3,
 ):
     wave_tensor = np.zeros(shape=(N, N, N), dtype=np.complex_)
     for x in range(0, N):
         for y in range(0, N):
             for z in range(0, N):
-                r = np.array([x, y, z]) * delta_x_bohr_radii
+                r = (
+                    np.array([x, y, z]) * delta_x_bohr_radii
+                    - np.array([1.0, 1.0, 1.0]) * N * delta_x_bohr_radii * 0.5
+                )
                 wave_tensor[x, y, z] = (
                     (2.0 / math.pi / a**2) ** (3.0 / 4.0)
                     * math_utils.exp_i(np.dot(initial_momentum_h_per_bohr_radius_3, r))

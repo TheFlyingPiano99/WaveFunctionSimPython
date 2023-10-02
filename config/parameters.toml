@@ -3,9 +3,9 @@
 # +Y is the upward direction
 # Values are given in hartree atomic unit system
 
-["Wave packet"]
+["Wave_packet"]
 particle_mass = 1.0
-initial_wp_position_bohr_radii_3 = [0.0, 0.0, -7.0]
+initial_wp_position_bohr_radii_3 = [0.0, 0.0, -10.0]
 initial_wp_velocity_bohr_radii_hartree_per_h_bar = [0.0, 0.0, 10.0]
 wp_width_bohr_radii = 1.0
 
@@ -20,7 +20,7 @@ max_pontential_hartree = 0
 min_pontential_hartree = -5
 
 ["Iteration"]
-total_iteration_count = 50
+total_iteration_count = 20
 animation_frame_step_interval = 2
 png_step_interval = 10
 measurement_plane_capture_interval = 10

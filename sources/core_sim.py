@@ -15,7 +15,14 @@ def time_evolution(wave_tensor, kinetic_operator, potential_operator):
 
 
 class IterData:
-    elapsed_iter_time = 0.0
+    elapsed_system_time_s = 0.0
+    average_iteration_system_time_s = 0.0
+    animation_frame_step_interval: int
+    png_step_interval: int
+    measurement_plane_capture_interval: int
+    probability_plot_interval: int
+    total_iteration_count: int
+    total_simulated_time: float
 
 
 def run_iteration(sim_state, measurement_tools):
@@ -104,7 +111,13 @@ def run_iteration(sim_state, measurement_tools):
             potential_operator=sim_state.potential_operator,
         )
         iter_time = time.time() - iter_start_time_s
-        iter_data.elapsed_iter_time += iter_time
+        iter_data.elapsed_system_time_s += iter_time
         print(f"Iteration time: {iter_time} s")
 
+    iter_data.total_simulated_time = (
+        sim_state.delta_time_h_bar_per_hartree * iter_data.total_iteration_count
+    )
+    iter_data.average_iteration_system_time_s = iter_data.elapsed_system_time_s / float(
+        iter_data.total_iteration_count
+    )
     return sim_state, measurement_tools, iter_data
