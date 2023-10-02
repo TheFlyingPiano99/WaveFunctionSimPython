@@ -4,8 +4,9 @@ import sources.core_sim as core_sim
 
 
 class MeasurementTools:
-    elapsed_iter_time = 0.0
     measurement_plane: measurement.MeasurementPlane
+    canvas: volume_visualization.VolumeCanvas
+    animation_writer: animation.AnimationWriter
 
 
 def sim():
