@@ -6,13 +6,16 @@ from sources import potential
 
 class SimState:
     config: Dict
+    tensor_shape: np.shape
     initial_wp_velocity_bohr_radii_hartree_per_h_bar = np.array([0.0, 0.0, 0.0])
     initial_wp_momentum_h_per_bohr_radius = np.array([0.0, 0.0, 0.0])
     wp_width_bohr_radii = 1.0
     particle_mass = 1.0
     initial_wp_position_bohr_radii_3 = np.array([0.0, 0.0, 0.0])
-    drain_potential: potential.DrainPotentialData
+    drain_potential_description: potential.DrainPotentialDescription
     N = 128
+    viewing_window_bottom_corner_voxel: np.array
+    viewing_window_top_corner_voxel: np.array
     de_broglie_wave_length_bohr_radii: float
     simulated_volume_width_bohr_radii: float
     delta_x_bohr_radii: float
@@ -52,6 +55,7 @@ class SimState:
             config["Wave_packet"]["initial_wp_position_bohr_radii_3"]
         )
         self.N = config["Volume"]["number_of_samples_per_axis"]
+        self.tensor_shape = (self.N, self.N, self.N)
         self.delta_x_bohr_radii = self.simulated_volume_width_bohr_radii / self.N
         self.upper_limit_on_delta_time_h_per_hartree = (
             4.0
@@ -63,16 +67,45 @@ class SimState:
             0.5 * self.upper_limit_on_delta_time_h_per_hartree
         )
         # Init draining potential
-        self.drain_potential = potential.DrainPotentialData()
-        self.drain_potential.boundary_bottom_corner = (
-            np.array(
-                config["Volume"]["viewing_window_boundary_bottom_corner_bohr_radii_3"]
-            ),
-            self.simulated_volume_width_bohr_radii,
+        self.drain_potential_description = potential.DrainPotentialDescription(config)
+        self.viewing_window_bottom_corner_voxel = np.array(
+            math_utils.transform_center_origin_to_corner_origin_system(
+                self.drain_potential_description.boundary_bottom_corner_bohr_radii,
+                self.simulated_volume_width_bohr_radii,
+            )
+            / self.delta_x_bohr_radii,
+            dtype=np.int32,
         )
-        self.drain_potential.boundary_top_corner = (
-            np.array(
-                self.config["Volume"]["viewing_window_boundary_top_corner_bohr_radii_3"]
-            ),
-            self.simulated_volume_width_bohr_radii,
+        self.viewing_window_top_corner_voxel = np.array(
+            math_utils.transform_center_origin_to_corner_origin_system(
+                self.drain_potential_description.boundary_top_corner_bohr_radii,
+                self.simulated_volume_width_bohr_radii,
+            )
+            / self.delta_x_bohr_radii,
+            dtype=np.int32,
+        )
+        # Swap coordinates if needed
+        for i in range(0, 3):
+            if (
+                self.viewing_window_bottom_corner_voxel[i]
+                > self.viewing_window_top_corner_voxel[i]
+            ):
+                temp = self.viewing_window_bottom_corner_voxel[i]
+                self.viewing_window_bottom_corner_voxel[
+                    i
+                ] = self.viewing_window_top_corner_voxel[i]
+                self.viewing_window_top_corner_voxel[i] = temp
+
+    def get_view_into_probability_density(self):
+        return math_utils.cut_window(
+            arr=self.probability_density,
+            bottom=self.viewing_window_bottom_corner_voxel,
+            top=self.viewing_window_top_corner_voxel,
+        )
+
+    def get_view_into_potential(self):
+        return math_utils.cut_window(
+            arr=self.only_the_obstacle_potential,
+            bottom=self.viewing_window_bottom_corner_voxel,
+            top=self.viewing_window_top_corner_voxel,
         )

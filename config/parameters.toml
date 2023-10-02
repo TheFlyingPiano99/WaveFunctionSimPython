@@ -12,15 +12,15 @@ wp_width_bohr_radii = 1.0
 ["Volume"]
 simulated_volume_width_bohr_radii = 30.0 #Including draining potential regions
 number_of_samples_per_axis = 128
-viewing_window_boundary_bottom_corner_bohr_radii_3 = [10.0, 10.0, 10.0]   # Same as the inner boundary of the draining potential
-viewing_window_boundary_top_corner_bohr_radii_3 = [-10.0, -10.0, -10.0]   # Same as the inner boundary of the draining potential
+viewing_window_boundary_bottom_corner_bohr_radii_3 = [8.0, 8.0, 8.0]   # Same as the inner boundary of the draining potential
+viewing_window_boundary_top_corner_bohr_radii_3 = [-8.0, -8.0, -8.0]   # Same as the inner boundary of the draining potential
 
 ["Potential"]
-max_pontential_hartree = 0
-min_pontential_hartree = -5
+outer_drain_potential_hartree = -100000
+drain_interpolation_exponent = 3.0
 
 ["Iteration"]
-total_iteration_count = 20
+total_iteration_count = 200
 animation_frame_step_interval = 2
 png_step_interval = 10
 measurement_plane_capture_interval = 10

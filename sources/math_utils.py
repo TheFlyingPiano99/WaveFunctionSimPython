@@ -9,13 +9,38 @@ import numpy as np
 
 
 @jit(nopython=True, fastmath=True)
-def exp_i(angle):
+def exp_i(angle: float):
     return math.cos(angle) + 1j * math.sin(angle)
 
 
+@jit(nopython=True, fastmath=True)
+def exp_i(cangle: np.complex_):
+    return (math.cos(cangle.real) + 1j * math.sin(cangle.real)) * math.exp(-cangle.imag)
+
+
 @jit(nopython=True, fastmath=True, parallel=True)
-def square_of_abs(wave_tensor):
+def square_of_abs(wave_tensor: np.ndarray):
     return np.square(np.abs(wave_tensor))
+
+
+@jit(nopython=True, fastmath=True, parallel=True)
+def vector_length(vec: np.array):
+    return np.sqrt(np.dot(vec, vec))
+
+
+@jit(nopython=True)
+def remap(t: float, min: float, max: float):
+    return (t - min) / (max - min)
+
+
+@jit(nopython=True)
+def clamp(t: float, val0: float, val1: float):
+    return min(max(val0, t), val1)
+
+
+@jit(nopython=True)
+def interpolate(val0: float, val1: float, t: float, exponent: float = 1.0):
+    return (1.0 - t**exponent) * val0 + t**exponent * val1
 
 
 @jit(nopython=True, fastmath=True, parallel=True)
@@ -58,3 +83,7 @@ def relativistic_energy(momentum, rest_mass: float):
 
 def h_bar_per_hartree_to_ns(t: float):
     return t * 2.4188843265857 * 10 ** (-8)
+
+
+def cut_window(arr: np.ndarray, bottom: np.array, top: np.array):
+    return arr[bottom[0] : top[0], bottom[1] : top[1], bottom[2] : top[2]]

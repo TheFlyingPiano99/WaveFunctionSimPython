@@ -2,6 +2,8 @@ import numpy as np
 import time
 import sources.plot as plot
 import sources.math_utils as math_utils
+import sources.sim_state as sim_st
+import sources.measurement as measurement
 
 
 def time_evolution(wave_tensor, kinetic_operator, potential_operator):
@@ -25,7 +27,7 @@ class IterData:
     total_simulated_time: float
 
 
-def run_iteration(sim_state, measurement_tools):
+def run_iteration(sim_state: sim_st.SimState, measurement_tools):
     iter_data = IterData()
     iter_data.animation_frame_step_interval = sim_state.config["Iteration"][
         "animation_frame_step_interval"
@@ -76,7 +78,7 @@ def run_iteration(sim_state, measurement_tools):
             or i % iter_data.png_step_interval == 0
         ):
             measurement_tools.canvas.update(
-                sim_state.probability_density,
+                sim_state.get_view_into_probability_density(),
                 iter_count=i,
                 delta_time_h_bar_per_hartree=sim_state.delta_time_h_bar_per_hartree,
             )

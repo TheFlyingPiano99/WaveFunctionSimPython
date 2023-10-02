@@ -13,15 +13,16 @@ def sim():
     print("Wave function simulation")
 
     sim_state = init.initialize()
+    text_writer.write_sim_state(sim_state)
 
     print(
-        "***************************************************************************************"
+        "****************************************************************************"
     )
     print("Starting simulation")
     measurement_tools = MeasurementTools()
     measurement_tools.canvas = volume_visualization.VolumeCanvas(
-        volume_data=sim_state.probability_density,
-        secondary_data=sim_state.only_the_obstacle_potential,
+        volume_data=sim_state.get_view_into_probability_density(),
+        secondary_volume_data=sim_state.get_view_into_potential(),
     )
     measurement_tools.animation_writer = animation.AnimationWriter(
         "output/probability_density_time_development.gif"

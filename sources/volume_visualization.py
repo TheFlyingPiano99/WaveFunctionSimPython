@@ -10,12 +10,17 @@ import vispy.io as io
 import sources.math_utils as math_utils
 import sources.multi_volume_visual as multi_volume_visual
 
+
 class VolumeCanvas:
+    canvas: scene.SceneCanvas
+    viewing_window_bottom_corner_voxel: np.array
+    viewing_window_top_corner_voxel: np.array
 
-    def __init__(self, volume_data, secondary_data):
-
+    def __init__(self, volume_data, secondary_volume_data):
         # Prepare canvas
-        self.canvas = scene.SceneCanvas(keys='interactive', bgcolor='black', size=(1024, 768), show=False)
+        self.canvas = scene.SceneCanvas(
+            keys="interactive", bgcolor="black", size=(1024, 768), show=False
+        )
         self.view = self.canvas.central_widget.add_view()
 
         """
@@ -35,6 +40,7 @@ class VolumeCanvas:
                 return vec4(pow(tScaled, 0.1), pow(tScaled, 0.9), pow(tScaled, 2.0), max(0, tScaled*1.05 - 0.05));
             }
             """
+
         class PotentialColorMap(BaseColormap):
             glsl_map = """
             vec4 translucent_green(float t) {
@@ -42,32 +48,53 @@ class VolumeCanvas:
                 return vec4(tScaled, pow(tScaled, 0.5), tScaled*tScaled, max(0, tScaled*1.05 - 0.05) * 0.1);
             }
             """
+
         self.primary_color_map = ProbabilityDensityColorMap()
         self.secondary_color_map = PotentialColorMap()
-        self.clim1 = volume_data.astype(np.float32).min(), volume_data.astype(np.float32).max()
-        self.clim2 = secondary_data.astype(np.float32).min(), secondary_data.astype(np.float32).max()
+        self.clim1 = (
+            volume_data.astype(np.float32).min(),
+            volume_data.astype(np.float32).max(),
+        )
+        self.clim2 = (
+            secondary_volume_data.astype(np.float32).min(),
+            secondary_volume_data.astype(np.float32).max(),
+        )
 
+        volumes = [
+            (volume_data.astype(np.float32), self.clim1, self.primary_color_map),
+            (
+                secondary_volume_data.astype(np.float32),
+                self.clim2,
+                self.secondary_color_map,
+            ),
+        ]
         # Create the volume visuals
-        self.volume = multi_volume_visual.MultiVolume(volumes=[(volume_data.astype(np.float32), self.clim1, self.primary_color_map),
-                                                                     (secondary_data.astype(np.float32), self.clim2, self.secondary_color_map)
-                                                                     ],
-                                                            parent=self.view.scene, method='translucent')
+        self.volume = multi_volume_visual.MultiVolume(
+            volumes=volumes,
+            parent=self.view.scene,
+            method="translucent",
+        )
 
-        #self.volume.parent=self.view.scene
-        #self.volume.method='translucent'
-        #self.volume.gamma=1.0
-        #self.secondary_volume = scene.visuals.Volume(secondary_data.astype(np.float32), parent=self.view.scene, method='translucent', gamma=1.0)
+        # self.volume.parent=self.view.scene
+        # self.volume.method='translucent'
+        # self.volume.gamma=1.0
+        # self.secondary_volume = scene.visuals.Volume(secondary_data.astype(np.float32), parent=self.view.scene, method='translucent', gamma=1.0)
 
-        fov = 60.
-        cam = scene.cameras.TurntableCamera(parent=self.view.scene, fov=fov,
-                                             name='Turntable')
+        fov = 60.0
+        cam = scene.cameras.TurntableCamera(
+            parent=self.view.scene, fov=fov, name="Turntable"
+        )
         cam.update()
         self.view.camera = cam  # Select turntable at first
 
-        self.text1 = scene.visuals.Text(f'Probability density (Elapsed time = {0.0} ħ/E)', parent=self.canvas.scene, color='white')
+        self.text1 = scene.visuals.Text(
+            f"Probability density (Elapsed time = {0.0} ħ/E)",
+            parent=self.canvas.scene,
+            color="white",
+        )
         self.text1.font_size = 16
         self.text1.pos = self.canvas.size[0] // 2, self.canvas.size[1] // 14
-        self.text1.text = f'Probability density (Elapsed time = {0.0:.5f} ħ/E = {math_utils.h_bar_per_hartree_to_ns(0.0):.2E} ns)'
+        self.text1.text = f"Probability density (Elapsed time = {0.0:.5f} ħ/E = {math_utils.h_bar_per_hartree_to_ns(0.0):.2E} ns)"
 
         # Create Axis:
         # TODO
@@ -89,11 +116,12 @@ class VolumeCanvas:
 
         """
 
-
     def update(self, volume_data, iter_count, delta_time_h_bar_per_hartree):
-        self.volume.update_volume_data(volume_data=volume_data.astype(np.float32), index=0)
+        self.volume.update_volume_data(
+            volume_data=volume_data.astype(np.float32), index=0
+        )
         self.canvas.update()
-        self.text1.text = f'Probability density (Elapsed time = {iter_count * delta_time_h_bar_per_hartree:.5f} ħ/E = {math_utils.h_bar_per_hartree_to_ns(iter_count * delta_time_h_bar_per_hartree):.2E} ns)'
+        self.text1.text = f"Probability density (Elapsed time = {iter_count * delta_time_h_bar_per_hartree:.5f} ħ/E = {math_utils.h_bar_per_hartree_to_ns(iter_count * delta_time_h_bar_per_hartree):.2E} ns)"
         return self.canvas
 
     def save_to_png(self, save_path):
