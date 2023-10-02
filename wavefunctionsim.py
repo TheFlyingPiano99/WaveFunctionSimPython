@@ -1,4 +1,3 @@
-import sources.initialisation
 from sources import volume_visualization, animation, measurement, text_writer
 import sources.initialisation as init
 import sources.core_sim as core_sim

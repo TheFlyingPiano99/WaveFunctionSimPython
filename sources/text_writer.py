@@ -24,17 +24,17 @@ def write_sim_state(sim_state: sim_st.SimState):
         f.write("\n")
         f.write("Volume:\n")
         f.write(
-            f"Width of simulated volume: {sim_state.simulated_volume_width_bohr_radii:0.4} Bohr radii\n"
+            f"Width of simulated volume: {sim_state.simulated_volume_width_bohr_radii:.4f} Bohr radii\n"
         )
         f.write(f"Number of samples per axis: {sim_state.N}\n")
-        f.write(f"Grid step size: {sim_state.delta_x_bohr_radii:0.4} Bohr radii\n")
+        f.write(f"Grid step size: {sim_state.delta_x_bohr_radii:.4f} Bohr radii\n")
         f.write(
             "___________________________________________________________________________\n"
         )
         f.write("\n")
         f.write("Iteration:\n")
         f.write(
-            f"Delta time: {sim_state.delta_time_h_bar_per_hartree:0.4} h-bar / hartree\n"
+            f"Delta time: {sim_state.delta_time_h_bar_per_hartree:.4f} h-bar / hartree\n"
         )
 
 
@@ -42,11 +42,11 @@ def append_iter_data(iter_data: core_sim.IterData):
     with open("output/parameters.txt", mode="a") as f:
         f.write(f"Total iteration count: {iter_data.total_iteration_count}\n")
         f.write(
-            f"Total simulated time: {iter_data.total_simulated_time:0.4} h-bar / hartree\n"
+            f"Total simulated time: {iter_data.total_simulated_time:.4f} h-bar / hartree\n"
         )
         f.write(
-            f"Elapsed system time during iteration: {iter_data.elapsed_system_time_s:0.4} s\n"
+            f"Elapsed system time during iteration: {iter_data.elapsed_system_time_s:.4f} s\n"
         )
         f.write(
-            f"Average system time of an iteration: {iter_data.average_iteration_system_time_s:0.4} s\n"
+            f"Average system time of an iteration: {iter_data.average_iteration_system_time_s:.4f} s\n"
         )

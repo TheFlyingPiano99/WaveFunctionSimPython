@@ -1,7 +1,7 @@
 from typing import Dict
 import numpy as np
 import sources.math_utils as math_utils
-from sources import wave_packet, potential, operators, sim_state
+from sources import potential
 
 
 class SimState:

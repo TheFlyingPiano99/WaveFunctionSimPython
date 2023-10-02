@@ -1,9 +1,6 @@
-from typing import Dict
-from numba import typeof
 import numpy as np
 import time
 import toml
-import sources.math_utils as math_utils
 from sources import wave_packet, potential, operators, text_writer
 import sources.sim_state as sim_st
 
