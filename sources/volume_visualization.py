@@ -61,7 +61,11 @@ class VolumeCanvas:
         )
 
         volumes = [
-            (volume_data.astype(np.float32), self.clim1, self.primary_color_map),
+            (
+                volume_data.astype(np.float32),
+                self.clim1,
+                self.primary_color_map,
+            ),
             (
                 secondary_volume_data.astype(np.float32),
                 self.clim2,
@@ -80,10 +84,11 @@ class VolumeCanvas:
         # self.volume.gamma=1.0
         # self.secondary_volume = scene.visuals.Volume(secondary_data.astype(np.float32), parent=self.view.scene, method='translucent', gamma=1.0)
 
-        fov = 60.0
+        fov = 45.0
         cam = scene.cameras.TurntableCamera(
             parent=self.view.scene, fov=fov, name="Turntable"
         )
+        cam.up = "+y"
         cam.update()
         self.view.camera = cam  # Select turntable at first
 
@@ -118,7 +123,8 @@ class VolumeCanvas:
 
     def update(self, volume_data, iter_count, delta_time_h_bar_per_hartree):
         self.volume.update_volume_data(
-            volume_data=volume_data.astype(np.float32), index=0
+            volume_data=volume_data.astype(np.float32),
+            index=0,
         )
         self.canvas.update()
         self.text1.text = f"Probability density (Elapsed time = {iter_count * delta_time_h_bar_per_hartree:.5f} ħ/E = {math_utils.h_bar_per_hartree_to_ns(iter_count * delta_time_h_bar_per_hartree):.2E} ns)"
@@ -130,3 +136,6 @@ class VolumeCanvas:
 
     def get_canvas(self):
         return self.canvas
+
+    def render(self):
+        return self.canvas.render(alpha=False)

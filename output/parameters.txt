@@ -1,0 +1,18 @@
+Simulation parameters
+
+___________________________________________________________________________
+
+Wave packet:
+Particle mass: 1.0 electron rest mass
+Initial mean position: [-10.   0.   0.] Bohr radii
+Initial mean momentum: [5. 0. 0.] h-bar / Bohr radius
+___________________________________________________________________________
+
+Volume:
+Width of simulated volume: 60.0000 Bohr radii
+Number of samples per axis: 128
+Grid step size: 0.4688 Bohr radii
+___________________________________________________________________________
+
+Iteration:
+Delta time: 0.1399 h-bar / hartree

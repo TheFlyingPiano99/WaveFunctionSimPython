@@ -1,12 +1,12 @@
 # We simulate the time-development of the wave function in an NxNxN sized cube
 # The origin of the coordinate system is in the center of the simulated volume
-# +Y is the upward direction
+# We use right-handed system, where +Y is the upward direction
 # Values are given in hartree atomic unit system
 
 ["Wave_packet"]
 particle_mass = 1.0
-initial_wp_position_bohr_radii_3 = [0.0, 0.0, -10.0]
-initial_wp_velocity_bohr_radii_hartree_per_h_bar = [0.0, 0.0, 5.0]
+initial_wp_position_bohr_radii_3 = [-10.0, 0.0, 0.0]
+initial_wp_velocity_bohr_radii_hartree_per_h_bar = [5.0, 0.0, 0.0]
 wp_width_bohr_radii = 1.0
 
 ["Volume"]
@@ -30,3 +30,4 @@ animation_frame_step_interval = 2
 png_step_interval = 10
 measurement_plane_capture_interval = 10
 probability_plot_interval = 50
+per_axis_probability_denisty_interval = 2

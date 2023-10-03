@@ -25,6 +25,7 @@ class IterData:
     probability_plot_interval: int
     total_iteration_count: int
     total_simulated_time: float
+    per_axis_probability_denisty_plot_interval: int
 
 
 def run_iteration(sim_state: sim_st.SimState, measurement_tools):
@@ -42,6 +43,9 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
     iter_data.total_iteration_count = sim_state.config["Iteration"][
         "total_iteration_count"
     ]
+    iter_data.per_axis_probability_denisty_plot_interval = sim_state.config[
+        "Iteration"
+    ]["per_axis_probability_denisty_interval"]
 
     for i in range(iter_data.total_iteration_count + 1):
         iter_start_time_s = time.time()
@@ -74,6 +78,31 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
         )
 
         if (
+            i % iter_data.per_axis_probability_denisty_plot_interval == 0
+            or i % iter_data.animation_frame_step_interval == 0
+        ):
+            measurement_tools.x_axis_probability_density.integrate_probability_density(
+                sim_state.probability_density
+            )
+            measurement_tools.y_axis_probability_density.integrate_probability_density(
+                sim_state.probability_density
+            )
+            measurement_tools.z_axis_probability_density.integrate_probability_density(
+                sim_state.probability_density
+            )
+        if i % iter_data.per_axis_probability_denisty_plot_interval == 0:
+            measurement_tools.per_axis_density_plot = plot.plot_per_axis_probability_density(
+                [
+                    measurement_tools.x_axis_probability_density.get_probability_density_with_label(),
+                    measurement_tools.y_axis_probability_density.get_probability_density_with_label(),
+                    measurement_tools.z_axis_probability_density.get_probability_density_with_label(),
+                ],
+                delta_x=sim_state.delta_x_bohr_radii,
+                delta_t=sim_state.delta_time_h_bar_per_hartree,
+                index=i,
+                show_fig=False,
+            )
+        if (
             i % iter_data.animation_frame_step_interval == 0
             or i % iter_data.png_step_interval == 0
         ):
@@ -83,7 +112,12 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
                 delta_time_h_bar_per_hartree=sim_state.delta_time_h_bar_per_hartree,
             )
         if i % iter_data.animation_frame_step_interval == 0:
-            measurement_tools.animation_writer.add_frame(measurement_tools.canvas)
+            measurement_tools.animation_writer_3D.add_frame(
+                measurement_tools.canvas.render()
+            )
+            measurement_tools.animation_writer_per_axis.add_frame(
+                measurement_tools.per_axis_density_plot
+            )
         if i % iter_data.png_step_interval == 0:
             measurement_tools.canvas.save_to_png(
                 f"output/probability_density_{i:04d}.png"
@@ -97,7 +131,7 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
                 ],
                 delta_t=sim_state.delta_time_h_bar_per_hartree,
                 index=i,
-                show_fig=i == 1000,
+                show_fig=False,
             )
         if i % iter_data.measurement_plane_capture_interval == 0:
             plot.plot_canvas(

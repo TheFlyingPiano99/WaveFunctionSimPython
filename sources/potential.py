@@ -196,52 +196,37 @@ def add_double_slit(
 ):
     if V is None:
         V = np.zeros(shape=shape, dtype=np.complex_)
-    center_bohr_radii = math_utils.transform_center_origin_to_corner_origin_system(
-        center_bohr_radii, delta_x * shape[0]
-    )
     for x in range(0, shape[0]):
         for y in range(0, V.shape[1]):
             for z in range(0, V.shape[2]):
-                r = np.array([x, y, z]) * delta_x
+                r = math_utils.transform_corner_origin_to_center_origin_system(
+                    np.array([x, y, z]) * delta_x, delta_x * shape[0]
+                )
                 if (
-                    r[2] > center_bohr_radii[2] - thickness_bohr_radii / 2.0
-                    and r[2] < center_bohr_radii[2] + thickness_bohr_radii / 2.0
-                ):
-                    v = (
-                        height_hartree
-                        * (
-                            1.0
-                            - abs(center_bohr_radii[2] - r[2])
-                            / thickness_bohr_radii
-                            * 2.0
+                    r[0] > center_bohr_radii[0] - thickness_bohr_radii / 2.0
+                    and r[0] < center_bohr_radii[0] + thickness_bohr_radii / 2.0
+                    and not (
+                        (
+                            r[2]
+                            > center_bohr_radii[2]
+                            - space_between_slits_bohr_radii * 0.5
+                            - slit_width_bohr_radii
+                            and r[2]
+                            < center_bohr_radii[2]
+                            - space_between_slits_bohr_radii * 0.5
                         )
-                        * min(
-                            1.0,
-                            abs(
-                                r[1]
-                                - (
-                                    center_bohr_radii[1]
-                                    + space_between_slits_bohr_radii / 2.0
-                                    + slit_width_bohr_radii / 2.0
-                                )
-                            )
-                            / slit_width_bohr_radii
-                            * 2.0,
-                        )
-                        * min(
-                            1.0,
-                            abs(
-                                r[1]
-                                - (
-                                    center_bohr_radii[1]
-                                    - space_between_slits_bohr_radii / 2.0
-                                    - slit_width_bohr_radii / 2.0
-                                )
-                            )
-                            / slit_width_bohr_radii
-                            * 2.0,
+                        or (
+                            r[2]
+                            < center_bohr_radii[2]
+                            + space_between_slits_bohr_radii * 0.5
+                            + slit_width_bohr_radii
+                            and r[2]
+                            > center_bohr_radii[2]
+                            + space_between_slits_bohr_radii * 0.5
                         )
                     )
+                ):
+                    v = height_hartree
                     V[x, y, z] += v
 
     return V

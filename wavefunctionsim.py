@@ -6,7 +6,11 @@ import sources.core_sim as core_sim
 class MeasurementTools:
     measurement_plane: measurement.MeasurementPlane
     canvas: volume_visualization.VolumeCanvas
-    animation_writer: animation.AnimationWriter
+    animation_writer_3D: animation.AnimationWriter
+    animation_writer_per_axis: animation.AnimationWriter
+    x_axis_probability_density: measurement.ProjectedMeasurement
+    y_axis_probability_density: measurement.ProjectedMeasurement
+    z_axis_probability_density: measurement.ProjectedMeasurement
 
 
 def sim():
@@ -24,8 +28,11 @@ def sim():
         volume_data=sim_state.get_view_into_probability_density(),
         secondary_volume_data=sim_state.get_view_into_potential(),
     )
-    measurement_tools.animation_writer = animation.AnimationWriter(
-        "output/probability_density_time_development.gif"
+    measurement_tools.animation_writer_3D = animation.AnimationWriter(
+        "output/probability_density_time_development_3D.gif"
+    )
+    measurement_tools.animation_writer_per_axis = animation.AnimationWriter(
+        "output/probability_density_time_development_per_axis.gif"
     )
     measurement_tools.measurement_plane = measurement.MeasurementPlane(
         wave_tensor=sim_state.wave_tensor,
@@ -48,12 +55,25 @@ def sim():
         label="Second half",
     )
 
+    # Setup "per axis" probability density:
+    measurement_tools.x_axis_probability_density = measurement.ProjectedMeasurement(
+        N=sim_state.N, sum_axis=(1, 2), label="X axis"
+    )
+    measurement_tools.y_axis_probability_density = measurement.ProjectedMeasurement(
+        N=sim_state.N, sum_axis=(0, 2), label="Y axis"
+    )
+    measurement_tools.z_axis_probability_density = measurement.ProjectedMeasurement(
+        N=sim_state.N, sum_axis=(0, 1), label="Z axis"
+    )
+
     # Run simulation
     sim_state, measurement_tools, iter_data = core_sim.run_iteration(
         sim_state, measurement_tools
     )
 
-    measurement_tools.animation_writer.finish()
+    # Finishing steps:
+    measurement_tools.animation_writer_3D.finish()
+    measurement_tools.animation_writer_per_axis.finish()
     print("Simulation has finished.")
     print(f"Total simulation time: {iter_data.elapsed_system_time_s} s")
     print(f"Average iteration time: {iter_data.average_iteration_system_time_s} s")
