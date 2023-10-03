@@ -136,9 +136,8 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
         if i % iter_data.measurement_plane_capture_interval == 0:
             plot.plot_canvas(
                 plane_probability_density=measurement_tools.measurement_plane.get_probability_density(),
-                probability_save_path=f"output/measurement_plane_probability_{i:04d}.png",
                 plane_dwell_time_density=measurement_tools.measurement_plane.get_dwell_time(),
-                dwell_time_save_path=f"output/measurement_plane_dwell_time_{i:04d}.png",
+                index=i,
             )
 
         sim_state.wave_tensor = time_evolution(

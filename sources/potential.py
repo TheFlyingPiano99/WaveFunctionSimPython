@@ -73,25 +73,20 @@ def add_draining_potential(
     for x in range(0, V.shape[0]):
         for y in range(0, V.shape[1]):
             for z in range(0, V.shape[2]):
-                pos = math_utils.transform_corner_origin_to_center_origin_system(
-                    np.array([x, y, z]) * delta_x, N * delta_x
+                pos = (
+                    np.array([x, y, z]) * delta_x
+                    - np.array([1.0, 1.0, 1.0]) * N * delta_x * 0.5
                 )
-                radius_bohr_radii = math_utils.vector_length(pos)
-                t = math_utils.clamp(
-                    math_utils.remap(
-                        radius_bohr_radii,
-                        inner_radius_bohr_radii,
-                        outer_radius_bohr_radii,
+                radius_bohr_radii = np.sqrt(np.dot(pos, pos))
+                t = min(
+                    max(
+                        0.0,
+                        (radius_bohr_radii - inner_radius_bohr_radii)
+                        / (outer_radius_bohr_radii - inner_radius_bohr_radii),
                     ),
-                    0.0,
                     1.0,
                 )
-                V[x, y, z] += 1j * math_utils.interpolate(
-                    0.0,
-                    max_potential_hartree,
-                    t,
-                    exponent,
-                )
+                V[x, y, z] += 1j * t**exponent * max_potential_hartree
     return V
 
 
@@ -226,7 +221,6 @@ def add_double_slit(
                         )
                     )
                 ):
-                    v = height_hartree
-                    V[x, y, z] += v
+                    V[x, y, z] += height_hartree
 
     return V

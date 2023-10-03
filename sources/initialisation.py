@@ -123,6 +123,19 @@ def initialize():
         )
     except OSError:
         print("No cached localized_potential.npy found.")
+        if (
+            abs(
+                sim_state.config["Potential"]["wall_potential_hartree"]
+                * sim_state.delta_time_h_bar_per_hartree
+                / np.pi
+                - sim_state.config["Potential"]["wall_potential_hartree"]
+                * sim_state.delta_time_h_bar_per_hartree
+                // np.pi
+            )
+            < 0.1
+        ):
+            print("WARNING: delta_t * wall_max_potential too close to multiply of pi!")
+
         sim_state.V = potential.add_double_slit(
             delta_x=sim_state.delta_x_bohr_radii,
             center_bohr_radii=np.array([0.0, 0.0, 0.0]),

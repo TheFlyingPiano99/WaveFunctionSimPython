@@ -29,10 +29,10 @@ def sim():
         secondary_volume_data=sim_state.get_view_into_potential(),
     )
     measurement_tools.animation_writer_3D = animation.AnimationWriter(
-        "output/probability_density_time_development_3D.gif"
+        "output/probability_density_time_development_3D.mp4"
     )
     measurement_tools.animation_writer_per_axis = animation.AnimationWriter(
-        "output/probability_density_time_development_per_axis.gif"
+        "output/probability_density_time_development_per_axis.mp4"
     )
     measurement_tools.measurement_plane = measurement.MeasurementPlane(
         wave_tensor=sim_state.wave_tensor,

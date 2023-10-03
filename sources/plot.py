@@ -3,9 +3,15 @@ import matplotlib.pyplot as plt
 import matplotlib.image
 import sources.math_utils as math_utils
 from PIL import Image
+import os
 
 
 def plot_probability_evolution(probability_evolutions, delta_t, index, show_fig=False):
+    # Path:
+    dir = "output/probability_evolution/"
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+
     plt.clf()  # Clear figure
     plt.grid(True)
     plt.xlabel("Elapsed time [ħ/E]")
@@ -17,7 +23,7 @@ def plot_probability_evolution(probability_evolutions, delta_t, index, show_fig=
     for prob_data in probability_evolutions:
         plt.plot(x, prob_data[0], label=prob_data[1])
     plt.legend()
-    plt.savefig(f"output/probability_evolution_{index:04d}.png")
+    plt.savefig(os.path.join(dir, f"probability_evolution_{index:04d}.png"))
     if show_fig:
         plt.show()
 
@@ -25,6 +31,10 @@ def plot_probability_evolution(probability_evolutions, delta_t, index, show_fig=
 def plot_per_axis_probability_density(
     probability_densities, delta_x, delta_t, index, show_fig=False
 ):
+    dir = "output/per_axis_probability_density/"
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+
     plt.clf()  # Clear figure
     plt.grid(True)
     plt.xlabel("Location [Bohr radius]")
@@ -40,7 +50,12 @@ def plot_per_axis_probability_density(
     for prob_data in probability_densities:
         plt.plot(x, prob_data[0], label=prob_data[1])
     plt.legend()
-    plt.savefig(f"output/per_axis_probability_density_{index:04d}.png")
+    plt.savefig(
+        os.path.join(
+            dir,
+            f"per_axis_probability_density_{index:04d}.png",
+        )
+    )
     if show_fig:
         plt.show()
     fig = plt.gcf()
@@ -51,17 +66,24 @@ def plot_per_axis_probability_density(
     return np.array(img)
 
 
-def plot_canvas(
-    plane_probability_density,
-    probability_save_path,
-    plane_dwell_time_density,
-    dwell_time_save_path,
-):
+def plot_canvas(plane_probability_density, plane_dwell_time_density, index):
+    dir = "output/canvas_probability/"
+    if not os.path.exists(dir):
+        os.mkdir(dir)
     formatted = plane_probability_density
     matplotlib.image.imsave(
-        fname=probability_save_path, arr=formatted, cmap="gist_heat", dpi=100
+        fname=os.path.join(dir, f"measurement_plane_probability_{index:04d}.png"),
+        arr=formatted,
+        cmap="gist_heat",
+        dpi=100,
     )
+    dir = "output/canvas_dwell_time/"
+    if not os.path.exists(dir):
+        os.mkdir(dir)
     formatted = plane_dwell_time_density
     matplotlib.image.imsave(
-        fname=dwell_time_save_path, arr=formatted, cmap="gist_heat", dpi=100
+        fname=os.path.join(dir, f"measurement_plane_probability_{index:04d}.png"),
+        arr=formatted,
+        cmap="gist_heat",
+        dpi=100,
     )
