@@ -13,7 +13,7 @@ import numba
     ]
 )
 class MeasurementPlane:
-    def __init__(self, wave_tensor, delta_x, location_bohr_radii):
+    def __init__(self, wave_tensor, delta_x, location_bohr_radii, simulated_box_width):
         self.plane_dwell_time_density = np.zeros(
             shape=(wave_tensor.shape[0], wave_tensor.shape[1])
         )
@@ -21,10 +21,10 @@ class MeasurementPlane:
             shape=(wave_tensor.shape[0], wave_tensor.shape[1])
         )
         self.cumulated_time = 0.0
-        self.x = int(location_bohr_radii / delta_x)
+        self.x = int((location_bohr_radii + simulated_box_width * 0.5) / delta_x)
 
     def integrate(self, wave_tensor, delta_time):
-        wave_slice = wave_tensor[:, :, self.x]
+        wave_slice = wave_tensor[self.x, :, :]
         self.plane_probability_density = np.square(np.abs(wave_slice))
         self.plane_dwell_time_density += self.plane_probability_density * delta_time
         self.cumulated_time += delta_time

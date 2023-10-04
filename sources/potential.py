@@ -58,7 +58,7 @@ def add_potential_box(
     return V
 
 
-@jit(nopython=True)
+@jit(nopython=True, fastmath=True)
 def add_draining_potential(
     N,
     delta_x,
@@ -66,22 +66,19 @@ def add_draining_potential(
     outer_radius_bohr_radii,
     max_potential_hartree,
     exponent,
-    V=None,
+    V,
 ):
-    if V is None:
-        V = np.zeros(shape=(N, N, N), dtype=np.complex_)
-    for x in range(0, V.shape[0]):
-        for y in range(0, V.shape[1]):
-            for z in range(0, V.shape[2]):
+    for x in range(N):
+        for y in range(N):
+            for z in range(N):
                 pos = (
                     np.array([x, y, z]) * delta_x
                     - np.array([1.0, 1.0, 1.0]) * N * delta_x * 0.5
                 )
-                radius_bohr_radii = np.sqrt(np.dot(pos, pos))
                 t = min(
                     max(
                         0.0,
-                        (radius_bohr_radii - inner_radius_bohr_radii)
+                        (np.sqrt(np.dot(pos, pos)) - inner_radius_bohr_radii)
                         / (outer_radius_bohr_radii - inner_radius_bohr_radii),
                     ),
                     1.0,
@@ -141,10 +138,8 @@ def add_single_slit(
     thickness_bohr_radii,
     height_hartree,
     slit_size_bohr_radii,
-    V=None,
+    V: np.ndarray,
 ):
-    if V is None:
-        V = np.zeros(shape=V.shape, dtype=np.complex_)
     for x in range(0, V.shape[0]):
         for y in range(0, V.shape[1]):
             for z in range(0, V.shape[2]):
@@ -178,7 +173,7 @@ def add_single_slit(
     return V
 
 
-@jit(nopython=True)
+@jit(nopython=True, fastmath=True)
 def add_double_slit(
     delta_x,
     center_bohr_radii,
@@ -187,13 +182,11 @@ def add_double_slit(
     space_between_slits_bohr_radii,
     slit_width_bohr_radii,
     shape: np.shape,
-    V=None,
+    V: np.ndarray,
 ):
-    if V is None:
-        V = np.zeros(shape=shape, dtype=np.complex_)
-    for x in range(0, shape[0]):
-        for y in range(0, V.shape[1]):
-            for z in range(0, V.shape[2]):
+    for x in range(shape[0]):
+        for y in range(shape[1]):
+            for z in range(shape[2]):
                 r = math_utils.transform_corner_origin_to_center_origin_system(
                     np.array([x, y, z]) * delta_x, delta_x * shape[0]
                 )

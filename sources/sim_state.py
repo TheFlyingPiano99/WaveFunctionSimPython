@@ -24,8 +24,7 @@ class SimState:
     wave_tensor: np.ndarray
     probability_density: np.ndarray
     kinetic_operator: np.ndarray
-    only_the_obstacle_potential: np.ndarray
-    V: np.ndarray
+    localised_potential_hartree: np.ndarray
     potential_operator: np.ndarray
 
     def __init__(self, config):
@@ -63,9 +62,10 @@ class SimState:
             * (3.0 * self.delta_x_bohr_radii * self.delta_x_bohr_radii)
             / 3.0
         )  # Based on reasoning from the Web-Schrödinger paper
-        self.delta_time_h_bar_per_hartree = (
-            0.5 * self.upper_limit_on_delta_time_h_per_hartree
-        )
+        self.delta_time_h_bar_per_hartree = config["Iteration"][
+            "delta_time_h_bar_per_hartree"
+        ]
+
         # Init draining potential
         self.drain_potential_description = potential.DrainPotentialDescription(config)
         self.viewing_window_bottom_corner_voxel = np.array(
@@ -105,7 +105,7 @@ class SimState:
 
     def get_view_into_potential(self):
         return math_utils.cut_window(
-            arr=np.real(self.only_the_obstacle_potential),
+            arr=np.real(self.localised_potential_hartree),
             bottom=self.viewing_window_bottom_corner_voxel,
             top=self.viewing_window_top_corner_voxel,
         )

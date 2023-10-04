@@ -22,7 +22,7 @@ def sim():
     print(
         "****************************************************************************"
     )
-    print("Starting simulation")
+    print("Simulating")
     measurement_tools = MeasurementTools()
     measurement_tools.canvas = volume_visualization.VolumeCanvas(
         volume_data=sim_state.get_view_into_probability_density(),
@@ -37,7 +37,8 @@ def sim():
     measurement_tools.measurement_plane = measurement.MeasurementPlane(
         wave_tensor=sim_state.wave_tensor,
         delta_x=sim_state.delta_x_bohr_radii,
-        location_bohr_radii=25.0,
+        location_bohr_radii=28.0,
+        simulated_box_width=sim_state.simulated_volume_width_bohr_radii,
     )
     measurement_tools.measurement_volume_full = measurement.AAMeasurementVolume(
         bottom_corner=(0, 0, 0),
