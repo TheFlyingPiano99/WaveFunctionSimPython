@@ -1,6 +1,9 @@
 from sources import volume_visualization, animation, measurement, text_writer
 import sources.initialisation as init
 import sources.core_sim as core_sim
+import sys
+import os
+import signal
 
 
 class MeasurementTools:
@@ -14,7 +17,24 @@ class MeasurementTools:
 
 
 def sim():
-    print("Wave function simulation")
+    print("Wave packet simulation")
+    print("Created by Zoltan Simon")
+
+    out_dir = "output/"
+    if os.path.exists(out_dir):
+        if os.listdir(out_dir):
+            answer = ""
+            while not answer in {"y", "n"}:
+                print(
+                    "Output directory is not empty.\n"
+                    "os.listdir('/your/path') will override previous files under \"./output/\".\n"
+                    "Would you like to still continue [y/n]?",
+                    end=" ",
+                )
+                answer = input()
+                if answer == "n":
+                    print("Exiting application.")
+                    sys.exit(0)
 
     sim_state = init.initialize()
     text_writer.write_sim_state(sim_state)

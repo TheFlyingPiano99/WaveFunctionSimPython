@@ -9,6 +9,7 @@ import vispy.visuals as visuals
 import vispy.io as io
 import sources.math_utils as math_utils
 import sources.multi_volume_visual as multi_volume_visual
+import os
 
 
 class VolumeCanvas:
@@ -130,9 +131,13 @@ class VolumeCanvas:
         self.text1.text = f"Probability density (Elapsed time = {iter_count * delta_time_h_bar_per_hartree:.5f} ħ/E = {math_utils.h_bar_per_hartree_to_ns(iter_count * delta_time_h_bar_per_hartree):.2E} ns)"
         return self.canvas
 
-    def save_to_png(self, save_path):
+    def render_to_png(self, index):
         img = self.canvas.render()
-        io.write_png(filename=save_path, data=img)
+        dir = "output/probability_density_3D/"
+        file_name = f"probability_density_3D_{index:04d}.png"
+        if not os.path.exists(dir):
+            os.mkdir(dir)
+        io.write_png(filename=os.path.join(dir, file_name), data=img)
 
     def get_canvas(self):
         return self.canvas

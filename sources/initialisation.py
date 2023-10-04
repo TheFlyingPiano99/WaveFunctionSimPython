@@ -4,6 +4,7 @@ import toml
 from sources import wave_packet, potential, operators
 import sources.sim_state as sim_st
 import sources.text_writer as text_writer
+import os
 
 
 def initialize():

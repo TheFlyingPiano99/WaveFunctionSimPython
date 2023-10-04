@@ -5,6 +5,10 @@ import sources.math_utils as math_utils
 import sources.sim_state as sim_st
 import sources.measurement as measurement
 from alive_progress import alive_bar
+import sources.signal_handling as signal_handling
+import os
+import sources.snapshot_io as snapshot
+from sources.iter_data import IterData
 
 
 def time_evolution(wave_tensor, kinetic_operator, potential_operator):
@@ -15,18 +19,6 @@ def time_evolution(wave_tensor, kinetic_operator, potential_operator):
     moment_space_wave_tensor = np.fft.fftn(wave_tensor, norm="forward")
     moment_space_wave_tensor = np.multiply(kinetic_operator, moment_space_wave_tensor)
     return np.fft.fftn(moment_space_wave_tensor, norm="backward")
-
-
-class IterData:
-    elapsed_system_time_s = 0.0
-    average_iteration_system_time_s = 0.0
-    animation_frame_step_interval: int
-    png_step_interval: int
-    measurement_plane_capture_interval: int
-    probability_plot_interval: int
-    total_iteration_count: int
-    total_simulated_time: float
-    per_axis_probability_denisty_plot_interval: int
 
 
 def run_iteration(sim_state: sim_st.SimState, measurement_tools):
@@ -49,9 +41,27 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
         "Iteration"
     ]["per_axis_probability_denisty_interval"]
 
+    if os.path.exists("cache/data_snapshot.txt") and os.path.exists(
+        "cache/wave_snapshot.npy"
+    ):
+        answer = ""
+        while not answer in {"y", "n"}:
+            print(
+                "Snapshot of interrupted simulation detected.\n"
+                "Would you like to continue the previously interrupted simulation [y/n]?",
+                end=" ",
+            )
+            answer = input()
+            if answer == "y":
+                sim_state, iter_data = snapshot.read_snapshot(sim_state, iter_data)
+
+    signal_handling.register_signal_handler(sim_state, iter_data)
+
     # Main iteration loop:
     with alive_bar(iter_data.total_iteration_count) as bar:
-        for i in range(iter_data.total_iteration_count):
+        for j in range(iter_data.i):
+            bar()
+        for iter_data.i in range(iter_data.total_iteration_count):
             iter_start_time_s = time.time()
             sim_state.probability_density = math_utils.square_of_abs(
                 sim_state.wave_tensor
@@ -73,8 +83,8 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
             )
 
             if (
-                i % iter_data.per_axis_probability_denisty_plot_interval == 0
-                or i % iter_data.animation_frame_step_interval == 0
+                iter_data.i % iter_data.per_axis_probability_denisty_plot_interval == 0
+                or iter_data.i % iter_data.animation_frame_step_interval == 0
             ):
                 measurement_tools.x_axis_probability_density.integrate_probability_density(
                     sim_state.probability_density
@@ -85,7 +95,7 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
                 measurement_tools.z_axis_probability_density.integrate_probability_density(
                     sim_state.probability_density
                 )
-            if i % iter_data.per_axis_probability_denisty_plot_interval == 0:
+            if iter_data.i % iter_data.per_axis_probability_denisty_plot_interval == 0:
                 measurement_tools.per_axis_density_plot = plot.plot_per_axis_probability_density(
                     [
                         measurement_tools.x_axis_probability_density.get_probability_density_with_label(),
@@ -94,30 +104,28 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
                     ],
                     delta_x=sim_state.delta_x_bohr_radii,
                     delta_t=sim_state.delta_time_h_bar_per_hartree,
-                    index=i,
+                    index=iter_data.i,
                     show_fig=False,
                 )
             if (
-                i % iter_data.animation_frame_step_interval == 0
-                or i % iter_data.png_step_interval == 0
+                iter_data.i % iter_data.animation_frame_step_interval == 0
+                or iter_data.i % iter_data.png_step_interval == 0
             ):
                 measurement_tools.canvas.update(
                     sim_state.get_view_into_probability_density(),
-                    iter_count=i,
+                    iter_count=iter_data.i,
                     delta_time_h_bar_per_hartree=sim_state.delta_time_h_bar_per_hartree,
                 )
-            if i % iter_data.animation_frame_step_interval == 0:
+            if iter_data.i % iter_data.animation_frame_step_interval == 0:
                 measurement_tools.animation_writer_3D.add_frame(
                     measurement_tools.canvas.render()
                 )
                 measurement_tools.animation_writer_per_axis.add_frame(
                     measurement_tools.per_axis_density_plot
                 )
-            if i % iter_data.png_step_interval == 0:
-                measurement_tools.canvas.save_to_png(
-                    f"output/probability_density_{i:04d}.png"
-                )
-            if i % iter_data.probability_plot_interval == 0:
+            if iter_data.i % iter_data.png_step_interval == 0:
+                measurement_tools.canvas.render_to_png(iter_data.i)
+            if iter_data.i % iter_data.probability_plot_interval == 0:
                 plot.plot_probability_evolution(
                     [
                         measurement_tools.measurement_volume_full.get_probability_evolution(),
@@ -125,14 +133,14 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
                         measurement_tools.measurement_volume_second_half.get_probability_evolution(),
                     ],
                     delta_t=sim_state.delta_time_h_bar_per_hartree,
-                    index=i,
+                    index=iter_data.i,
                     show_fig=False,
                 )
-            if i % iter_data.measurement_plane_capture_interval == 0:
+            if iter_data.i % iter_data.measurement_plane_capture_interval == 0:
                 plot.plot_canvas(
                     plane_probability_density=measurement_tools.measurement_plane.get_probability_density(),
                     plane_dwell_time_density=measurement_tools.measurement_plane.get_dwell_time(),
-                    index=i,
+                    index=iter_data.i,
                 )
 
             sim_state.wave_tensor = time_evolution(
@@ -151,4 +159,5 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
     iter_data.average_iteration_system_time_s = iter_data.elapsed_system_time_s / float(
         iter_data.total_iteration_count
     )
+    snapshot.remove_snapshot()
     return sim_state, measurement_tools, iter_data

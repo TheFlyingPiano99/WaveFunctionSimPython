@@ -15,6 +15,12 @@ def get_potential_description_text(sim_state: sim_st.SimState):
         text.write(
             "WARNING: delta_t * wall_max_potential too close to multiply of pi!\n"
         )
+    thickness = sim_state.config["Potential"]["wall_thickness_bohr_radii"]
+    text.write(f"Wall thickness is {thickness} bohr radii.\n")
+    if thickness < sim_state.de_broglie_wave_length_bohr_radii:
+        text.write(
+            "This thickness is smaller than the de Broglie wavelength of the particle.\n"
+        )
     if time_times_potential > np.pi:
         text.write(
             f"WARNING: delta_t * wall_max_potential = {time_times_potential} exceeds  pi!\n"
