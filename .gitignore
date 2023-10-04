@@ -3,6 +3,7 @@
 *.png
 *.zip
 *.gif
+*.mp4
 sources/__pycache__/*
 cache/*
 
