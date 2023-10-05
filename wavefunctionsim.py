@@ -42,7 +42,7 @@ def sim():
     print(
         "****************************************************************************"
     )
-    print("Simulating")
+    print("Simulating (Press <Ctrl-c> to quit.)")
     measurement_tools = MeasurementTools()
     measurement_tools.canvas = volume_visualization.VolumeCanvas(
         volume_data=sim_state.get_view_into_probability_density(),

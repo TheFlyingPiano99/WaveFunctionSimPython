@@ -9,3 +9,4 @@ class IterData:
     total_iteration_count: int
     total_simulated_time = 0.0
     per_axis_probability_denisty_plot_interval: int
+    is_quit = False

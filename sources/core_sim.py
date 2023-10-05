@@ -9,6 +9,8 @@ import sources.signal_handling as signal_handling
 import os
 import sources.snapshot_io as snapshot
 from sources.iter_data import IterData
+import keyboard
+import sys
 
 
 def time_evolution(wave_tensor, kinetic_operator, potential_operator):
@@ -55,13 +57,20 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
             if answer == "y":
                 sim_state, iter_data = snapshot.read_snapshot(sim_state, iter_data)
 
-    signal_handling.register_signal_handler(sim_state, iter_data)
+    iter_data.is_quit = False
+    signal_handling.register_signal_handler(iter_data)
+
+    start_index = iter_data.i  # Needed because of snapshots
 
     # Main iteration loop:
     with alive_bar(iter_data.total_iteration_count) as bar:
         for j in range(iter_data.i):
             bar()
-        for iter_data.i in range(iter_data.total_iteration_count):
+        for iter_data.i in range(start_index, iter_data.total_iteration_count):
+            if iter_data.is_quit:
+                snapshot.write_snapshot(sim_state, iter_data)
+                sys.exit(0)
+
             iter_start_time_s = time.time()
             sim_state.probability_density = math_utils.square_of_abs(
                 sim_state.wave_tensor
