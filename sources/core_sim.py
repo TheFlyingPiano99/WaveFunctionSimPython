@@ -24,6 +24,31 @@ def time_evolution(wave_tensor, kinetic_operator, potential_operator):
     return np.fft.fftn(moment_space_wave_tensor, norm="backward")
 
 
+def merged_time_evolution(
+    wave_tensor,
+    kinetic_operator,
+    potential_operator,
+    merged_kinetic_operator,
+    merged_iteration_count,
+):
+    moment_space_wave_tensor = np.fft.fftn(wave_tensor, norm="forward")
+    moment_space_wave_tensor = np.multiply(kinetic_operator, moment_space_wave_tensor)
+
+    for i in range(merged_iteration_count - 1):
+        wave_tensor = np.fft.fftn(moment_space_wave_tensor, norm="backward")
+        wave_tensor = np.multiply(potential_operator, wave_tensor)
+        moment_space_wave_tensor = np.fft.fftn(wave_tensor, norm="forward")
+        moment_space_wave_tensor = np.multiply(
+            merged_kinetic_operator, moment_space_wave_tensor
+        )
+
+    wave_tensor = np.fft.fftn(moment_space_wave_tensor, norm="backward")
+    wave_tensor = np.multiply(potential_operator, wave_tensor)
+    moment_space_wave_tensor = np.fft.fftn(wave_tensor, norm="forward")
+    moment_space_wave_tensor = np.multiply(kinetic_operator, moment_space_wave_tensor)
+    return np.fft.fftn(moment_space_wave_tensor, norm="backward")
+
+
 def run_iteration(sim_state: sim_st.SimState, measurement_tools):
     # Setup iteration parameters:
     iter_data = IterData()
