@@ -3,17 +3,33 @@ import sources.core_sim as core_sim
 import numpy as np
 import io
 from datetime import timedelta
+from colorama import Fore, Back, Style
 
 
-def get_potential_description_text(sim_state: sim_st.SimState):
+def get_title_text():
     text = io.StringIO()
-    text.write("Localised potential energy:\n")
+    text.write(Fore.GREEN + "\n ____________________________\n")
+    text.write("|                            |\n")
+    text.write("|   Wave packet simulation   |\n")
+    text.write("|____________________________|\n" + Style.RESET_ALL)
+    return text.getvalue()
+
+
+def get_potential_description_text(sim_state: sim_st.SimState, use_colors=False):
+    text = io.StringIO()
+    text.write(
+        (Fore.GREEN if use_colors else "")
+        + "Localised potential energy:\n"
+        + (Style.RESET_ALL if use_colors else "")
+    )
     wall_potential = sim_state.config["Potential"]["wall_potential_hartree"]
     time_times_potential = wall_potential * sim_state.delta_time_h_bar_per_hartree
     text.write(f"Obstacle wall potential is {wall_potential} hartree.\n")
     if abs(time_times_potential / np.pi - time_times_potential // np.pi) < 0.1:
         text.write(
-            "WARNING: delta_t * wall_max_potential too close to multiply of pi!\n"
+            (Fore.RED if use_colors else "")
+            + "WARNING: delta_t * wall_max_potential too close to multiply of pi!\n"
+            + (Style.RESET_ALL if use_colors else "")
         )
     thickness = sim_state.config["Potential"]["wall_thickness_bohr_radii"]
     text.write(f"Wall thickness is {thickness} bohr radii.\n")
@@ -23,7 +39,9 @@ def get_potential_description_text(sim_state: sim_st.SimState):
         )
     if time_times_potential > np.pi:
         text.write(
-            f"WARNING: delta_t * wall_max_potential = {time_times_potential} exceeds  pi!\n"
+            (Fore.RED if use_colors else "")
+            + f"WARNING: delta_t * wall_max_potential = {time_times_potential} exceeds  pi!\n"
+            + (Style.RESET_ALL if use_colors else "")
         )
 
     space_between_slits = sim_state.config["Potential"][
@@ -31,7 +49,9 @@ def get_potential_description_text(sim_state: sim_st.SimState):
     ]
     if space_between_slits > sim_state.de_broglie_wave_length_bohr_radii:
         text.write(
-            f"WARNING: Space between slits = {space_between_slits} esceeds de Brogile wavelength = {sim_state.de_broglie_wave_length_bohr_radii} of the particle!"
+            (Fore.RED if use_colors else "")
+            + f"WARNING: Space between slits = {space_between_slits} esceeds de Brogile wavelength = {sim_state.de_broglie_wave_length_bohr_radii:.4f} of the particle!"
+            + (Style.RESET_ALL if use_colors else "")
         )
     drain_max = sim_state.config["Potential"]["outer_drain_potential_hartree"]
     text.write(
@@ -42,9 +62,13 @@ def get_potential_description_text(sim_state: sim_st.SimState):
     return text.getvalue()
 
 
-def get_sim_state_description_text(sim_state: sim_st.SimState):
+def get_sim_state_description_text(sim_state: sim_st.SimState, use_colors=False):
     text = io.StringIO()
-
+    text.write(
+        (Fore.GREEN if use_colors else "")
+        + "Simulation state:\n"
+        + (Style.RESET_ALL if use_colors else "")
+    )
     velocity_magnitude = (
         np.dot(
             sim_state.initial_wp_velocity_bohr_radii_hartree_per_h_bar,
@@ -54,7 +78,7 @@ def get_sim_state_description_text(sim_state: sim_st.SimState):
     )
     text.write(
         f"Mass of the particle is {sim_state.particle_mass} electron rest mass.\n"
-        f"Initial velocity of the particle is {velocity_magnitude} Bohr radius hartree / h-bar\n"
+        f"Initial velocity of the particle is {velocity_magnitude} Bohr radius hartree / h-bar.\n"
     )
 
     momentum_magnitude = (
@@ -65,10 +89,10 @@ def get_sim_state_description_text(sim_state: sim_st.SimState):
         ** 0.5
     )
     text.write(
-        f"Initial mean momentum of particle is {momentum_magnitude} h-bar / Bohr radius\n"
+        f"Initial mean momentum of particle is {momentum_magnitude} h-bar / Bohr radius.\n"
     )
     text.write(
-        f"De Broglie wavelength associated with the particle is {sim_state.de_broglie_wave_length_bohr_radii} Bohr radii.\n"
+        f"De Broglie wavelength associated with the particle is {sim_state.de_broglie_wave_length_bohr_radii:.4f} Bohr radii.\n"
     )
 
     initial_kinetic_energy_hartree = (
@@ -93,7 +117,9 @@ def get_sim_state_description_text(sim_state: sim_st.SimState):
         >= sim_state.de_broglie_wave_length_bohr_radii / 2.0
     ):
         text.write(
-            f"WARNING: delta_x = {sim_state.delta_x_bohr_radii} exceeds half of de Broglie wavelength!\n"
+            (Fore.RED if use_colors else "")
+            + f"WARNING: delta_x = {sim_state.delta_x_bohr_radii} exceeds half of de Broglie wavelength!\n"
+            + (Style.RESET_ALL if use_colors else "")
         )
 
     # The maximum allowed delta_time
@@ -109,7 +135,11 @@ def get_sim_state_description_text(sim_state: sim_st.SimState):
         sim_state.delta_time_h_bar_per_hartree
         > 0.5 * sim_state.upper_limit_on_delta_time_h_per_hartree
     ):
-        print("WARNING: delta_time exceeds theoretical limit!")
+        text.write(
+            (Fore.RED if use_colors else "")
+            + "WARNING: delta_time exceeds theoretical limit!\n"
+            + (Style.RESET_ALL if use_colors else "")
+        )
 
     return text.getvalue()
 

@@ -4,6 +4,8 @@ import sources.core_sim as core_sim
 import sys
 import os
 import signal
+import sources.text_writer as text_writer
+from colorama import Fore, Style
 
 
 class MeasurementTools:
@@ -17,8 +19,7 @@ class MeasurementTools:
 
 
 def sim():
-    print("Wave packet simulation")
-    print("Created by Zoltan Simon")
+    print(text_writer.get_title_text())
 
     out_dir = "output/"
     if os.path.exists(out_dir):
@@ -27,22 +28,21 @@ def sim():
             while not answer in {"y", "n"}:
                 print(
                     "Output directory is not empty.\n"
-                    "os.listdir('/your/path') will override previous files under \"./output/\".\n"
-                    "Would you like to still continue [y/n]?",
+                    'Continuing will override previous files under "./output/".\n'
+                    "Would you still like to continue [y/n]?",
                     end=" ",
                 )
                 answer = input()
                 if answer == "n":
                     print("Exiting application.")
                     sys.exit(0)
-
+    print("\n")
     sim_state = init.initialize()
     text_writer.write_sim_state(sim_state)
 
     print(
         "****************************************************************************"
     )
-    print("Simulating (Press <Ctrl-c> to quit.)")
     measurement_tools = MeasurementTools()
     measurement_tools.canvas = volume_visualization.VolumeCanvas(
         volume_data=sim_state.get_view_into_probability_density(),

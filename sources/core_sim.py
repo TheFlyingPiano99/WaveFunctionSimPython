@@ -11,6 +11,7 @@ import sources.snapshot_io as snapshot
 from sources.iter_data import IterData
 import keyboard
 import sys
+from colorama import Fore, Style
 
 
 def time_evolution(wave_tensor, kinetic_operator, potential_operator):
@@ -56,6 +57,8 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
             answer = input()
             if answer == "y":
                 sim_state, iter_data = snapshot.read_snapshot(sim_state, iter_data)
+
+    print(Fore.GREEN + "Simulating " + Style.RESET_ALL + "(Press <Ctrl-c> to quit.)")
 
     iter_data.is_quit = False
     signal_handling.register_signal_handler(iter_data)

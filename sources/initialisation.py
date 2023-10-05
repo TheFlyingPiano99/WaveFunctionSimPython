@@ -16,7 +16,7 @@ def initialize():
     sim_state = sim_st.SimState(config)
 
     # Maximal kinetic energy
-    print(text_writer.get_sim_state_description_text(sim_state))
+    print(text_writer.get_sim_state_description_text(sim_state, use_colors=True))
     print(
         "***************************************************************************************"
     )
@@ -62,7 +62,7 @@ def initialize():
         np.save(file="cache/kinetic_operator.npy", arr=sim_state.kinetic_operator)
 
     print("Initializing potential energy operator")
-    print(text_writer.get_potential_description_text(sim_state))
+    print(text_writer.get_potential_description_text(sim_state, use_colors=True))
     try:
         sim_state.localised_potential_hartree = np.load(
             file="cache/localized_potential.npy"
