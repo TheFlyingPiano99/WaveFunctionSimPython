@@ -27,7 +27,7 @@ def write_snapshot(sim_state: SimState, iter_data: IterData):
 
 def read_snapshot(sim_state: SimState, iter_data: IterData):
     try:
-        sim_state.wave_tenso = np.load(file="cache/wave_snapshot.npy")
+        sim_state.wave_tensor = np.load(file="cache/wave_snapshot.npy")
     except OSError:
         print("Failed to read wave tensor!")
     with io.open("cache/data_snapshot.txt", mode="r") as f:
@@ -48,5 +48,7 @@ def read_snapshot(sim_state: SimState, iter_data: IterData):
 
 
 def remove_snapshot():
-    os.remove("cache/data_snapshot.txt")
-    os.remove("cache/wave_snapshot.npy")
+    if os.path.exists("cache/data_snapshot.txt"):
+        os.remove("cache/data_snapshot.txt")
+    if os.path.exists("cache/wave_snapshot.npy"):
+        os.remove("cache/wave_snapshot.npy")

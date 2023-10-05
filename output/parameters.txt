@@ -15,3 +15,7 @@ Wall thickness is 2.0 bohr radii.
 This thickness is smaller than the de Broglie wavelength of the particle.
 Draining potential value at the outer edge is -100000.0 hartree.
 Draining potential exponent is 3.0.
+Total iteration count is 50.
+Total simulated time is 25.0000 h-bar / hartree.
+Elapsed system time during iteration was 0:01:08.623587.
+Average system time of an iteration was 1.3725 s.

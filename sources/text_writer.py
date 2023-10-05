@@ -144,6 +144,21 @@ def get_sim_state_description_text(sim_state: sim_st.SimState, use_colors=False)
     return text.getvalue()
 
 
+def get_finish_text(iter_data):
+    text = io.StringIO()
+    text.write(f"Total iteration count is {iter_data.total_iteration_count}.\n")
+    text.write(
+        f"Total simulated time is {iter_data.total_simulated_time:.4f} h-bar / hartree.\n"
+    )
+    text.write(
+        f"Elapsed system time during iteration was {str(timedelta(seconds=iter_data.elapsed_system_time_s))}.\n"
+    )
+    text.write(
+        f"Average system time of an iteration was {iter_data.average_iteration_system_time_s:.4f} s.\n"
+    )
+    return text.getvalue()
+
+
 def write_sim_state(sim_state: sim_st.SimState):
     with open("output/parameters.txt", mode="w") as f:
         f.write(get_sim_state_description_text(sim_state))
@@ -152,13 +167,4 @@ def write_sim_state(sim_state: sim_st.SimState):
 
 def append_iter_data(iter_data: core_sim.IterData):
     with open("output/parameters.txt", mode="a") as f:
-        f.write(f"Total iteration count: {iter_data.total_iteration_count}\n")
-        f.write(
-            f"Total simulated time: {iter_data.total_simulated_time:.4f} h-bar / hartree\n"
-        )
-        f.write(
-            f"Elapsed system time during iteration: {str(timedelta(seconds=iter_data.elapsed_system_time_s))} s\n"
-        )
-        f.write(
-            f"Average system time of an iteration: {iter_data.average_iteration_system_time_s:.4f} s\n"
-        )
+        f.write(get_finish_text(iter_data))

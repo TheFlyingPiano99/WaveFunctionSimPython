@@ -57,6 +57,7 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
             answer = input()
             if answer == "y":
                 sim_state, iter_data = snapshot.read_snapshot(sim_state, iter_data)
+                snapshot.remove_snapshot()
 
     print(Fore.GREEN + "Simulating " + Style.RESET_ALL + "(Press <Ctrl-c> to quit.)")
 
@@ -171,5 +172,4 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
     iter_data.average_iteration_system_time_s = iter_data.elapsed_system_time_s / float(
         iter_data.total_iteration_count
     )
-    snapshot.remove_snapshot()
     return sim_state, measurement_tools, iter_data

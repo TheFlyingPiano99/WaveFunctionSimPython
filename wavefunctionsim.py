@@ -95,9 +95,8 @@ def sim():
     # Finishing steps:
     measurement_tools.animation_writer_3D.finish()
     measurement_tools.animation_writer_per_axis.finish()
-    print("Simulation has finished.")
-    print(f"Total simulation time: {iter_data.elapsed_system_time_s} s")
-    print(f"Average iteration time: {iter_data.average_iteration_system_time_s} s")
+    print(Fore.GREEN + "Simulation has finished." + Style.RESET_ALL)
+    print(text_writer.get_finish_text(iter_data))
     text_writer.append_iter_data(iter_data)
 
 
