@@ -1,21 +1,16 @@
 Simulation state:
 Mass of the particle is 1.0 electron rest mass.
-Initial velocity of the particle is 1.0 Bohr radius hartree / h-bar.
-Initial mean momentum of particle is 1.0 h-bar / Bohr radius.
-De Broglie wavelength associated with the particle is 6.2832 Bohr radii.
-Initial mean kinetic energy of the particle is 0.5 hartree.
+Initial velocity of the particle is 5.0 Bohr radius hartree / h-bar.
+Initial mean momentum of particle is 5.0 h-bar / Bohr radius.
+De Broglie wavelength associated with the particle is 1.2566 Bohr radii.
+Initial mean kinetic energy of the particle is 12.5 hartree.
 Width of simulated volume is w = 120.0 Bohr radii.
-Number of samples per axis is N = 128.
-Space resolution is delta_x = 0.9375 Bohr radii.
-The maximal viable time resolution < 1.1190581936148891 h-bar / hartree
-Time resolution is delta = 0.5 h-bar / hartree.
+Number of samples per axis is N = 256.
+Space resolution is delta_x = 0.46875 Bohr radii.
+The maximal viable time resolution < 0.2797645484037223 h-bar / hartree
+Time resolution is delta = 0.1 h-bar / hartree.
 Localised potential energy:
-Obstacle wall potential is 5.0 hartree.
+Obstacle wall potential is 5 hartree.
 Wall thickness is 2.0 bohr radii.
-This thickness is smaller than the de Broglie wavelength of the particle.
-Draining potential value at the outer edge is -100000.0 hartree.
+Draining potential value at the outer edge is -100.0 hartree.
 Draining potential exponent is 3.0.
-Total iteration count is 50.
-Total simulated time is 25.0000 h-bar / hartree.
-Elapsed system time during iteration was 0:01:08.623587.
-Average system time of an iteration was 1.3725 s.

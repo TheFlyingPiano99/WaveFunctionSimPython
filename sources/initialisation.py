@@ -5,15 +5,40 @@ from sources import wave_packet, potential, operators
 import sources.sim_state as sim_st
 import sources.text_writer as text_writer
 import os
+import filecmp
+from colorama import Fore, Style
 
 
 def initialize():
     # We use hartree atomic unit system
     initialisation_start_time_s = time.time()
-    with open("config/parameters.toml") as f:
-        config = toml.load(f)
-
+    use_cache = True
+    try:
+        with open("config/parameters.toml", mode="r") as f:
+            config = toml.load(f)
+            try:
+                with open("cache/cached_parameters.toml", mode="r") as cache_f:
+                    cached_config = toml.load(cache_f)
+                    if not cached_config == config:
+                        print(
+                            "Changes detected in 'parameters.toml'.\n"
+                            "Falling back to full initialisation."
+                        )
+                        use_cache = False
+            except OSError as e:
+                use_cache = False
+            try:
+                with open("cache/cached_parameters.toml", mode="w") as cache_f:
+                    toml.dump(config, cache_f)
+            except OSError as e:
+                print("Error while creating parameter cache: " + e)
+    except OSError as e:
+        print(
+            Fore.RED + "No 'config/parameters.toml' found!" + Style.RESET_ALL + "\n"
+            "Exiting application."
+        )
     sim_state = sim_st.SimState(config)
+    sim_state.use_cache = use_cache
 
     # Maximal kinetic energy
     print(text_writer.get_sim_state_description_text(sim_state, use_colors=True))
@@ -27,10 +52,16 @@ def initialize():
     ]
     print(f"Wave packet width is {sim_state.wp_width_bohr_radii} bohr radii.")
     a = sim_state.wp_width_bohr_radii * 2.0
-    try:
-        sim_state.wave_tensor = np.load(file="cache/gaussian_wave_packet.npy")
-    except OSError:
-        print("No cached gaussian_wave_packet.npy found.")
+
+    full_init = True
+    if use_cache:
+        try:
+            sim_state.wave_tensor = np.load(file="cache/gaussian_wave_packet.npy")
+            full_init = False
+        except OSError:
+            print("No cached gaussian_wave_packet.npy found.")
+
+    if full_init:
         sim_state.wave_tensor = wave_packet.init_gaussian_wave_packet(
             N=sim_state.N,
             delta_x_bohr_radii=sim_state.delta_x_bohr_radii,
@@ -50,10 +81,15 @@ def initialize():
     print(f"Sum of probabilities after normalization = {sum_probability}")
     # Operators:
     print("Initializing kinetic energy operator")
-    try:
-        sim_state.kinetic_operator = np.load(file="cache/kinetic_operator.npy")
-    except OSError:
-        print("No cached kinetic_operator.npy found.")
+
+    full_init = True
+    if use_cache:
+        try:
+            sim_state.kinetic_operator = np.load(file="cache/kinetic_operator.npy")
+            full_init = False
+        except OSError:
+            print("No cached kinetic_operator.npy found.")
+    if full_init:
         sim_state.kinetic_operator = operators.init_kinetic_operator(
             N=sim_state.N,
             delta_x=sim_state.delta_x_bohr_radii,
@@ -63,13 +99,17 @@ def initialize():
 
     print("Initializing potential energy operator")
     print(text_writer.get_potential_description_text(sim_state, use_colors=True))
-    try:
-        sim_state.localised_potential_hartree = np.load(
-            file="cache/localized_potential.npy"
-        )
-    except OSError:
-        print("No cached localized_potential.npy found.")
 
+    full_init = True
+    if use_cache:
+        try:
+            sim_state.localised_potential_hartree = np.load(
+                file="cache/localized_potential.npy"
+            )
+            full_init = False
+        except OSError:
+            print("No cached localized_potential.npy found.")
+    if full_init:
         space_between_slits = sim_state.config["Potential"][
             "distance_between_slits_bohr_radii"
         ]
@@ -105,10 +145,14 @@ def initialize():
             arr=sim_state.localised_potential_hartree,
         )
 
-    try:
-        sim_state.potential_operator = np.load(file="cache/potential_operator.npy")
-    except OSError:
-        print("No cached potential_operator.npy found.")
+    full_init = True
+    if use_cache:
+        try:
+            sim_state.potential_operator = np.load(file="cache/potential_operator.npy")
+            full_init = False
+        except OSError:
+            print("No cached potential_operator.npy found.")
+    if full_init:
         sim_state.potential_operator = operators.init_potential_operator(
             V=sim_state.localised_potential_hartree,
             N=sim_state.N,

@@ -69,20 +69,14 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
         "Iteration"
     ]["per_axis_probability_denisty_interval"]
 
-    if os.path.exists("cache/data_snapshot.txt") and os.path.exists(
-        "cache/wave_snapshot.npy"
+    if (
+        sim_state.use_cache
+        and os.path.exists("cache/data_snapshot.txt")
+        and os.path.exists("cache/wave_snapshot.npy")
     ):
-        answer = ""
-        while not answer in {"y", "n"}:
-            print(
-                "Snapshot of interrupted simulation detected.\n"
-                "Would you like to continue the previously interrupted simulation [y/n]?",
-                end=" ",
-            )
-            answer = input()
-            if answer == "y":
-                sim_state, iter_data = snapshot.read_snapshot(sim_state, iter_data)
-                snapshot.remove_snapshot()
+        print("Snapshot of interrupted simulation detected.")
+        sim_state, iter_data = snapshot.read_snapshot(sim_state, iter_data)
+        snapshot.remove_snapshot()
 
     print(Fore.GREEN + "Simulating " + Style.RESET_ALL + "(Press <Ctrl-c> to quit.)")
 
@@ -116,7 +110,7 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
             )
 
             measurement_tools.measurement_plane.integrate(
-                sim_state.wave_tensor,
+                sim_state.probability_density,
                 sim_state.delta_time_h_bar_per_hartree,
             )
 

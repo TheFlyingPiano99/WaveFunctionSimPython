@@ -119,7 +119,13 @@ class MultiVolumeVisual(Visual):
         self.textures = []
         for i in range(n_volume_max):
             self.textures.append(
-                tex_cls((10, 10, 10), interpolation="linear", wrapping="clamp_to_edge")
+                tex_cls(
+                    data=(16, 16, 16),
+                    interpolation="linear",
+                    format="luminance",
+                    internalformat="luminance",
+                    wrapping="clamp_to_edge",
+                )
             )
             self.shared_program["u_volumetex{0}".format(i)] = self.textures[i]
             self.shared_program.frag["cmap{0:d}".format(i)] = Function(

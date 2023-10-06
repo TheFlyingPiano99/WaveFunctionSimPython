@@ -6,6 +6,7 @@ import os
 import signal
 import sources.text_writer as text_writer
 from colorama import Fore, Style
+import numpy as np
 
 
 class MeasurementTools:
@@ -47,6 +48,8 @@ def sim():
     measurement_tools.canvas = volume_visualization.VolumeCanvas(
         volume_data=sim_state.get_view_into_probability_density(),
         secondary_volume_data=sim_state.get_view_into_potential(),
+        cam_rotation_speed=sim_state.config["View"]["camera_rotation_speed"],
+        azimuth=sim_state.config["View"]["camera_azimuth"],
     )
     measurement_tools.animation_writer_3D = animation.AnimationWriter(
         "output/probability_density_time_development_3D.mp4"
@@ -59,32 +62,65 @@ def sim():
         delta_x=sim_state.delta_x_bohr_radii,
         location_bohr_radii=28.0,
         simulated_box_width=sim_state.simulated_volume_width_bohr_radii,
+        viewing_window_bottom_voxel=sim_state.viewing_window_bottom_corner_voxel,
+        viewing_window_top_voxel=sim_state.viewing_window_top_corner_voxel,
     )
     measurement_tools.measurement_volume_full = measurement.AAMeasurementVolume(
-        bottom_corner=(0, 0, 0),
-        top_corner=(sim_state.N, sim_state.N, sim_state.N),
+        bottom_corner=sim_state.viewing_window_bottom_corner_voxel,
+        top_corner=sim_state.viewing_window_top_corner_voxel,
         label="Full volume",
     )
     measurement_tools.measurement_volume_first_half = measurement.AAMeasurementVolume(
-        bottom_corner=(0, 0, 0),
-        top_corner=(sim_state.N, sim_state.N, int(sim_state.N / 2)),
+        bottom_corner=sim_state.viewing_window_bottom_corner_voxel,
+        top_corner=np.array(
+            sim_state.viewing_window_top_corner_voxel
+            - (
+                sim_state.viewing_window_top_corner_voxel
+                - sim_state.viewing_window_bottom_corner_voxel
+            )
+            * np.array([0.5, 0, 0]),
+            dtype=int,
+        ),
         label="First half",
     )
     measurement_tools.measurement_volume_second_half = measurement.AAMeasurementVolume(
-        bottom_corner=(0, 0, int(sim_state.N / 2)),
-        top_corner=(sim_state.N, sim_state.N, sim_state.N),
+        bottom_corner=np.array(
+            sim_state.viewing_window_bottom_corner_voxel
+            + (
+                sim_state.viewing_window_top_corner_voxel
+                - sim_state.viewing_window_bottom_corner_voxel
+            )
+            * np.array([0.5, 0, 0]),
+            dtype=int,
+        ),
+        top_corner=sim_state.viewing_window_top_corner_voxel,
         label="Second half",
     )
 
     # Setup "per axis" probability density:
     measurement_tools.x_axis_probability_density = measurement.ProjectedMeasurement(
-        N=sim_state.N, sum_axis=(1, 2), label="X axis"
+        min_voxel=sim_state.viewing_window_bottom_corner_voxel[0],
+        max_voxel=sim_state.viewing_window_top_corner_voxel[0],
+        left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[0],
+        right_edge=sim_state.viewing_window_top_corner_bohr_radii[0],
+        sum_axis=(1, 2),
+        label="X axis",
     )
     measurement_tools.y_axis_probability_density = measurement.ProjectedMeasurement(
-        N=sim_state.N, sum_axis=(0, 2), label="Y axis"
+        min_voxel=sim_state.viewing_window_bottom_corner_voxel[1],
+        max_voxel=sim_state.viewing_window_top_corner_voxel[1],
+        left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[1],
+        right_edge=sim_state.viewing_window_top_corner_bohr_radii[1],
+        sum_axis=(0, 2),
+        label="Y axis",
     )
     measurement_tools.z_axis_probability_density = measurement.ProjectedMeasurement(
-        N=sim_state.N, sum_axis=(0, 1), label="Z axis"
+        min_voxel=sim_state.viewing_window_bottom_corner_voxel[2],
+        max_voxel=sim_state.viewing_window_top_corner_voxel[2],
+        left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[2],
+        right_edge=sim_state.viewing_window_top_corner_bohr_radii[2],
+        sum_axis=(0, 1),
+        label="Z axis",
     )
 
     # Run simulation

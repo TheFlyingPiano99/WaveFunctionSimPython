@@ -16,6 +16,8 @@ class SimState:
     N = 128
     viewing_window_bottom_corner_voxel: np.array
     viewing_window_top_corner_voxel: np.array
+    viewing_window_bottom_corner_bohr_radii: np.array
+    viewing_window_top_corner_bohr_radii: np.array
     de_broglie_wave_length_bohr_radii: float
     simulated_volume_width_bohr_radii: float
     delta_x_bohr_radii: float
@@ -26,6 +28,7 @@ class SimState:
     kinetic_operator: np.ndarray
     localised_potential_hartree: np.ndarray
     potential_operator: np.ndarray
+    use_cache = True
 
     def __init__(self, config):
         self.config = config
@@ -68,6 +71,12 @@ class SimState:
 
         # Init draining potential
         self.drain_potential_description = potential.DrainPotentialDescription(config)
+        self.viewing_window_bottom_corner_bohr_radii = (
+            self.drain_potential_description.boundary_bottom_corner_bohr_radii
+        )
+        self.viewing_window_top_corner_bohr_radii = (
+            self.drain_potential_description.boundary_top_corner_bohr_radii
+        )
         self.viewing_window_bottom_corner_voxel = np.array(
             math_utils.transform_center_origin_to_corner_origin_system(
                 self.drain_potential_description.boundary_bottom_corner_bohr_radii,

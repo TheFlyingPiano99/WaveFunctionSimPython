@@ -20,12 +20,24 @@ class DrainPotentialDescription:
         self.boundary_top_corner_bohr_radii = np.array(
             config["Volume"]["viewing_window_boundary_top_corner_bohr_radii_3"]
         )
+        # Flip if inverted:
+        for i in range(3):
+            if (
+                self.boundary_bottom_corner_bohr_radii[i]
+                > self.boundary_top_corner_bohr_radii[i]
+            ):
+                temp = self.boundary_bottom_corner_bohr_radii[i]
+                self.boundary_bottom_corner_bohr_radii[
+                    i
+                ] = self.boundary_top_corner_bohr_radii[i]
+                self.boundary_top_corner_bohr_radii[i] = temp
+
         self.inner_radius_bohr_radii = max(
             math_utils.vector_length(self.boundary_bottom_corner_bohr_radii),
             math_utils.vector_length(self.boundary_top_corner_bohr_radii),
         )
         simulated_volume_width = config["Volume"]["simulated_volume_width_bohr_radii"]
-        self.outer_radius_bohr_radii = simulated_volume_width * 0.5 * 3.0**0.5
+        self.outer_radius_bohr_radii = simulated_volume_width * 0.5
         self.max_potential_hartree = config["Potential"][
             "outer_drain_potential_hartree"
         ]

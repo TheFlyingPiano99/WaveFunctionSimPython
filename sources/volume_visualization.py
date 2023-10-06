@@ -16,45 +16,44 @@ class VolumeCanvas:
     canvas: scene.SceneCanvas
     viewing_window_bottom_corner_voxel: np.array
     viewing_window_top_corner_voxel: np.array
+    density_scale = 100000.0
+    cam_rotation_speed = 0.0
+    cam_elevation_speed = 0.1
+    elevation = 45.0
+    azimuth = 0.0
 
-    def __init__(self, volume_data, secondary_volume_data):
+    def __init__(
+        self, volume_data, secondary_volume_data, cam_rotation_speed=0.0, azimuth=0.0
+    ):
+        volume_data = volume_data * self.density_scale
         # Prepare canvas
         self.canvas = scene.SceneCanvas(
             keys="interactive", bgcolor="black", size=(1024, 768), show=False
         )
         self.view = self.canvas.central_widget.add_view()
 
-        """
-        # Create an XYZAxis visual
-        axis = scene.visuals.XYZAxis(parent=self.view.scene)
-        s = STTransform(translate=(-10, -10, -10), scale=(volume_data.shape[0], volume_data.shape[1], volume_data.shape[2], 1))
-        affine = s.as_matrix()
-        axis.transform = affine
-        axis.update()
-        """
-
         # create colormaps that work well for translucent density visualisation
         class ProbabilityDensityColorMap(BaseColormap):
             glsl_map = """
             vec4 translucent_fire(float t) {
-                float tScaled = min(t * 50.0, 1.0);
-                return vec4(pow(tScaled, 0.1), pow(tScaled, 0.9), pow(tScaled, 2.0), max(0, tScaled*1.05 - 0.05));
+                float tScaled = min(t, 1.0);
+                return vec4(pow(tScaled, 0.1), pow(tScaled, 0.9), pow(tScaled, 2.0), pow(tScaled, 1.0));
             }
             """
 
         class PotentialColorMap(BaseColormap):
             glsl_map = """
             vec4 translucent_green(float t) {
-                float tScaled = min(t * 1.0, 1.0);
-                return vec4(tScaled, pow(tScaled, 0.5), tScaled*tScaled, max(0, tScaled*1.05 - 0.05) * 0.1);
+                float tScaled = min(t, 1.0);
+                return vec4(tScaled, pow(tScaled, 0.5), tScaled*tScaled, max(0, tScaled*1.001 - 0.001) * 0.5);
             }
             """
 
         self.primary_color_map = ProbabilityDensityColorMap()
         self.secondary_color_map = PotentialColorMap()
         self.clim1 = (
-            volume_data.astype(np.float32).min(),
-            volume_data.astype(np.float32).max(),
+            0.0,
+            volume_data.astype(np.float32).max() * 0.01,
         )
         self.clim2 = (
             secondary_volume_data.astype(np.float32).min(),
@@ -63,12 +62,22 @@ class VolumeCanvas:
 
         volumes = [
             (
-                volume_data.astype(np.float32),
+                np.pad(
+                    array=volume_data.astype(np.float32),
+                    pad_width=1,
+                    mode="constant",
+                    constant_values=0.0,
+                ),
                 self.clim1,
                 self.primary_color_map,
             ),
             (
-                secondary_volume_data.astype(np.float32),
+                np.pad(
+                    array=secondary_volume_data.astype(np.float32),
+                    pad_width=1,
+                    mode="constant",
+                    constant_values=0.0,
+                ),
                 self.clim2,
                 self.secondary_color_map,
             ),
@@ -78,6 +87,7 @@ class VolumeCanvas:
             volumes=volumes,
             parent=self.view.scene,
             method="translucent",
+            relative_step_size=0.1,
         )
 
         # self.volume.parent=self.view.scene
@@ -85,11 +95,14 @@ class VolumeCanvas:
         # self.volume.gamma=1.0
         # self.secondary_volume = scene.visuals.Volume(secondary_data.astype(np.float32), parent=self.view.scene, method='translucent', gamma=1.0)
 
+        self.cam_rotation_speed = cam_rotation_speed
         fov = 45.0
         cam = scene.cameras.TurntableCamera(
             parent=self.view.scene, fov=fov, name="Turntable"
         )
         cam.up = "+y"
+        self.azimuth = azimuth
+        cam.azimuth = azimuth
         cam.update()
         self.view.camera = cam  # Select turntable at first
 
@@ -124,8 +137,21 @@ class VolumeCanvas:
 
     def update(self, volume_data, iter_count, delta_time_h_bar_per_hartree):
         self.volume.update_volume_data(
-            volume_data=volume_data.astype(np.float32),
+            volume_data=np.pad(
+                array=(volume_data * self.density_scale).astype(np.float32),
+                pad_width=1,
+                mode="constant",
+                constant_values=0.0,
+            ),
             index=0,
+        )
+        self.view.camera.azimuth = (
+            self.azimuth
+            + self.cam_rotation_speed * iter_count * delta_time_h_bar_per_hartree
+        )
+        self.view.camera.elevation = (
+            self.elevation
+            + self.cam_elevation_speed * iter_count * delta_time_h_bar_per_hartree
         )
         self.canvas.update()
         self.text1.text = f"Probability density (Elapsed time = {iter_count * delta_time_h_bar_per_hartree:.5f} ħ/E = {math_utils.h_bar_per_hartree_to_ns(iter_count * delta_time_h_bar_per_hartree):.2E} ns)"

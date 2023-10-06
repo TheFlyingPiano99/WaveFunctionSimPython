@@ -45,7 +45,7 @@ def plot_per_axis_probability_density(
     n = probability_densities[0][0].size
     # For n assuming that all datasets have the same size
     x = np.linspace(start=-n * delta_x * 0.5, stop=n * delta_x * 0.5, dtype=None, num=n)
-    plt.xlim(-n * delta_x * 0.5, n * delta_x * 0.5)
+    plt.xlim(probability_densities[0][2], probability_densities[0][3])
     plt.ylim(0.0, 0.5)
     for prob_data in probability_densities:
         plt.plot(x, prob_data[0], label=prob_data[1])
@@ -76,14 +76,17 @@ def plot_canvas(plane_probability_density, plane_dwell_time_density, index):
         arr=formatted,
         cmap="gist_heat",
         dpi=100,
+        vmin=0.0,
+        vmax=max(0.0000001, np.max(plane_probability_density)),
     )
     dir = "output/canvas_dwell_time/"
     if not os.path.exists(dir):
         os.mkdir(dir)
-    formatted = plane_dwell_time_density
     matplotlib.image.imsave(
-        fname=os.path.join(dir, f"measurement_plane_probability_{index:04d}.png"),
-        arr=formatted,
+        fname=os.path.join(dir, f"measurement_dwell_time_{index:04d}.png"),
+        arr=plane_dwell_time_density,
         cmap="gist_heat",
         dpi=100,
+        vmin=0.0,
+        vmax=max(0.0000001, np.max(plane_dwell_time_density)),
     )
