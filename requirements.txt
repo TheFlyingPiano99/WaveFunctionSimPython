@@ -1,6 +1,9 @@
-plotly~=5.14.1
 numpy~=1.23.5
 imageio~=2.22.4
 matplotlib~=3.6.2
 vispy~=0.14.0
 toml~=0.10.2
+Pillow~=9.3.0
+keyboard~=0.13.5
+colorama~=0.4.6
+numba~=0.58.0
