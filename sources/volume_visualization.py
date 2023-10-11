@@ -37,7 +37,7 @@ class VolumeCanvas:
             glsl_map = """
             vec4 translucent_fire(float t) {
                 float tScaled = min(t, 1.0);
-                return vec4(pow(tScaled, 0.1), pow(tScaled, 0.9), pow(tScaled, 2.0), pow(tScaled, 1.2));
+                return vec4(pow(tScaled, 0.1), pow(tScaled, 0.9), pow(tScaled, 2.0), pow(tScaled, 0.8));
             }
             """
 

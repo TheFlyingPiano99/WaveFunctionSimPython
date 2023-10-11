@@ -9,8 +9,8 @@ keyboard>=0.13.5
 colorama>=0.4.6
 numba>=0.58.0
 alive_progress>=3.1.0
+tqdm
 PyQt5
 imageio[ffmpeg]
 PyOpenGL
 cupy
-

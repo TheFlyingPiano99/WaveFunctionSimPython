@@ -244,8 +244,7 @@ def get_shaders(n_volume_max):
                             vec3 normal = -gradDensity.xyz;\n\
                             if (length(normal) > 0.0) {{\n\
                                 float l = length(normal);\n\
-                                l = 1.0;\n\
-                                normal = normalize(normal) * min(1.0, pow(l, 1.5));\n\
+                                normal = normalize(normal) * min(1.0, pow(l, 1.2));\n\
                             }}\n\
                             else{{\n\
                                 normal = vec3(0,0,0); // Disable reflection for too homogenous density\n\

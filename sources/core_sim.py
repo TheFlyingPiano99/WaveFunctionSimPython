@@ -13,6 +13,7 @@ from sources.iter_data import IterData
 import keyboard
 import sys
 from colorama import Fore, Style
+from tqdm import tqdm
 
 
 def time_evolution(wave_tensor, kinetic_operator, potential_operator):
@@ -87,103 +88,104 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
     start_index = iter_data.i  # Needed because of snapshots
 
     # Main iteration loop:
+    """
     with alive_bar(iter_data.total_iteration_count) as bar:
         for j in range(iter_data.i):
             bar()
-        for iter_data.i in range(start_index, iter_data.total_iteration_count):
-            if iter_data.is_quit:
-                snapshot.write_snapshot(sim_state, iter_data)
-                sys.exit(0)
+    """
+    for iter_data.i in tqdm(range(start_index, iter_data.total_iteration_count)):
+        if iter_data.is_quit:
+            snapshot.write_snapshot(sim_state, iter_data)
+            sys.exit(0)
 
-            iter_start_time_s = time.time()
-            sim_state.probability_density = math_utils.square_of_abs(
-                sim_state.wave_tensor
-            )
+        iter_start_time_s = time.time()
+        sim_state.probability_density = math_utils.square_of_abs(
+            sim_state.wave_tensor
+        )
 
-            measurement_tools.measurement_volume_full.integrate_probability_density(
+        measurement_tools.measurement_volume_full.integrate_probability_density(
+            sim_state.probability_density
+        )
+        measurement_tools.measurement_volume_first_half.integrate_probability_density(
+            sim_state.probability_density
+        )
+        measurement_tools.measurement_volume_second_half.integrate_probability_density(
+            sim_state.probability_density
+        )
+
+        measurement_tools.measurement_plane.integrate(
+            sim_state.probability_density,
+            sim_state.delta_time_h_bar_per_hartree,
+        )
+
+        if (
+            iter_data.i % iter_data.per_axis_probability_denisty_plot_interval == 0
+            or iter_data.i % iter_data.animation_frame_step_interval == 0
+        ):
+            measurement_tools.x_axis_probability_density.integrate_probability_density(
                 sim_state.probability_density
             )
-            measurement_tools.measurement_volume_first_half.integrate_probability_density(
+            measurement_tools.y_axis_probability_density.integrate_probability_density(
                 sim_state.probability_density
             )
-            measurement_tools.measurement_volume_second_half.integrate_probability_density(
+            measurement_tools.z_axis_probability_density.integrate_probability_density(
                 sim_state.probability_density
             )
-
-            measurement_tools.measurement_plane.integrate(
-                sim_state.probability_density,
-                sim_state.delta_time_h_bar_per_hartree,
+        if iter_data.i % iter_data.per_axis_probability_denisty_plot_interval == 0:
+            measurement_tools.per_axis_density_plot = plot.plot_per_axis_probability_density(
+                [
+                    measurement_tools.x_axis_probability_density.get_probability_density_with_label(),
+                    measurement_tools.y_axis_probability_density.get_probability_density_with_label(),
+                    measurement_tools.z_axis_probability_density.get_probability_density_with_label(),
+                ],
+                delta_x=sim_state.delta_x_bohr_radii,
+                delta_t=sim_state.delta_time_h_bar_per_hartree,
+                index=iter_data.i,
+                show_fig=False,
+            )
+        if (
+            iter_data.i % iter_data.animation_frame_step_interval == 0
+            or iter_data.i % iter_data.png_step_interval == 0
+        ):
+            measurement_tools.canvas.update(
+                sim_state.get_view_into_probability_density(),
+                iter_count=iter_data.i,
+                delta_time_h_bar_per_hartree=sim_state.delta_time_h_bar_per_hartree,
+            )
+        if iter_data.i % iter_data.animation_frame_step_interval == 0:
+            measurement_tools.animation_writer_3D.add_frame(
+                measurement_tools.canvas.render()
+            )
+            measurement_tools.animation_writer_per_axis.add_frame(
+                measurement_tools.per_axis_density_plot
+            )
+        if iter_data.i % iter_data.png_step_interval == 0:
+            measurement_tools.canvas.render_to_png(iter_data.i)
+        if iter_data.i % iter_data.probability_plot_interval == 0:
+            plot.plot_probability_evolution(
+                [
+                    measurement_tools.measurement_volume_full.get_probability_evolution(),
+                    measurement_tools.measurement_volume_first_half.get_probability_evolution(),
+                    measurement_tools.measurement_volume_second_half.get_probability_evolution(),
+                ],
+                delta_t=sim_state.delta_time_h_bar_per_hartree,
+                index=iter_data.i,
+                show_fig=False,
+            )
+        if iter_data.i % iter_data.measurement_plane_capture_interval == 0:
+            plot.plot_canvas(
+                plane_probability_density=measurement_tools.measurement_plane.get_probability_density(),
+                plane_dwell_time_density=measurement_tools.measurement_plane.get_dwell_time(),
+                index=iter_data.i,
             )
 
-            if (
-                iter_data.i % iter_data.per_axis_probability_denisty_plot_interval == 0
-                or iter_data.i % iter_data.animation_frame_step_interval == 0
-            ):
-                measurement_tools.x_axis_probability_density.integrate_probability_density(
-                    sim_state.probability_density
-                )
-                measurement_tools.y_axis_probability_density.integrate_probability_density(
-                    sim_state.probability_density
-                )
-                measurement_tools.z_axis_probability_density.integrate_probability_density(
-                    sim_state.probability_density
-                )
-            if iter_data.i % iter_data.per_axis_probability_denisty_plot_interval == 0:
-                measurement_tools.per_axis_density_plot = plot.plot_per_axis_probability_density(
-                    [
-                        measurement_tools.x_axis_probability_density.get_probability_density_with_label(),
-                        measurement_tools.y_axis_probability_density.get_probability_density_with_label(),
-                        measurement_tools.z_axis_probability_density.get_probability_density_with_label(),
-                    ],
-                    delta_x=sim_state.delta_x_bohr_radii,
-                    delta_t=sim_state.delta_time_h_bar_per_hartree,
-                    index=iter_data.i,
-                    show_fig=False,
-                )
-            if (
-                iter_data.i % iter_data.animation_frame_step_interval == 0
-                or iter_data.i % iter_data.png_step_interval == 0
-            ):
-                measurement_tools.canvas.update(
-                    sim_state.get_view_into_probability_density(),
-                    iter_count=iter_data.i,
-                    delta_time_h_bar_per_hartree=sim_state.delta_time_h_bar_per_hartree,
-                )
-            if iter_data.i % iter_data.animation_frame_step_interval == 0:
-                measurement_tools.animation_writer_3D.add_frame(
-                    measurement_tools.canvas.render()
-                )
-                measurement_tools.animation_writer_per_axis.add_frame(
-                    measurement_tools.per_axis_density_plot
-                )
-            if iter_data.i % iter_data.png_step_interval == 0:
-                measurement_tools.canvas.render_to_png(iter_data.i)
-            if iter_data.i % iter_data.probability_plot_interval == 0:
-                plot.plot_probability_evolution(
-                    [
-                        measurement_tools.measurement_volume_full.get_probability_evolution(),
-                        measurement_tools.measurement_volume_first_half.get_probability_evolution(),
-                        measurement_tools.measurement_volume_second_half.get_probability_evolution(),
-                    ],
-                    delta_t=sim_state.delta_time_h_bar_per_hartree,
-                    index=iter_data.i,
-                    show_fig=False,
-                )
-            if iter_data.i % iter_data.measurement_plane_capture_interval == 0:
-                plot.plot_canvas(
-                    plane_probability_density=measurement_tools.measurement_plane.get_probability_density(),
-                    plane_dwell_time_density=measurement_tools.measurement_plane.get_dwell_time(),
-                    index=iter_data.i,
-                )
-
-            sim_state.wave_tensor = time_evolution(
-                wave_tensor=sim_state.wave_tensor,
-                kinetic_operator=sim_state.kinetic_operator,
-                potential_operator=sim_state.potential_operator,
-            )
-            iter_time = time.time() - iter_start_time_s
-            iter_data.elapsed_system_time_s += iter_time
-            bar()
+        sim_state.wave_tensor = time_evolution(
+            wave_tensor=sim_state.wave_tensor,
+            kinetic_operator=sim_state.kinetic_operator,
+            potential_operator=sim_state.potential_operator,
+        )
+        iter_time = time.time() - iter_start_time_s
+        iter_data.elapsed_system_time_s += iter_time
 
     # Calculate resulting time statistics:
     iter_data.total_simulated_time = (
