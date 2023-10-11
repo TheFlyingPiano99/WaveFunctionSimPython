@@ -4,7 +4,7 @@ import cupy as cp
 import sources.math_utils as math_utils
 
 @jit(nopython=True)
-def init_kinetic_operator(N: int, delta_x: float, delta_time :float):
+def init_kinetic_operator(N: int, delta_x: float, delta_time: float):
     P_kinetic = np.zeros(shape=(N, N, N), dtype=np.complex_)
     for x in range(0, N):
         for y in range(0, N):
@@ -24,7 +24,7 @@ def init_kinetic_operator(N: int, delta_x: float, delta_time :float):
 
 
 @jit(nopython=True)
-def init_potential_operator(V, N, delta_time):
+def init_potential_operator(V:np.ndarray, N:int, delta_time:float):
     P_potential = np.zeros(shape=(N, N, N), dtype=cp.complex_)
     for x in range(0, N):
         for y in range(0, N):

@@ -1,6 +1,8 @@
 import numpy as np
 import cupy as cp
 import sources.math_utils as math_utils
+from numba import jit
+
 
 class DrainPotentialDescription:
     boundary_bottom_corner_bohr_radii: np.array
@@ -66,6 +68,7 @@ def add_potential_box(
     return V
 
 
+@jit(nopython=True)
 def add_draining_potential(
     N : int,
     delta_x : float,
@@ -73,19 +76,19 @@ def add_draining_potential(
     outer_radius_bohr_radii : float,
     max_potential_hartree : float,
     exponent : float,
-    V : cp.ndarray,
+    V : np.ndarray,
 ):
     for x in range(N):
         for y in range(N):
             for z in range(N):
                 pos = (
-                    cp.array([x, y, z]) * delta_x
-                    - cp.array([1.0, 1.0, 1.0]) * N * delta_x * 0.5
+                    np.array([x, y, z]) * delta_x
+                    - np.array([1.0, 1.0, 1.0]) * N * delta_x * 0.5
                 )
                 t = min(
                     max(
                         0.0,
-                        (cp.sqrt(cp.dot(pos, pos)) - inner_radius_bohr_radii)
+                        (np.sqrt(np.dot(pos, pos)) - inner_radius_bohr_radii)
                         / (outer_radius_bohr_radii - inner_radius_bohr_radii),
                     ),
                     1.0,
@@ -176,6 +179,7 @@ def add_single_slit(
     return V
 
 
+@jit(nopython=True)
 def add_double_slit(
     delta_x : float,
     center_bohr_radii : np.array,
@@ -183,8 +187,8 @@ def add_double_slit(
     height_hartree : float,
     space_between_slits_bohr_radii : float,
     slit_width_bohr_radii : float,
-    shape: cp.shape,
-    V: cp.ndarray,
+    shape: np.shape,
+    V: np.ndarray,
 ):
     for x in range(shape[0]):
         for y in range(shape[1]):

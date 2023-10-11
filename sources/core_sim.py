@@ -1,4 +1,5 @@
 import numpy as np
+import cupy as cp
 import time
 import sources.plot as plot
 import sources.math_utils as math_utils
@@ -12,7 +13,6 @@ from sources.iter_data import IterData
 import keyboard
 import sys
 from colorama import Fore, Style
-import cupy as cp
 
 
 def time_evolution(wave_tensor, kinetic_operator, potential_operator):

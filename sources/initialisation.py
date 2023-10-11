@@ -118,7 +118,7 @@ def initialize():
         )
         sim_state.localised_potential_hartree = cp.asarray(potential.add_double_slit(
             delta_x=sim_state.delta_x_bohr_radii,
-            center_bohr_radii=cp.array([0.0, 0.0, 0.0]),
+            center_bohr_radii=np.array([0.0, 0.0, 0.0]),
             thickness_bohr_radii=sim_state.config["Potential"][
                 "wall_thickness_bohr_radii"
             ],
@@ -153,11 +153,11 @@ def initialize():
         except OSError:
             print("No cached potential_operator.npy found.")
     if full_init:
-        sim_state.potential_operator = operators.init_potential_operator(
-            V=sim_state.localised_potential_hartree,
+        sim_state.potential_operator = cp.asarray(operators.init_potential_operator(
+            V=cp.asnumpy(sim_state.localised_potential_hartree),
             N=sim_state.N,
             delta_time=sim_state.delta_time_h_bar_per_hartree,
-        )
+        ))
         cp.save(file="cache/potential_operator.npy", arr=sim_state.potential_operator)
     try:
         with open("cache/cached_parameters.toml", mode="w") as cache_f:

@@ -41,10 +41,12 @@ def interpolate(val0: float, val1: float, t: float, exponent: float = 1.0):
     return (1.0 - t**exponent) * val0 + t**exponent * val1
 
 
+@jit(nopython=True)
 def transform_center_origin_to_corner_origin_system(pos: np.array, box_width: float):
     return pos + np.array([box_width, box_width, box_width]) * 0.5
 
 
+@jit(nopython=True)
 def transform_corner_origin_to_center_origin_system(pos: np.array, box_width: float):
     return pos - np.array([box_width, box_width, box_width]) * 0.5
 
