@@ -70,10 +70,9 @@ def plot_canvas(plane_probability_density, plane_dwell_time_density, index):
     dir = "output/canvas_probability/"
     if not os.path.exists(dir):
         os.mkdir(dir)
-    formatted = plane_probability_density
     matplotlib.image.imsave(
         fname=os.path.join(dir, f"measurement_plane_probability_{index:04d}.png"),
-        arr=formatted,
+        arr=plane_probability_density,
         cmap="gist_heat",
         dpi=100,
         vmin=0.0,

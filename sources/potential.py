@@ -1,9 +1,6 @@
-import numba
 import numpy as np
-import math
+import cupy as cp
 import sources.math_utils as math_utils
-from numba import jit
-
 
 class DrainPotentialDescription:
     boundary_bottom_corner_bohr_radii: np.array
@@ -44,16 +41,15 @@ class DrainPotentialDescription:
         self.exponent = config["Potential"]["drain_interpolation_exponent"]
 
 
-@jit(nopython=True)
 def add_potential_box(
-    N, delta_x, wall_thickness_bohr_radii, potential_wall_height_hartree, V=None
+    N, delta_x, wall_thickness_bohr_radii, potential_wall_height_hartree, V : cp.ndarray=None
 ):
     if V is None:
-        V = np.zeros(shape=(N, N, N), dtype=np.complex_)
+        V = cp.zeros(shape=(N, N, N), dtype=cp.complex_)
     for x in range(0, V.shape[0]):
         for y in range(0, V.shape[1]):
             for z in range(0, V.shape[2]):
-                r = np.array([x, y, z]) * delta_x
+                r = cp.array([x, y, z]) * delta_x
                 # Barriers:
                 t = max(
                     0.0,
@@ -70,27 +66,26 @@ def add_potential_box(
     return V
 
 
-@jit(nopython=True, fastmath=True)
 def add_draining_potential(
-    N,
-    delta_x,
-    inner_radius_bohr_radii,
-    outer_radius_bohr_radii,
-    max_potential_hartree,
-    exponent,
-    V,
+    N : int,
+    delta_x : float,
+    inner_radius_bohr_radii : float,
+    outer_radius_bohr_radii : float,
+    max_potential_hartree : float,
+    exponent : float,
+    V : cp.ndarray,
 ):
     for x in range(N):
         for y in range(N):
             for z in range(N):
                 pos = (
-                    np.array([x, y, z]) * delta_x
-                    - np.array([1.0, 1.0, 1.0]) * N * delta_x * 0.5
+                    cp.array([x, y, z]) * delta_x
+                    - cp.array([1.0, 1.0, 1.0]) * N * delta_x * 0.5
                 )
                 t = min(
                     max(
                         0.0,
-                        (np.sqrt(np.dot(pos, pos)) - inner_radius_bohr_radii)
+                        (cp.sqrt(cp.dot(pos, pos)) - inner_radius_bohr_radii)
                         / (outer_radius_bohr_radii - inner_radius_bohr_radii),
                     ),
                     1.0,
@@ -99,17 +94,16 @@ def add_draining_potential(
     return V
 
 
-@jit(nopython=True)
-def init_potential_sphere(N, delta_x, wall_thickness, potential_wall_hight):
-    V = np.zeros(shape=(N, N, N), dtype=np.complex_)
+def init_potential_sphere(N : int, delta_x : float, wall_thickness : float, potential_wall_hight : float):
+    V = cp.zeros(shape=(N, N, N), dtype=cp.complex_)
     for x in range(0, N):
         for y in range(0, N):
             for z in range(0, N):
-                r = np.array([x, y, z]) / np.array([N - 1, N - 1, N - 1])
+                r = cp.array([x, y, z]) / cp.array([N - 1, N - 1, N - 1])
                 V[x, y, z] = 0.0  # Zero in the middle
                 # Barriers:
-                dir = r - np.array([0.5, 0.5, 0.5])
-                l = np.dot(dir, dir) ** 0.5
+                dir = r - cp.array([0.5, 0.5, 0.5])
+                l = cp.dot(dir, dir) ** 0.5
                 if l > (0.5 - wall_thickness):
                     V[x, y, z] = (
                         potential_wall_hight
@@ -119,18 +113,16 @@ def init_potential_sphere(N, delta_x, wall_thickness, potential_wall_hight):
     return V
 
 
-@jit(nopython=True)
-def init_zero_potential(N):
-    V = np.zeros(shape=(N, N, N), dtype=np.complex_)
+def init_zero_potential(N : int):
+    V = cp.zeros(shape=(N, N, N), dtype=cp.complex_)
     return V
 
 
-@jit(nopython=True)
-def add_wall(V, delta_x, center_bohr_radii, thickness_bohr_radii, height_hartree):
+def add_wall(V : cp.ndarray, delta_x : float, center_bohr_radii : float, thickness_bohr_radii : float, height_hartree : float):
     for x in range(0, V.shape[0]):
         for y in range(0, V.shape[1]):
             for z in range(0, V.shape[2]):
-                r = np.array([x, y, z]) * delta_x
+                r = cp.array([x, y, z]) * delta_x
                 if (
                     r[2] > center_bohr_radii - thickness_bohr_radii / 2.0
                     and r[2] < center_bohr_radii + thickness_bohr_radii / 2.0
@@ -143,26 +135,25 @@ def add_wall(V, delta_x, center_bohr_radii, thickness_bohr_radii, height_hartree
     return V
 
 
-@jit(nopython=True)
 def add_single_slit(
-    delta_x,
-    center_bohr_radii,
-    thickness_bohr_radii,
-    height_hartree,
-    slit_size_bohr_radii,
-    V: np.ndarray,
+    delta_x : float,
+    center_bohr_radii : float,
+    thickness_bohr_radii : float,
+    height_hartree : float,
+    slit_size_bohr_radii : float,
+    V: cp.ndarray,
 ):
     for x in range(0, V.shape[0]):
         for y in range(0, V.shape[1]):
             for z in range(0, V.shape[2]):
-                r = np.array([x, y, z]) * delta_x
+                r = cp.array([x, y, z]) * delta_x
                 if (
                     r[2] > center_bohr_radii - thickness_bohr_radii / 2.0
                     and r[2] < center_bohr_radii + thickness_bohr_radii / 2.0
                 ):
                     v = height_hartree * max(
                         0.0,
-                        1.0
+                        0.0
                         - abs(center_bohr_radii - r[2]) / thickness_bohr_radii * 2.0
                         - max(
                             0.0,
@@ -185,16 +176,15 @@ def add_single_slit(
     return V
 
 
-@jit(nopython=True, fastmath=True)
 def add_double_slit(
-    delta_x,
-    center_bohr_radii,
-    thickness_bohr_radii,
-    height_hartree,
-    space_between_slits_bohr_radii,
-    slit_width_bohr_radii,
-    shape: np.shape,
-    V: np.ndarray,
+    delta_x : float,
+    center_bohr_radii : np.array,
+    thickness_bohr_radii : float,
+    height_hartree : float,
+    space_between_slits_bohr_radii : float,
+    slit_width_bohr_radii : float,
+    shape: cp.shape,
+    V: cp.ndarray,
 ):
     for x in range(shape[0]):
         for y in range(shape[1]):

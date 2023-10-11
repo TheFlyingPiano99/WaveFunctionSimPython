@@ -3,7 +3,7 @@ import math
 import matplotlib.pyplot as plt
 
 N = 32
-array = np.zeros(shape=[N], dtype=np.complex_)
+array = cp.zeros(shape=[N], dtype=cp.complex_)
 
 f = 5
 
@@ -12,13 +12,13 @@ for i in range(N):
 
 print(array)
 
-transformed_array = np.fft.fft(array, norm="forward")
+transformed_array = cp.fft.fft(array, norm="forward")
 
 print(transformed_array)
 
-array = np.fft.fft(transformed_array, norm="backward")
+array = cp.fft.fft(transformed_array, norm="backward")
 
-scale = np.arange(0, N, 1)
+scale = cp.arange(0, N, 1)
 
 fig, axs = plt.subplots(2, 1)
 axs[0].plot(scale , array.real, scale , array.imag)
@@ -38,18 +38,18 @@ plt.show()
 
 #-------------------------------------------------------------------------------------------
 
-array = np.zeros(shape=[N, N], dtype=np.complex_)
+array = cp.zeros(shape=[N, N], dtype=cp.complex_)
 f = 0.25 / 2.0 * 2.0 * math.pi
 print(f"Freq: {f}")
 for x in range(N):
     for y in range(N):
         array[x, y] = math.cos(f * x) + 1j * math.sin(f * x)
 
-magnitude = np.abs(array)
+magnitude = cp.abs(array)
 
-transformed_array = np.fft.fftn(array, norm="forward")
+transformed_array = cp.fft.fftn(array, norm="forward")
 
-fft_magnitude = np.abs(transformed_array)
+fft_magnitude = cp.abs(transformed_array)
 
 plt.imshow(magnitude, cmap='gray')
 plt.show()

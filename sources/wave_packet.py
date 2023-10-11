@@ -1,7 +1,8 @@
 import numpy as np
+import cupy as cp
 import math
 import sources.math_utils as math_utils
-from numba import jit
+from numba import jit, njit
 
 
 def P_free_space(r, t):
@@ -9,37 +10,36 @@ def P_free_space(r, t):
         1.0
         / (2.0 * math.pi * t) ** 0.5
         * math.exp(-1j * math.pi / 4)
-        * math.exp(1j * np.dot(r, r) / 2.0 / t)
+        * math.exp(1j * cp.dot(r, r) / 2.0 / t)
     )
 
 
 def wave_0_x(x):
-    sum = np.complex_(0.0)
+    sum = cp.complex_(0.0)
     for i in range(10):
-        sum += P_free_space(np.array([x, 0]), i)
+        sum += P_free_space(cp.array([x, 0]), i)
     return sum
 
 
 def wave_0_y(y):
-    sum = np.complex_(0.0)
+    sum = cp.complex_(0.0)
     for i in range(10):
-        sum += P_free_space(np.array([0, y]), i)
+        sum += P_free_space(cp.array([0, y]), i)
     return sum
 
 
 def wave_packet(x, y):
     return wave_0_x(x) * wave_0_y(y)
 
-
 @jit(nopython=True)
 def init_gaussian_wave_packet(
-    N,
-    delta_x_bohr_radii,
-    a,
-    r_0_bohr_radii_3,
-    initial_momentum_h_per_bohr_radius_3,
+    N: int,
+    delta_x_bohr_radii: float,
+    a: float,
+    r_0_bohr_radii_3: np.array,
+    initial_momentum_h_per_bohr_radius_3: np.array,
 ):
-    wave_tensor = np.zeros(shape=(N, N, N), dtype=np.complex_)
+    wave_tensor = np.zeros(shape=(N, N, N), dtype=cp.complex_)
     for x in range(0, N):
         for y in range(0, N):
             for z in range(0, N):

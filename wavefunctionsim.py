@@ -6,6 +6,7 @@ import os
 import signal
 import sources.text_writer as text_writer
 from colorama import Fore, Style
+import cupy as cp
 import numpy as np
 
 

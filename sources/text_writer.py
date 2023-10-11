@@ -4,7 +4,7 @@ import numpy as np
 import io
 from datetime import timedelta
 from colorama import Fore, Back, Style
-
+import cupy as cp
 
 def get_title_text():
     text = io.StringIO()
@@ -25,7 +25,7 @@ def get_potential_description_text(sim_state: sim_st.SimState, use_colors=False)
     wall_potential = sim_state.config["Potential"]["wall_potential_hartree"]
     time_times_potential = wall_potential * sim_state.delta_time_h_bar_per_hartree
     text.write(f"Obstacle wall potential is {wall_potential} hartree.\n")
-    if abs(time_times_potential / np.pi - time_times_potential // np.pi) < 0.1:
+    if abs(time_times_potential / cp.pi - time_times_potential // cp.pi) < 0.1:
         text.write(
             (Fore.RED if use_colors else "")
             + "WARNING: delta_t * wall_max_potential too close to multiply of pi!\n"
@@ -37,7 +37,7 @@ def get_potential_description_text(sim_state: sim_st.SimState, use_colors=False)
         text.write(
             "This thickness is smaller than the de Broglie wavelength of the particle.\n"
         )
-    if time_times_potential > np.pi:
+    if time_times_potential > cp.pi:
         text.write(
             (Fore.RED if use_colors else "")
             + f"WARNING: delta_t * wall_max_potential = {time_times_potential} exceeds  pi!\n"
@@ -70,7 +70,7 @@ def get_sim_state_description_text(sim_state: sim_st.SimState, use_colors=False)
         + (Style.RESET_ALL if use_colors else "")
     )
     velocity_magnitude = (
-        np.dot(
+        cp.dot(
             sim_state.initial_wp_velocity_bohr_radii_hartree_per_h_bar,
             sim_state.initial_wp_velocity_bohr_radii_hartree_per_h_bar,
         )
@@ -82,7 +82,7 @@ def get_sim_state_description_text(sim_state: sim_st.SimState, use_colors=False)
     )
 
     momentum_magnitude = (
-        np.dot(
+        cp.dot(
             sim_state.initial_wp_momentum_h_per_bohr_radius,
             sim_state.initial_wp_momentum_h_per_bohr_radius,
         )

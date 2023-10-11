@@ -41,7 +41,7 @@ from vispy.visuals.volume import _VERTEX_SHADER
 
 # Fragment shader
 FRAG_SHADER = """
-#version 330
+#version 130
 // uniforms
 {declarations}
 uniform vec3 u_shape;
@@ -49,11 +49,9 @@ uniform float u_threshold;
 uniform float u_relative_step_size;
 uniform int u_n_tex;
 
-//varyings
-// varying vec3 v_texcoord;
-varying vec3 v_position;
-varying vec4 v_nearpos;
-varying vec4 v_farpos;
+in vec3 v_position;
+in vec4 v_nearpos;
+in vec4 v_farpos;
 
 // uniforms for lighting. Hard coded until we figure out how to do lights
 const vec4 u_ambient = vec4(0.2, 0.4, 0.2, 1.0);
@@ -61,7 +59,7 @@ const vec4 u_diffuse = vec4(0.8, 0.2, 0.2, 1.0);
 const vec4 u_specular = vec4(1.0, 1.0, 1.0, 1.0);
 const float u_shininess = 40.0;
 
-//varying vec3 lightDirs[1];
+//in vec3 lightDirs[1];
 
 // global holding view direction in local coordinates
 vec3 view_ray;
@@ -174,7 +172,6 @@ void main() {{
 
     // For testing: show the number of steps. This helps to establish
     // whether the rays are correctly oriented
-    //gl_FragColor = vec4(0.0, nsteps / 3.0 / u_shape.x, 1.0, 1.0);
     //return;
 
     vec4 integrated_color = vec4(0., 0., 0., 0.);
@@ -245,7 +242,7 @@ def get_shaders(n_volume_max):
                             vec4 gradDensity = resampleGradientAndDensity(u_volumetex{0:d}, loc, size);\n\
                             vec4 current_color = $cmap{0:d}(gradDensity.w);\n\
                             vec3 normal = -gradDensity.xyz;\n\
-                            if (length(normal) > 0.00001) {{\n\
+                            if (length(normal) > 0.0) {{\n\
                                 normal = normalize(normal);\n\
                             }}\n\
                             else{{\n\

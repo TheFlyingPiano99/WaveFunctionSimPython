@@ -1,4 +1,5 @@
 from typing import Dict
+import cupy as cp
 import numpy as np
 import sources.math_utils as math_utils
 from sources import potential
@@ -6,7 +7,7 @@ from sources import potential
 
 class SimState:
     config: Dict
-    tensor_shape: np.shape
+    tensor_shape: cp.shape
     initial_wp_velocity_bohr_radii_hartree_per_h_bar = np.array([0.0, 0.0, 0.0])
     initial_wp_momentum_h_per_bohr_radius = np.array([0.0, 0.0, 0.0])
     wp_width_bohr_radii = 1.0
@@ -23,11 +24,11 @@ class SimState:
     delta_x_bohr_radii: float
     upper_limit_on_delta_time_h_per_hartree: float
     delta_time_h_bar_per_hartree: float
-    wave_tensor: np.ndarray
-    probability_density: np.ndarray
-    kinetic_operator: np.ndarray
-    localised_potential_hartree: np.ndarray
-    potential_operator: np.ndarray
+    wave_tensor: cp.ndarray
+    probability_density: cp.ndarray
+    kinetic_operator: cp.ndarray
+    localised_potential_hartree: cp.ndarray
+    potential_operator: cp.ndarray
     use_cache = True
 
     def __init__(self, config):
@@ -78,9 +79,10 @@ class SimState:
             self.drain_potential_description.boundary_top_corner_bohr_radii
         )
         self.viewing_window_bottom_corner_voxel = np.array(
-            math_utils.transform_center_origin_to_corner_origin_system(
-                self.drain_potential_description.boundary_bottom_corner_bohr_radii,
-                self.simulated_volume_width_bohr_radii,
+            (
+                    self.drain_potential_description.boundary_bottom_corner_bohr_radii
+                    + np.array([self.simulated_volume_width_bohr_radii, self.simulated_volume_width_bohr_radii, self.simulated_volume_width_bohr_radii])
+                    * 0.5
             )
             / self.delta_x_bohr_radii,
             dtype=np.int32,
@@ -114,7 +116,7 @@ class SimState:
 
     def get_view_into_potential(self):
         return math_utils.cut_window(
-            arr=np.real(self.localised_potential_hartree),
+            arr=cp.real(self.localised_potential_hartree),
             bottom=self.viewing_window_bottom_corner_voxel,
             top=self.viewing_window_top_corner_voxel,
         )

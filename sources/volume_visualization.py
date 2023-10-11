@@ -10,12 +10,12 @@ import vispy.io as io
 import sources.math_utils as math_utils
 import sources.multi_volume_visual as multi_volume_visual
 import os
-
+import cupy as cp
 
 class VolumeCanvas:
     canvas: scene.SceneCanvas
-    viewing_window_bottom_corner_voxel: np.array
-    viewing_window_top_corner_voxel: np.array
+    viewing_window_bottom_corner_voxel: cp.array
+    viewing_window_top_corner_voxel: cp.array
     density_scale = 100000.0
     cam_rotation_speed = 0.0
     cam_elevation_speed = 0.1
@@ -53,17 +53,17 @@ class VolumeCanvas:
         self.secondary_color_map = PotentialColorMap()
         self.clim1 = (
             0.0,
-            volume_data.astype(np.float32).max() * 0.01,
+            cp.asnumpy(volume_data).astype(np.float32).max() * 0.01,
         )
         self.clim2 = (
-            secondary_volume_data.astype(np.float32).min(),
-            secondary_volume_data.astype(np.float32).max(),
+            cp.asnumpy(secondary_volume_data).astype(np.float32).min(),
+            cp.asnumpy(secondary_volume_data).astype(np.float32).max(),
         )
 
         volumes = [
             (
                 np.pad(
-                    array=volume_data.astype(np.float32),
+                    array=cp.asnumpy(volume_data).astype(np.float32),
                     pad_width=1,
                     mode="constant",
                     constant_values=0.0,
@@ -73,7 +73,7 @@ class VolumeCanvas:
             ),
             (
                 np.pad(
-                    array=secondary_volume_data.astype(np.float32),
+                    array=cp.asnumpy(secondary_volume_data).astype(np.float32),
                     pad_width=1,
                     mode="constant",
                     constant_values=0.0,
@@ -138,7 +138,7 @@ class VolumeCanvas:
     def update(self, volume_data, iter_count, delta_time_h_bar_per_hartree):
         self.volume.update_volume_data(
             volume_data=np.pad(
-                array=(volume_data * self.density_scale).astype(np.float32),
+                array=(cp.asnumpy(volume_data) * self.density_scale).astype(np.float32),
                 pad_width=1,
                 mode="constant",
                 constant_values=0.0,
@@ -158,7 +158,7 @@ class VolumeCanvas:
         return self.canvas
 
     def render_to_png(self, index):
-        img = self.canvas.render()
+        img = self.render()
         dir = "output/probability_density_3D/"
         file_name = f"probability_density_3D_{index:04d}.png"
         if not os.path.exists(dir):

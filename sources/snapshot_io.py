@@ -1,13 +1,14 @@
 import os
 import io
 import numpy as np
+import cupy as cp
 from sources.sim_state import SimState
 from sources.iter_data import IterData
 
 
 def write_snapshot(sim_state: SimState, iter_data: IterData):
     print("Creating snapshot.")
-    np.save(arr=sim_state.wave_tensor, file="cache/wave_snapshot.npy")
+    cp.save(arr=sim_state.wave_tensor, file="cache/wave_snapshot.npy")
     with io.open("cache/data_snapshot.txt", mode="w") as f:
         f.write(
             f"{iter_data.i};"
@@ -27,7 +28,7 @@ def write_snapshot(sim_state: SimState, iter_data: IterData):
 
 def read_snapshot(sim_state: SimState, iter_data: IterData):
     try:
-        sim_state.wave_tensor = np.load(file="cache/wave_snapshot.npy")
+        sim_state.wave_tensor = cp.asarray(np.load(file="cache/wave_snapshot.npy"))
     except OSError:
         print("Failed to read wave tensor!")
     with io.open("cache/data_snapshot.txt", mode="r") as f:
