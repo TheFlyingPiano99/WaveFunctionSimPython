@@ -243,10 +243,12 @@ def get_shaders(n_volume_max):
                             vec4 current_color = $cmap{0:d}(gradDensity.w);\n\
                             vec3 normal = -gradDensity.xyz;\n\
                             if (length(normal) > 0.0) {{\n\
-                                normal = normalize(normal);\n\
+                                float l = length(normal);\n\
+                                l = 1.0;\n\
+                                normal = normalize(normal) * min(1.0, pow(l, 1.5));\n\
                             }}\n\
                             else{{\n\
-                                normal = vec3(0,0,0);// Disable reflection for too homogenous density\n\
+                                normal = vec3(0,0,0); // Disable reflection for too homogenous density\n\
                             }}\n\
                             // Light reflection:\n\
                             vec3 light_dir = vec3(-1, 1, 1);\n\

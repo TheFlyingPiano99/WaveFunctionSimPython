@@ -6,7 +6,7 @@
 ["Wave_packet"]
 particle_mass = 1.0
 initial_wp_position_bohr_radii_3 = [-20.0, 0.0, 0.0]
-initial_wp_velocity_bohr_radii_hartree_per_h_bar = [0.0, 0.0, 0.0]
+initial_wp_velocity_bohr_radii_hartree_per_h_bar = [1.0, 0.0, 0.0]
 wp_width_bohr_radii = 1.0
 
 ["Volume"]
@@ -26,7 +26,7 @@ distance_between_slits_bohr_radii = 0.5
 
 ["Iteration"]
 delta_time_h_bar_per_hartree = 0.1
-total_iteration_count = 300
+total_iteration_count = 500
 animation_frame_step_interval = 2
 png_step_interval = 10
 measurement_plane_capture_interval = 10

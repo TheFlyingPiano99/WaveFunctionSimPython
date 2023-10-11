@@ -15,7 +15,7 @@ def init_kinetic_operator(N: int, delta_x: float, delta_time: float):
                     f[0] = 1.0 - f[0]
                 if f[1] > 0.5:
                     f[1] = 1.0 - f[1]
-                if f[1] > 0.5:
+                if f[2] > 0.5:
                     f[2] = 1.0 - f[2]
                 k = 2.0 * np.pi * f / delta_x
                 angle = np.dot(k, k) * delta_time / 4.0
