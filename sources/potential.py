@@ -47,7 +47,7 @@ def add_potential_box(
     N, delta_x, wall_thickness_bohr_radii, potential_wall_height_hartree, V : cp.ndarray=None
 ):
     if V is None:
-        V = cp.zeros(shape=(N, N, N), dtype=cp.complex_)
+        V = cp.zeros(shape=(N, N, N), dtype=cp.csingle)
     for x in range(0, V.shape[0]):
         for y in range(0, V.shape[1]):
             for z in range(0, V.shape[2]):
@@ -98,7 +98,7 @@ def add_draining_potential(
 
 
 def init_potential_sphere(N : int, delta_x : float, wall_thickness : float, potential_wall_hight : float):
-    V = cp.zeros(shape=(N, N, N), dtype=cp.complex_)
+    V = cp.zeros(shape=(N, N, N), dtype=cp.csingle)
     for x in range(0, N):
         for y in range(0, N):
             for z in range(0, N):
@@ -117,7 +117,7 @@ def init_potential_sphere(N : int, delta_x : float, wall_thickness : float, pote
 
 
 def init_zero_potential(N : int):
-    V = cp.zeros(shape=(N, N, N), dtype=cp.complex_)
+    V = cp.zeros(shape=(N, N, N), dtype=cp.csingle)
     return V
 
 

@@ -68,6 +68,7 @@ def initialize():
                 a,
                 sim_state.initial_wp_position_bohr_radii_3,
                 -sim_state.initial_wp_momentum_h_per_bohr_radius,
+                sim_state.tensor_shape
             )
         )
         cp.save(file="cache/gaussian_wave_packet.npy", arr=sim_state.wave_tensor)
@@ -94,6 +95,7 @@ def initialize():
             sim_state.N,
             sim_state.delta_x_bohr_radii,
             sim_state.delta_time_h_bar_per_hartree,
+            sim_state.tensor_shape
         ))
         cp.save(file="cache/kinetic_operator.npy", arr=sim_state.kinetic_operator)
 
@@ -114,7 +116,7 @@ def initialize():
             "distance_between_slits_bohr_radii"
         ]
         sim_state.localised_potential_hartree = cp.zeros(
-            shape=sim_state.tensor_shape, dtype=cp.complex_
+            shape=sim_state.tensor_shape, dtype=cp.csingle
         )
         sim_state.localised_potential_hartree = cp.asarray(potential.add_double_slit(
             delta_x=sim_state.delta_x_bohr_radii,
@@ -157,6 +159,7 @@ def initialize():
             V=cp.asnumpy(sim_state.localised_potential_hartree),
             N=sim_state.N,
             delta_time=sim_state.delta_time_h_bar_per_hartree,
+            shape=sim_state.tensor_shape
         ))
         cp.save(file="cache/potential_operator.npy", arr=sim_state.potential_operator)
     try:

@@ -15,14 +15,14 @@ def P_free_space(r, t):
 
 
 def wave_0_x(x):
-    sum = cp.complex_(0.0)
+    sum = cp.csingle(0.0)
     for i in range(10):
         sum += P_free_space(cp.array([x, 0]), i)
     return sum
 
 
 def wave_0_y(y):
-    sum = cp.complex_(0.0)
+    sum = cp.csingle(0.0)
     for i in range(10):
         sum += P_free_space(cp.array([0, y]), i)
     return sum
@@ -38,8 +38,9 @@ def init_gaussian_wave_packet(
     a: float,
     r_0_bohr_radii_3: np.array,
     initial_momentum_h_per_bohr_radius_3: np.array,
+    shape: np.shape
 ):
-    wave_tensor = np.zeros(shape=(N, N, N), dtype=cp.complex_)
+    wave_tensor = np.zeros(shape=shape, dtype=cp.csingle)
     for x in range(0, N):
         for y in range(0, N):
             for z in range(0, N):
