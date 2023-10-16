@@ -24,11 +24,11 @@ def init_kinetic_operator(N: int, delta_x: float, delta_time: float, shape: np.s
 
 
 @jit(nopython=True)
-def init_potential_operator(V:np.ndarray, N:int, delta_time:float, shape: np.shape):
-    P_potential = np.zeros(shape=shape, dtype=cp.csingle)
-    for x in range(0, N):
-        for y in range(0, N):
-            for z in range(0, N):
-                angle = -V[x, y, z] * delta_time
+def init_potential_operator(V: np.ndarray, delta_time:float):
+    P_potential = np.zeros(shape=V.shape, dtype=np.csingle)
+    for x in range(0, V.shape[0]):
+        for y in range(0, V.shape[1]):
+            for z in range(0, V.shape[2]):
+                angle = -V[V.shape[0] - x - 1, V.shape[1] - y - 1, V.shape[2] - z - 1] * delta_time
                 P_potential[x, y, z] = math_utils.exp_i(angle)
     return P_potential

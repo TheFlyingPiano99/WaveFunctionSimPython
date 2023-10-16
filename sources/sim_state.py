@@ -25,17 +25,17 @@ class SimState:
     upper_limit_on_delta_time_h_per_hartree: float
     delta_time_h_bar_per_hartree: float
     wave_tensor: cp.ndarray
-    probability_density: cp.ndarray
     kinetic_operator: cp.ndarray
-    localised_potential_hartree: cp.ndarray
     potential_operator: cp.ndarray
+    probability_density: np.ndarray
+    localised_potential_hartree: np.ndarray
     use_cache = True
 
     def __init__(self, config):
         self.config = config
-        self.particle_mass = config["Wave_packet"]["particle_mass"]
+        self.particle_mass = config["wave_packet"]["particle_mass"]
         self.initial_wp_velocity_bohr_radii_hartree_per_h_bar = np.array(
-            config["Wave_packet"]["initial_wp_velocity_bohr_radii_hartree_per_h_bar"]
+            config["wave_packet"]["initial_wp_velocity_bohr_radii_hartree_per_h_bar"]
         )
         self.initial_wp_momentum_h_per_bohr_radius = math_utils.classical_momentum(
             mass=self.particle_mass,
@@ -51,13 +51,13 @@ class SimState:
         self.de_broglie_wave_length_bohr_radii = (
             math_utils.get_de_broglie_wave_length_bohr_radii(momentum_magnitude)
         )
-        self.simulated_volume_width_bohr_radii = config["Volume"][
+        self.simulated_volume_width_bohr_radii = config["volume"][
             "simulated_volume_width_bohr_radii"
         ]
         self.initial_wp_position_bohr_radii_3 = np.array(
-            config["Wave_packet"]["initial_wp_position_bohr_radii_3"]
+            config["wave_packet"]["initial_wp_position_bohr_radii_3"]
         )
-        self.N = config["Volume"]["number_of_samples_per_axis"]
+        self.N = config["volume"]["number_of_samples_per_axis"]
         self.tensor_shape = (self.N, self.N, self.N)
         self.delta_x_bohr_radii = self.simulated_volume_width_bohr_radii / self.N
         self.upper_limit_on_delta_time_h_per_hartree = (
@@ -66,7 +66,7 @@ class SimState:
             * (3.0 * self.delta_x_bohr_radii * self.delta_x_bohr_radii)
             / 3.0
         )  # Based on reasoning from the Web-Schrödinger paper
-        self.delta_time_h_bar_per_hartree = config["Iteration"][
+        self.delta_time_h_bar_per_hartree = config["iteration"][
             "delta_time_h_bar_per_hartree"
         ]
 
@@ -116,7 +116,7 @@ class SimState:
 
     def get_view_into_potential(self):
         return math_utils.cut_window(
-            arr=cp.real(self.localised_potential_hartree),
+            arr=np.real(self.localised_potential_hartree),
             bottom=self.viewing_window_bottom_corner_voxel,
             top=self.viewing_window_top_corner_voxel,
         )

@@ -3,36 +3,60 @@
 # We use right-handed system, where +Y is the upward direction
 # Values are given in hartree atomic unit system
 
-["Wave_packet"]
+["wave_packet"]
 particle_mass = 1.0
-initial_wp_position_bohr_radii_3 = [-21.0, 0.0, 0.0]
-initial_wp_velocity_bohr_radii_hartree_per_h_bar = [3.0, 0.0, 0.0]
+initial_wp_position_bohr_radii_3 = [-25.0, -6.0, 6.0]
+initial_wp_velocity_bohr_radii_hartree_per_h_bar = [0.0, 0.0, 0.0]
 wp_width_bohr_radii = 1.0
 
-["Volume"]
+["volume"]
 simulated_volume_width_bohr_radii = 120.0 #Including draining potential regions
 number_of_samples_per_axis = 256         #Including draining potential regions
 viewing_window_boundary_bottom_corner_bohr_radii_3 = [30.0, 30.0, 30.0]   # Same as the inner boundary of the draining potential
 viewing_window_boundary_top_corner_bohr_radii_3 = [-30.0, -30.0, -30.0]   # Same as the inner boundary of the draining potential
 
-["Potential"]
-outer_drain_potential_hartree = -100.0
-drain_interpolation_exponent = 3.0
-wall_potential_hartree = 5
-wall_thickness_bohr_radii = 2.0
-slit_width_bohr_radii = 0.5
-distance_between_slits_bohr_radii = 0.5
+["drain"]
+outer_potential_hartree = -100.0
+interpolation_exponent = 3.0
 
+[[walls]]
+center_hartree = [0, 0, 0]
+normal = [1, 0, 0]
+potential_hartree = 5
+thickness_bohr_radii = 2.0
 
-["Iteration"]
+[[walls]]
+center_hartree = [10, 0, 0]
+normal = [1, 0, 0]
+potential_hartree = 5
+thickness_bohr_radii = 2.0
+
+[double_slits]
+
+#[[double_slits]]
+#center_bohr_radius_3 = [-10, 0, 0]
+#normal = [1, 0, 0]
+#potential_hartree = 20.0
+#thickness_bohr_radii = 2.0
+#slit_width_bohr_radii = 0.5
+#distance_between_slits_bohr_radii = 0.5
+
+[particle_interaction]
+radius_hartree = 3.0
+potential_hartree = 20.0
+
+["iteration"]
 delta_time_h_bar_per_hartree = 0.01
-total_iteration_count = 500
+total_iteration_count = 4000
 animation_frame_step_interval = 2
 png_step_interval = 10
 measurement_plane_capture_interval = 10
 probability_plot_interval = 50
 per_axis_probability_denisty_interval = 2
 
-["View"]
+["view"]
 camera_rotation_speed = 0.5
 camera_azimuth = -5.0
+x_axis_label = "A particle"
+y_axis_label = "B particle"
+z_axis_label = "C particle"

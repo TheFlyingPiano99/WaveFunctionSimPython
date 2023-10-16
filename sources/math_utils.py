@@ -20,7 +20,7 @@ def exp_i(cangle: np.complex_):
 
 
 def square_of_abs(wave_tensor: cp.ndarray):
-    return cp.square(cp.abs(wave_tensor))
+    return cp.asnumpy(cp.square(cp.abs(wave_tensor)))
 
 def vector_length(vec: np.array):
     return np.sqrt(np.dot(vec, vec))
@@ -83,5 +83,5 @@ def h_bar_per_hartree_to_ns(t: float):
     return t * 2.4188843265857 * 10 ** (-8)
 
 
-def cut_window(arr: np.ndarray, bottom: cp.array, top: np.array):
+def cut_window(arr: np.ndarray, bottom: np.array, top: np.array):
     return arr[bottom[0] : top[0], bottom[1] : top[1], bottom[2] : top[2]]

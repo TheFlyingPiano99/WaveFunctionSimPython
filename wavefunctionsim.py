@@ -49,8 +49,8 @@ def sim():
     measurement_tools.canvas = volume_visualization.VolumeCanvas(
         volume_data=sim_state.get_view_into_probability_density(),
         secondary_volume_data=sim_state.get_view_into_potential(),
-        cam_rotation_speed=sim_state.config["View"]["camera_rotation_speed"],
-        azimuth=sim_state.config["View"]["camera_azimuth"],
+        cam_rotation_speed=sim_state.config["view"]["camera_rotation_speed"],
+        azimuth=sim_state.config["view"]["camera_azimuth"],
     )
     measurement_tools.animation_writer_3D = animation.AnimationWriter(
         "output/probability_density_time_development_3D.mp4"
@@ -59,7 +59,6 @@ def sim():
         "output/probability_density_time_development_per_axis.mp4"
     )
     measurement_tools.measurement_plane = measurement.MeasurementPlane(
-        wave_tensor=sim_state.wave_tensor,
         delta_x=sim_state.delta_x_bohr_radii,
         location_bohr_radii=28.0,
         simulated_box_width=sim_state.simulated_volume_width_bohr_radii,
@@ -105,7 +104,7 @@ def sim():
         left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[0],
         right_edge=sim_state.viewing_window_top_corner_bohr_radii[0],
         sum_axis=(1, 2),
-        label="X axis",
+        label=sim_state.config["view"]["x_axis_label"],
     )
     measurement_tools.y_axis_probability_density = measurement.ProjectedMeasurement(
         min_voxel=sim_state.viewing_window_bottom_corner_voxel[1],
@@ -113,7 +112,7 @@ def sim():
         left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[1],
         right_edge=sim_state.viewing_window_top_corner_bohr_radii[1],
         sum_axis=(0, 2),
-        label="Y axis",
+        label=sim_state.config["view"]["y_axis_label"],
     )
     measurement_tools.z_axis_probability_density = measurement.ProjectedMeasurement(
         min_voxel=sim_state.viewing_window_bottom_corner_voxel[2],
@@ -121,7 +120,7 @@ def sim():
         left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[2],
         right_edge=sim_state.viewing_window_top_corner_bohr_radii[2],
         sum_axis=(0, 1),
-        label="Z axis",
+        label=sim_state.config["view"]["z_axis_label"],
     )
 
     # Run simulation

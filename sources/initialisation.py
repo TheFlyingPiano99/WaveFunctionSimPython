@@ -46,7 +46,7 @@ def initialize():
     )
 
     print("Initializing wave packet")
-    sim_state.wp_width_bohr_radii = sim_state.config["Wave_packet"][
+    sim_state.wp_width_bohr_radii = sim_state.config["wave_packet"][
         "wp_width_bohr_radii"
     ]
     print(f"Wave packet width is {sim_state.wp_width_bohr_radii} bohr radii.")
@@ -73,11 +73,11 @@ def initialize():
         )
         cp.save(file="cache/gaussian_wave_packet.npy", arr=sim_state.wave_tensor)
     # Normalize:
-    sim_state.probability_density = cp.square(cp.abs(sim_state.wave_tensor))
+    sim_state.probability_density = cp.asnumpy(cp.square(cp.abs(sim_state.wave_tensor)))
     sum_probability = cp.sum(sim_state.probability_density)
     print(f"Sum of probabilities = {sum_probability}")
     sim_state.wave_tensor = sim_state.wave_tensor / (sum_probability**0.5)
-    sim_state.probability_density = cp.square(cp.abs(sim_state.wave_tensor))
+    sim_state.probability_density = cp.asnumpy(cp.square(cp.abs(sim_state.wave_tensor)))
     sum_probability = cp.sum(sim_state.probability_density)
     print(f"Sum of probabilities after normalization = {sum_probability}")
     # Operators:
@@ -105,46 +105,61 @@ def initialize():
     full_init = True
     if use_cache:
         try:
-            sim_state.localised_potential_hartree = cp.asarray(np.load(
-                file="cache/localized_potential.npy"
-            ))
+            sim_state.localised_potential_hartree = np.load(file="cache/localized_potential.npy")
             full_init = False
         except OSError:
             print("No cached localized_potential.npy found.")
     if full_init:
-        space_between_slits = sim_state.config["Potential"][
-            "distance_between_slits_bohr_radii"
-        ]
-        sim_state.localised_potential_hartree = cp.zeros(
-            shape=sim_state.tensor_shape, dtype=cp.csingle
+        sim_state.localised_potential_hartree = np.zeros(
+            shape=sim_state.tensor_shape, dtype=np.csingle
         )
-        sim_state.localised_potential_hartree = cp.asarray(potential.add_double_slit(
-            delta_x=sim_state.delta_x_bohr_radii,
-            center_bohr_radii=np.array([0.0, 0.0, 0.0]),
-            thickness_bohr_radii=sim_state.config["Potential"][
-                "wall_thickness_bohr_radii"
-            ],
-            height_hartree=sim_state.config["Potential"]["wall_potential_hartree"],
-            slit_width_bohr_radii=sim_state.config["Potential"][
-                "slit_width_bohr_radii"
-            ],
-            shape=sim_state.tensor_shape,
-            space_between_slits_bohr_radii=space_between_slits,
-            V=cp.asnumpy(sim_state.localised_potential_hartree),
-        ))
+        print("Creating draining potential.")
         dp = sim_state.drain_potential_description
-        sim_state.localised_potential_hartree = cp.asarray(potential.add_draining_potential(
+        sim_state.localised_potential_hartree = potential.add_draining_potential(
             N=sim_state.N,
             delta_x=sim_state.delta_x_bohr_radii,
             inner_radius_bohr_radii=dp.inner_radius_bohr_radii,
             outer_radius_bohr_radii=dp.outer_radius_bohr_radii,
             max_potential_hartree=dp.max_potential_hartree,
             exponent=dp.exponent,
-            V=cp.asnumpy(sim_state.localised_potential_hartree),
-        ))
+            V=sim_state.localised_potential_hartree,
+        )
+        try:
+            interaction = sim_state.config["particle_interaction"]
+            r = interaction["radius_hartree"]
+            v = interaction["potential_hartree"]
+            print("Creating particle interaction potential.")
+            sim_state.localised_potential_hartree = potential.particle_interaction_potential(
+                delta_x=sim_state.delta_x_bohr_radii,
+                particle_radius_bohr_radius=r,
+                potential_hartree=v,
+                V=sim_state.localised_potential_hartree,
+            )
+            print("Creating harmonic oscillator.")
+            sim_state.localised_potential_hartree = potential.add_harmonic_oscillator_for_1D(
+                delta_x=sim_state.delta_x_bohr_radii,
+                potential_hartree=v,
+                V=sim_state.localised_potential_hartree,
+            )
+        except e:
+            pass
+        for double_slit in sim_state.config["double_slits"]:
+            print("Creating double-slit.")
+            space_between_slits = double_slit["distance_between_slits_bohr_radii"]
+            sim_state.localised_potential_hartree = potential.add_double_slit(
+                delta_x=sim_state.delta_x_bohr_radii,
+                center_bohr_radii=np.array(double_slit["center_bohr_radius_3"]),
+                thickness_bohr_radii=double_slit["thickness_bohr_radii"],
+                height_hartree=double_slit["potential_hartree"],
+                slit_width_bohr_radii=double_slit["slit_width_bohr_radii"],
+                shape=sim_state.tensor_shape,
+                space_between_slits_bohr_radii=space_between_slits,
+                V=sim_state.localised_potential_hartree,
+            )
+
         np.save(
             file="cache/localized_potential.npy",
-            arr=cp.asnumpy(sim_state.localised_potential_hartree),
+            arr=sim_state.localised_potential_hartree,
         )
 
     full_init = True
@@ -155,11 +170,10 @@ def initialize():
         except OSError:
             print("No cached potential_operator.npy found.")
     if full_init:
+        print("Creating potential operator.")
         sim_state.potential_operator = cp.asarray(operators.init_potential_operator(
-            V=cp.asnumpy(sim_state.localised_potential_hartree),
-            N=sim_state.N,
+            V=sim_state.localised_potential_hartree,
             delta_time=sim_state.delta_time_h_bar_per_hartree,
-            shape=sim_state.tensor_shape
         ))
         cp.save(file="cache/potential_operator.npy", arr=sim_state.potential_operator)
     try:

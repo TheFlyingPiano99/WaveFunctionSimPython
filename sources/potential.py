@@ -14,10 +14,10 @@ class DrainPotentialDescription:
 
     def __init__(self, config):
         self.boundary_bottom_corner_bohr_radii = np.array(
-            config["Volume"]["viewing_window_boundary_bottom_corner_bohr_radii_3"]
+            config["volume"]["viewing_window_boundary_bottom_corner_bohr_radii_3"]
         )
         self.boundary_top_corner_bohr_radii = np.array(
-            config["Volume"]["viewing_window_boundary_top_corner_bohr_radii_3"]
+            config["volume"]["viewing_window_boundary_top_corner_bohr_radii_3"]
         )
         # Flip if inverted:
         for i in range(3):
@@ -35,12 +35,12 @@ class DrainPotentialDescription:
             math_utils.vector_length(self.boundary_bottom_corner_bohr_radii),
             math_utils.vector_length(self.boundary_top_corner_bohr_radii),
         )
-        simulated_volume_width = config["Volume"]["simulated_volume_width_bohr_radii"]
+        simulated_volume_width = config["volume"]["simulated_volume_width_bohr_radii"]
         self.outer_radius_bohr_radii = simulated_volume_width * 0.5
-        self.max_potential_hartree = config["Potential"][
-            "outer_drain_potential_hartree"
+        self.max_potential_hartree = config["drain"][
+            "outer_potential_hartree"
         ]
-        self.exponent = config["Potential"]["drain_interpolation_exponent"]
+        self.exponent = config["drain"]["interpolation_exponent"]
 
 
 def add_potential_box(
@@ -223,3 +223,32 @@ def add_double_slit(
                     V[x, y, z] += height_hartree
 
     return V
+
+
+@jit(nopython=True)
+def particle_interaction_potential(V: np.ndarray, delta_x: float, particle_radius_bohr_radius: float, potential_hartree: float):
+    for x in range(V.shape[0]):
+        for y in range(V.shape[1]):
+            for z in range(V.shape[2]):
+                r = math_utils.transform_corner_origin_to_center_origin_system(
+                    np.array([x, y, z]) * delta_x, delta_x * V.shape[0]
+                )
+                if (
+                    abs(r[0] - r[1]) < 2.0 * particle_radius_bohr_radius
+                or abs(r[1] - r[2]) < 2.0 * particle_radius_bohr_radius
+                or abs(r[2] - r[0]) < 2.0 * particle_radius_bohr_radius
+                ):
+                    V[x, y, z] += potential_hartree
+    return  V
+
+@jit(nopython=True)
+def add_harmonic_oscillator_for_1D(V: np.ndarray, delta_x: float, potential_hartree: float):
+    for x in range(V.shape[0]):
+        for y in range(V.shape[1]):
+            for z in range(V.shape[2]):
+                r = math_utils.transform_corner_origin_to_center_origin_system(
+                    np.array([x, y, z]) * delta_x, delta_x * V.shape[0]
+                )
+                d = 30.0
+                V[x, y, z] -= potential_hartree * (r[0]* r[0] + r[1] * r[1] + r[2] * r[2]) / d / d
+    return  V
