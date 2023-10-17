@@ -1,8 +1,8 @@
 import math
 
 planck_constant = 2.0 * math.pi
-electron_rest_mass = 1.0
 reduced_planck_constant = 1.0
+electron_rest_mass = 1.0
 speed_of_light = 137.03599
 from numba import jit
 import numpy as np
@@ -85,3 +85,6 @@ def h_bar_per_hartree_to_ns(t: float):
 
 def cut_window(arr: np.ndarray, bottom: np.array, top: np.array):
     return arr[bottom[0] : top[0], bottom[1] : top[1], bottom[2] : top[2]]
+
+def get_momentum_for_harmonic_oscillator(V_max: float, x_max: float):
+    return math.sqrt(2.0 * V_max / (4 * electron_rest_mass * speed_of_light**2 * x_max**2))

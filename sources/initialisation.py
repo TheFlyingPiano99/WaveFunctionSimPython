@@ -9,6 +9,7 @@ import sources.text_writer as text_writer
 import os
 import filecmp
 from colorama import Fore, Style
+import sources.math_utils as math_utils
 
 
 def initialize():
@@ -106,6 +107,7 @@ def initialize():
     if use_cache:
         try:
             sim_state.localised_potential_hartree = np.load(file="cache/localized_potential.npy")
+            sim_state.localised_potential_to_visualize_hartree = np.load(file="cache/localized_potential_to_visualize.npy")
             full_init = False
         except OSError:
             print("No cached localized_potential.npy found.")
@@ -135,14 +137,36 @@ def initialize():
                 potential_hartree=v,
                 V=sim_state.localised_potential_hartree,
             )
-            print("Creating harmonic oscillator.")
-            sim_state.localised_potential_hartree = potential.add_harmonic_oscillator_for_1D(
-                delta_x=sim_state.delta_x_bohr_radii,
-                potential_hartree=v,
-                V=sim_state.localised_potential_hartree,
-            )
         except e:
             pass
+        try:
+            oscillator = sim_state.config["harmonic_oscillator_1d"]
+            omega = oscillator["angular_frequency"]
+            w = oscillator["width_bohr_radii"]
+            print("Creating harmonic oscillator.")
+            sim_state.localised_potential_to_visualize_hartree = potential.add_harmonic_oscillator_for_1D(
+                delta_x=sim_state.delta_x_bohr_radii,
+                angular_frequency=omega,
+                V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+            )
+            sim_state.localised_potential_hartree += sim_state.localised_potential_to_visualize_hartree
+        except:
+            pass
+        for wall_1d in sim_state.config["walls_1d"]:
+            c = wall_1d["center_hartree"]
+            v = wall_1d["potential_hartree"]
+            t = wall_1d["thickness_bohr_radii"]
+            print("Creating wall.")
+            v_wall = potential.add_wall_for_1D(
+                delta_x=sim_state.delta_x_bohr_radii,
+                potential_hartree=v,
+                V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+                thickness_bohr_radius=t,
+                center_bohr_radius=c
+            )
+            sim_state.localised_potential_to_visualize_hartree += v_wall
+            sim_state.localised_potential_hartree += v_wall
+
         for double_slit in sim_state.config["double_slits"]:
             print("Creating double-slit.")
             space_between_slits = double_slit["distance_between_slits_bohr_radii"]
@@ -161,6 +185,7 @@ def initialize():
             file="cache/localized_potential.npy",
             arr=sim_state.localised_potential_hartree,
         )
+        np.save(file="cache/localized_potential_to_visualize.npy", arr=sim_state.localised_potential_to_visualize_hartree)
 
     full_init = True
     if use_cache:

@@ -29,6 +29,7 @@ class SimState:
     potential_operator: cp.ndarray
     probability_density: np.ndarray
     localised_potential_hartree: np.ndarray
+    localised_potential_to_visualize_hartree: np.ndarray
     use_cache = True
 
     def __init__(self, config):

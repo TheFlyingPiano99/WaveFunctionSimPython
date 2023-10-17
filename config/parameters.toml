@@ -45,6 +45,16 @@ thickness_bohr_radii = 2.0
 radius_hartree = 3.0
 potential_hartree = 20.0
 
+[harmonic_oscillator_1d]
+angular_frequency = 0.1415
+width_bohr_radii = 50.0
+
+[[walls_1d]]
+center_hartree = 0.0
+potential_hartree = 20
+thickness_bohr_radii = 3.0
+
+
 ["iteration"]
 delta_time_h_bar_per_hartree = 0.01
 total_iteration_count = 4000
@@ -60,3 +70,4 @@ camera_azimuth = -5.0
 x_axis_label = "A particle"
 y_axis_label = "B particle"
 z_axis_label = "C particle"
+potential_label = "Potential"

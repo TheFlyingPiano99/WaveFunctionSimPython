@@ -18,6 +18,7 @@ class MeasurementTools:
     x_axis_probability_density: measurement.ProjectedMeasurement
     y_axis_probability_density: measurement.ProjectedMeasurement
     z_axis_probability_density: measurement.ProjectedMeasurement
+    projected_probability: measurement.ProjectedMeasurement
 
 
 def sim():
@@ -101,6 +102,8 @@ def sim():
     measurement_tools.x_axis_probability_density = measurement.ProjectedMeasurement(
         min_voxel=sim_state.viewing_window_bottom_corner_voxel[0],
         max_voxel=sim_state.viewing_window_top_corner_voxel[0],
+        near_voxel=sim_state.viewing_window_bottom_corner_voxel[1],
+        far_voxel=sim_state.viewing_window_top_corner_voxel[1],
         left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[0],
         right_edge=sim_state.viewing_window_top_corner_bohr_radii[0],
         sum_axis=(1, 2),
@@ -109,6 +112,8 @@ def sim():
     measurement_tools.y_axis_probability_density = measurement.ProjectedMeasurement(
         min_voxel=sim_state.viewing_window_bottom_corner_voxel[1],
         max_voxel=sim_state.viewing_window_top_corner_voxel[1],
+        near_voxel=sim_state.viewing_window_bottom_corner_voxel[2],
+        far_voxel=sim_state.viewing_window_top_corner_voxel[2],
         left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[1],
         right_edge=sim_state.viewing_window_top_corner_bohr_radii[1],
         sum_axis=(0, 2),
@@ -117,11 +122,28 @@ def sim():
     measurement_tools.z_axis_probability_density = measurement.ProjectedMeasurement(
         min_voxel=sim_state.viewing_window_bottom_corner_voxel[2],
         max_voxel=sim_state.viewing_window_top_corner_voxel[2],
+        near_voxel=sim_state.viewing_window_bottom_corner_voxel[0],
+        far_voxel=sim_state.viewing_window_top_corner_voxel[0],
         left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[2],
         right_edge=sim_state.viewing_window_top_corner_bohr_radii[2],
         sum_axis=(0, 1),
         label=sim_state.config["view"]["z_axis_label"],
     )
+    measurement_tools.projected_probability = measurement.ProjectedMeasurement(
+        min_voxel=sim_state.viewing_window_bottom_corner_voxel[0],
+        max_voxel=sim_state.viewing_window_top_corner_voxel[0],
+        near_voxel=sim_state.N // 2,
+        far_voxel=sim_state.N // 2 + 1,
+        left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[0],
+        right_edge=sim_state.viewing_window_top_corner_bohr_radii[0],
+        sum_axis=(1, 2),
+        label=sim_state.config["view"]["potential_label"],
+    )
+    measurement_tools.projected_probability.integrate_probability_density(
+        np.real(sim_state.localised_potential_to_visualize_hartree)
+    )
+    measurement_tools.projected_probability.scale_factor = 0.1 / 20.0
+    measurement_tools.projected_probability.offset = 0.1
 
     # Run simulation
     sim_state, measurement_tools, iter_data = core_sim.run_iteration(

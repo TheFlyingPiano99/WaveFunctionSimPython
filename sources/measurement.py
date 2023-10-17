@@ -88,14 +88,28 @@ class ProjectedMeasurement:
     probability_density: np.array
     min_voxel: int
     max_voxel: int
+    near_voxel: int     # in directions of summing axes
+    far_voxel: int      # in directions of summing axes
     left_edge_bohr_radii: float
     right_edge_boh_radii: float
     sum_axis: tuple
     label: str
+    scale_factor: float = 1.0
+    offset: float = 0.0
 
-    def __init__(self, min_voxel : int, max_voxel : int, left_edge : float, right_edge : float, sum_axis : tuple, label : str):
+    def __init__(self,
+                 min_voxel : int,
+                 max_voxel : int,
+                 left_edge : float,
+                 right_edge : float,
+                 sum_axis : tuple,
+                 label : str,
+                 near_voxel : int = None,
+                 far_voxel : int = None,
+                 ):
         self.min_voxel = min_voxel
         self.max_voxel = max_voxel
+
         if self.min_voxel > self.max_voxel:
             temp = self.min_voxel
             self.min_voxel = self.max_voxel
@@ -103,19 +117,39 @@ class ProjectedMeasurement:
         self.probability_density = np.zeros(
             shape=(max_voxel - min_voxel), dtype=np.float64
         )
+
         self.label = label
         self.left_edge_bohr_radii = left_edge
         self.right_edge_bohr_radii = right_edge
         self.sum_axis = sum_axis
 
-    def integrate_probability_density(self, probability_density_tensor : np.ndarray):
+        if near_voxel is None:
+            self.near_voxel = self.min_voxel     # let's assume cube shaped viewing window
+        else:
+            self.near_voxel = near_voxel
+        if far_voxel is None:
+            self.far_voxel = self.max_voxel     # let's assume cube shaped viewing window
+        else:
+            self.far_voxel = far_voxel
+
+    def integrate_probability_density(self, probability_density_tensor: np.ndarray):
+        near_far = []
+        for i in range(3):
+            if i in self.sum_axis:
+                near_far.append([self.near_voxel, self.far_voxel])
+            else:
+                near_far.append([self.min_voxel, self.max_voxel])
+
         self.probability_density = np.sum(
-            a=probability_density_tensor, axis=self.sum_axis
-        )[self.min_voxel : self.max_voxel]
+            a=probability_density_tensor[
+                near_far[0][0]: near_far[0][1],
+                near_far[1][0]: near_far[1][1],
+                near_far[2][0]: near_far[2][1],
+              ], axis=self.sum_axis)
 
     def get_probability_density_with_label(self):
         return (
-            self.probability_density,
+            self.offset + self.probability_density * self.scale_factor,
             self.label,
             self.left_edge_bohr_radii,
             self.right_edge_bohr_radii,

@@ -242,13 +242,33 @@ def particle_interaction_potential(V: np.ndarray, delta_x: float, particle_radiu
     return  V
 
 @jit(nopython=True)
-def add_harmonic_oscillator_for_1D(V: np.ndarray, delta_x: float, potential_hartree: float):
+def add_harmonic_oscillator_for_1D(V: np.ndarray, delta_x: float, angular_frequency: float):
+    const = 0.5 * math_utils.electron_rest_mass * angular_frequency**2
     for x in range(V.shape[0]):
         for y in range(V.shape[1]):
             for z in range(V.shape[2]):
                 r = math_utils.transform_corner_origin_to_center_origin_system(
                     np.array([x, y, z]) * delta_x, delta_x * V.shape[0]
                 )
-                d = 30.0
-                V[x, y, z] -= potential_hartree * (r[0]* r[0] + r[1] * r[1] + r[2] * r[2]) / d / d
+                V[x, y, z] -= const * (r[0]* r[0] + r[1] * r[1] + r[2] * r[2])
+    return  V
+
+
+@jit(nopython=True)
+def add_wall_for_1D(V: np.ndarray, delta_x: float, center_bohr_radius: float, thickness_bohr_radius: float, potential_hartree: float):
+    for x in range(V.shape[0]):
+        for y in range(V.shape[1]):
+            for z in range(V.shape[2]):
+                r = math_utils.transform_corner_origin_to_center_origin_system(
+                    np.array([x, y, z]) * delta_x, delta_x * V.shape[0]
+                )
+                if (r[0] >= center_bohr_radius - thickness_bohr_radius * 0.5
+                    and r[0] <= center_bohr_radius + thickness_bohr_radius * 0.5):
+                        V[x, y, z] += potential_hartree
+                if (r[1] >= center_bohr_radius - thickness_bohr_radius * 0.5
+                        and r[1] <= center_bohr_radius + thickness_bohr_radius * 0.5):
+                    V[x, y, z] += potential_hartree
+                if (r[2] >= center_bohr_radius - thickness_bohr_radius * 0.5
+                        and r[2] <= center_bohr_radius + thickness_bohr_radius * 0.5):
+                    V[x, y, z] += potential_hartree
     return  V
