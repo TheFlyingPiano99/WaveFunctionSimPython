@@ -12,7 +12,7 @@ import numpy as np
 
 class MeasurementTools:
     measurement_plane: measurement.MeasurementPlane
-    canvas: volume_visualization.VolumeCanvas
+    volumetric: volume_visualization.VolumetricVisualization
     animation_writer_3D: animation.AnimationWriter
     animation_writer_per_axis: animation.AnimationWriter
     x_axis_probability_density: measurement.ProjectedMeasurement
@@ -47,12 +47,14 @@ def sim():
         "****************************************************************************"
     )
     measurement_tools = MeasurementTools()
-    measurement_tools.canvas = volume_visualization.VolumeCanvas(
+    measurement_tools.volumetric = volume_visualization.VolumetricVisualization(
         volume_data=sim_state.get_view_into_probability_density(),
         secondary_volume_data=sim_state.get_view_into_potential(),
-        cam_rotation_speed=sim_state.config["view"]["camera_rotation_speed"],
-        azimuth=sim_state.config["view"]["camera_azimuth"],
+        cam_rotation_speed=sim_state.config["view"]["volumetric"]["camera_rotation_speed"],
+        azimuth=sim_state.config["view"]["volumetric"]["camera_azimuth"],
     )
+    measurement_tools.volumetric.set_light_direction(sim_state.config["view"]["volumetric"]["light_direction"])
+    measurement_tools.volumetric.light_rotation_speed = sim_state.config["view"]["volumetric"]["light_rotation_speed"]
     measurement_tools.animation_writer_3D = animation.AnimationWriter(
         "output/probability_density_time_development_3D.mp4"
     )
@@ -107,7 +109,7 @@ def sim():
         left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[0],
         right_edge=sim_state.viewing_window_top_corner_bohr_radii[0],
         sum_axis=(1, 2),
-        label=sim_state.config["view"]["x_axis_label"],
+        label=sim_state.config["view"]["per_axis_plot"]["x_axis_label"],
     )
     measurement_tools.y_axis_probability_density = measurement.ProjectedMeasurement(
         min_voxel=sim_state.viewing_window_bottom_corner_voxel[1],
@@ -117,7 +119,7 @@ def sim():
         left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[1],
         right_edge=sim_state.viewing_window_top_corner_bohr_radii[1],
         sum_axis=(0, 2),
-        label=sim_state.config["view"]["y_axis_label"],
+        label=sim_state.config["view"]["per_axis_plot"]["y_axis_label"],
     )
     measurement_tools.z_axis_probability_density = measurement.ProjectedMeasurement(
         min_voxel=sim_state.viewing_window_bottom_corner_voxel[2],
@@ -127,7 +129,7 @@ def sim():
         left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[2],
         right_edge=sim_state.viewing_window_top_corner_bohr_radii[2],
         sum_axis=(0, 1),
-        label=sim_state.config["view"]["z_axis_label"],
+        label=sim_state.config["view"]["per_axis_plot"]["z_axis_label"],
     )
     measurement_tools.projected_probability = measurement.ProjectedMeasurement(
         min_voxel=sim_state.viewing_window_bottom_corner_voxel[0],
@@ -137,13 +139,13 @@ def sim():
         left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[0],
         right_edge=sim_state.viewing_window_top_corner_bohr_radii[0],
         sum_axis=(1, 2),
-        label=sim_state.config["view"]["potential_label"],
+        label=sim_state.config["view"]["per_axis_plot"]["potential_label"],
     )
     measurement_tools.projected_probability.integrate_probability_density(
         np.real(sim_state.localised_potential_to_visualize_hartree)
     )
-    measurement_tools.projected_probability.scale_factor = sim_state.config["view"]["potential_plot_scale"]
-    measurement_tools.projected_probability.offset = sim_state.config["view"]["potential_plot_offset"]
+    measurement_tools.projected_probability.scale_factor = sim_state.config["view"]["per_axis_plot"]["potential_plot_scale"]
+    measurement_tools.projected_probability.offset = sim_state.config["view"]["per_axis_plot"]["potential_plot_offset"]
 
     # Run simulation
     sim_state, measurement_tools, iter_data = core_sim.run_iteration(

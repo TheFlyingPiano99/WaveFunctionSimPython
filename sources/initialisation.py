@@ -218,21 +218,48 @@ def initialize():
         try:
             walls_arr = sim_state.config["walls"]
             for wall in walls_arr:
-                c = wall["center_bohr_radii_3"]
-                n = wall["wall_normal"]
                 v = wall["potential_hartree"]
+                c = np.array(wall["center_bohr_radii_3"], dtype=float)
+                n = math_utils.normalize(np.array(wall["normal_vector_3"], dtype=float))
                 t = wall["thickness_bohr_radii"]
                 print("Creating wall.")
-                tensor = potential.add_wall_for_1D(
+                tensor = potential.add_wall(
                     delta_x=sim_state.delta_x_bohr_radii,
                     potential_hartree=v,
                     thickness_bohr_radius=t,
                     center_bohr_radius=c,
+                    normal=n,
                     V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
                 )
                 sim_state.localised_potential_hartree += tensor
                 try:
-                    visible = wall_1d["visible"]
+                    visible = wall["visible"]
+                    if visible:
+                        sim_state.localised_potential_to_visualize_hartree += tensor
+                except KeyError:
+                    pass
+        except KeyError:
+            pass
+
+        try:
+            grid_arr = sim_state.config["optical_grids"]
+            for grid in grid_arr:
+                v = grid["potential_hartree"]
+                c = np.array(grid["center_bohr_radii_3"], dtype=float)
+                n = math_utils.normalize(np.array(grid["normal_vector_3"], dtype=float))
+                d = grid["distance_between_nodes_bohr_radii"]
+                print("Creating optical grid.")
+                tensor = potential.add_optical_grid(
+                    delta_x=sim_state.delta_x_bohr_radii,
+                    potential_hartree=v,
+                    distance_between_nodes_bohr_radii=d,
+                    center_bohr_radius=c,
+                    normal=n,
+                    V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+                )
+                sim_state.localised_potential_hartree += tensor
+                try:
+                    visible = grid["visible"]
                     if visible:
                         sim_state.localised_potential_to_visualize_hartree += tensor
                 except KeyError:

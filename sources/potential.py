@@ -2,7 +2,7 @@ import numpy as np
 import cupy as cp
 import sources.math_utils as math_utils
 from numba import jit
-
+import math
 
 class DrainPotentialDescription:
     boundary_bottom_corner_bohr_radii: np.array
@@ -306,7 +306,29 @@ def add_wall(V: np.ndarray, delta_x: float, center_bohr_radius: np.array, normal
                     np.array([x, y, z]) * delta_x, delta_x * V.shape[0]
                 )
                 d = np.dot(normal, r - center_bohr_radius)
-                if d >= thickness_bohr_radius * 0.5 or d <= -thickness_bohr_radius * 0.5:
-                    continue
-                V[x, y, z] += potential_hartree
+                if d <= thickness_bohr_radius * 0.5 and d >= -thickness_bohr_radius * 0.5:
+                    V[x, y, z] += potential_hartree
     return  V
+
+@jit(nopython=True)
+def add_optical_grid(V: np.ndarray, delta_x: float, center_bohr_radius: np.array, normal: np.array, distance_between_nodes_bohr_radii: float, potential_hartree: float):
+    for x in range(V.shape[0]):
+        for y in range(V.shape[1]):
+            for z in range(V.shape[2]):
+                r = math_utils.transform_corner_origin_to_center_origin_system(
+                    np.array([x, y, z]) * delta_x, delta_x * V.shape[0]
+                )
+                right = np.cross(normal, math_utils.prefered_up())
+                up = np.cross(right, normal)
+                if (abs(np.dot(normal, r - center_bohr_radius)) < 10.0
+                    and abs(np.dot(right, r - center_bohr_radius)) < distance_between_nodes_bohr_radii * 5
+                    and abs(np.dot(up, r - center_bohr_radius)) < distance_between_nodes_bohr_radii * 5
+                ):
+                    for u in range(-3, 4):
+                        for v in range(-3, 4):
+                            current_center = (center_bohr_radius
+                                              + distance_between_nodes_bohr_radii * (right * float(u) + up * float(v)))
+                            d = math_utils.vector_length(current_center - r)
+                            V[x, y, z] += potential_hartree * math.exp(-0.5 * d**2)
+    return  V
+

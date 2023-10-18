@@ -146,6 +146,7 @@ class MultiVolumeVisual(Visual):
         self.set_gl_state("translucent", cull_face=False, depth_test=False)
 
         self.relative_step_size = relative_step_size
+        self.light_direction = np.array([-1.0, 1.0, 1.0], dtype=np.float_)
         self.freeze()
 
         # Add supplied volumes
@@ -216,6 +217,10 @@ class MultiVolumeVisual(Visual):
         """
         return self._relative_step_size
 
+    @property
+    def light_direction(self):
+        return self._light_direction
+
     @relative_step_size.setter
     def relative_step_size(self, value):
         value = float(value)
@@ -223,6 +228,11 @@ class MultiVolumeVisual(Visual):
             raise ValueError("relative_step_size cannot be smaller than 0.1")
         self._relative_step_size = value
         self.shared_program["u_relative_step_size"] = value
+
+    @light_direction.setter
+    def light_direction(self, light_dir):
+        self._light_direction = light_dir
+        self.shared_program["u_light_direction"] = light_dir
 
     def _create_vertex_data(self):
         """Create and set positions and texture coords from the given shape

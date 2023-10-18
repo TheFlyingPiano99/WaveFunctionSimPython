@@ -48,6 +48,7 @@ uniform vec3 u_shape;
 uniform float u_threshold;
 uniform float u_relative_step_size;
 uniform int u_n_tex;
+uniform vec3 u_light_direction; 
 
 in vec3 v_position;
 in vec4 v_nearpos;
@@ -188,7 +189,7 @@ void main() {{
 
 {color_calculation}
             
-            // Translucent method:            
+            // Translucent method:
             float a1 = integrated_color.a;
             float a2 = color.a * (1 - a1);
             float alpha = max(a1 + a2, 0.000001);
@@ -244,19 +245,19 @@ def get_shaders(n_volume_max):
                             vec3 normal = -gradDensity.xyz;\n\
                             if (length(normal) > 0.0) {{\n\
                                 float l = length(normal);\n\
-                                normal = normalize(normal) * min(1.0, pow(l, 1.2));\n\
+                                normal = normalize(normal) * min(1.0, pow(l, 1.0));\n\
                             }}\n\
                             else{{\n\
                                 normal = vec3(0,0,0); // Disable reflection for too homogenous density\n\
                             }}\n\
                             // Light reflection:\n\
-                            vec3 light_dir = vec3(-1, 1, 1);\n\
-                            vec3 halfway = normalize(-view_ray + light_dir);\n\
-                            float shininess = 16.0;\n\
+                            //vec3 light_dir = vec3(-1, 1, 1);\n\
+                            vec3 halfway = normalize(-view_ray + u_light_direction);\n\
+                            float shininess = 30.0;\n\
                             float diffuse = 1.0;\n\
-                            float specular = 0.9;\n\
-                            float ambient = 0.3;\n\
-                            vec3 radiance = (diffuse * max(0.0, dot(normal, light_dir)) + ambient) * current_color.rgb\n\
+                            float specular = 1.0;\n\
+                            float ambient = 0.2;\n\
+                            vec3 radiance = (diffuse * max(0.0, dot(normal, u_light_direction)) + ambient) * current_color.rgb\n\
                             + specular * max(0.0, pow(dot(normal, halfway), shininess));\n\
                             if (current_color.a > color.a)\n\
                                 color = vec4(radiance, current_color.a);\n\

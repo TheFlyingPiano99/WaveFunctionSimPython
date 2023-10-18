@@ -123,7 +123,8 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
             )
         if iter_data.i % iter_data.per_axis_probability_denisty_plot_interval == 0:
             measurement_tools.per_axis_density_plot = plot.plot_per_axis_probability_density(
-                [
+                title=sim_state.config["view"]["per_axis_plot"]["title"],
+                data=[
                     measurement_tools.x_axis_probability_density.get_probability_density_with_label(),
                     measurement_tools.y_axis_probability_density.get_probability_density_with_label(),
                     measurement_tools.z_axis_probability_density.get_probability_density_with_label(),
@@ -131,6 +132,7 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
                 ],
                 delta_x=sim_state.delta_x_bohr_radii,
                 delta_t=sim_state.delta_time_h_bar_per_hartree,
+                potential_scale=sim_state.config["view"]["per_axis_plot"]["potential_plot_scale"],
                 index=iter_data.i,
                 show_fig=False,
             )
@@ -138,20 +140,20 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
             iter_data.i % iter_data.animation_frame_step_interval == 0
             or iter_data.i % iter_data.png_step_interval == 0
         ):
-            measurement_tools.canvas.update(
+            measurement_tools.volumetric.update(
                 sim_state.get_view_into_probability_density(),
                 iter_count=iter_data.i,
                 delta_time_h_bar_per_hartree=sim_state.delta_time_h_bar_per_hartree,
             )
         if iter_data.i % iter_data.animation_frame_step_interval == 0:
             measurement_tools.animation_writer_3D.add_frame(
-                measurement_tools.canvas.render()
+                measurement_tools.volumetric.render()
             )
             measurement_tools.animation_writer_per_axis.add_frame(
                 measurement_tools.per_axis_density_plot
             )
         if iter_data.i % iter_data.png_step_interval == 0:
-            measurement_tools.canvas.render_to_png(iter_data.i)
+            measurement_tools.volumetric.render_to_png(iter_data.i)
         if iter_data.i % iter_data.probability_plot_interval == 0:
             plot.plot_probability_evolution(
                 [

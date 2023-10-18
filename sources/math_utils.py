@@ -7,7 +7,7 @@ speed_of_light = 137.03599
 from numba import jit
 import numpy as np
 import cupy as cp
-
+from scipy.spatial.transform import Rotation as R
 
 @jit(nopython=True, fastmath=True)
 def exp_i(angle: float):
@@ -22,6 +22,7 @@ def exp_i(cangle: np.complex_):
 def square_of_abs(wave_tensor: cp.ndarray):
     return cp.asnumpy(cp.square(cp.abs(wave_tensor)))
 
+@jit(nopython=True)
 def vector_length(vec: np.array):
     return np.sqrt(np.dot(vec, vec))
 
@@ -88,5 +89,17 @@ def h_bar_per_hartree_to_ns(t: float):
 def cut_window(arr: np.ndarray, bottom: np.array, top: np.array):
     return arr[bottom[0] : top[0], bottom[1] : top[1], bottom[2] : top[2]]
 
+
 def get_momentum_for_harmonic_oscillator(V_max: float, x_max: float):
     return math.sqrt(2.0 * V_max / (4 * electron_rest_mass * speed_of_light**2 * x_max**2))
+
+def normalize(v: np.array):
+    return v / vector_length(v)
+
+@jit(nopython=True)
+def prefered_up():
+    return np.array([0.0, 1.0, 0.0], dtype=np.float_)   # +Y
+
+def rotate(vec: np.array, axis: np.array, radians: float):
+    r = R.from_rotvec(radians * normalize(axis))
+    return r.apply(vec)

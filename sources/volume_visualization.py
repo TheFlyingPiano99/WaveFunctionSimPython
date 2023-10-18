@@ -12,13 +12,14 @@ import sources.multi_volume_visual as multi_volume_visual
 import os
 
 
-class VolumeCanvas:
+class VolumetricVisualization:
     canvas: scene.SceneCanvas
     viewing_window_bottom_corner_voxel: np.array
     viewing_window_top_corner_voxel: np.array
     density_scale = 100000.0
     cam_rotation_speed = 0.0
     cam_elevation_speed = 0.1
+    light_rotation_speed = 0.1
     elevation = 45.0
     azimuth = 0.0
 
@@ -37,7 +38,7 @@ class VolumeCanvas:
             glsl_map = """
             vec4 translucent_fire(float t) {
                 float tScaled = min(t, 1.0);
-                return vec4(pow(tScaled, 0.1), pow(tScaled, 0.9), pow(tScaled, 2.0), pow(tScaled, 0.8));
+                return vec4(pow(tScaled, 0.1), pow(tScaled, 0.9), pow(tScaled, 2.0), pow(tScaled, 1.0));
             }
             """
 
@@ -153,6 +154,9 @@ class VolumeCanvas:
             self.elevation
             + self.cam_elevation_speed * iter_count * delta_time_h_bar_per_hartree
         )
+        self.volume.light_direction = (
+            math_utils.rotate(self.volume.light_direction, math_utils.prefered_up(), delta_time_h_bar_per_hartree * self.light_rotation_speed)
+        )
         self.canvas.update()
         self.text1.text = f"Probability density (Elapsed time = {iter_count * delta_time_h_bar_per_hartree:.5f} ħ/E = {math_utils.h_bar_per_hartree_to_ns(iter_count * delta_time_h_bar_per_hartree):.2E} ns)"
         return self.canvas
@@ -170,3 +174,6 @@ class VolumeCanvas:
 
     def render(self):
         return self.canvas.render(alpha=False)
+
+    def set_light_direction(self, light_dir: np.array):
+        self.volume.light_direction = light_dir

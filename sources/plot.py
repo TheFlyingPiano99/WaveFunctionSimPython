@@ -29,7 +29,7 @@ def plot_probability_evolution(probability_evolutions, delta_t, index, show_fig=
 
 
 def plot_per_axis_probability_density(
-    probability_densities, delta_x, delta_t, index, show_fig=False
+    title: str, data: tuple, delta_x: float, delta_t: float, index: int, potential_scale: float, show_fig=False
 ):
     dir = "output/per_axis_probability_density/"
     if not os.path.exists(dir):
@@ -38,16 +38,17 @@ def plot_per_axis_probability_density(
     plt.clf()  # Clear figure
     plt.grid(True)
     plt.xlabel("Location [Bohr radius]")
-    plt.ylabel("Probability density")
+    plt.ylabel(f"Probability density / Potential [{1.0 / potential_scale:.1f} hartree]")
     plt.title(
-        f"Probability density (Elapsed time = {index * delta_t:.5f} ħ/E = {math_utils.h_bar_per_hartree_to_ns(index * delta_t):.2E} ns)"
+        title
+        + f"\n(Elapsed time = {index * delta_t:.5f} ħ/E = {math_utils.h_bar_per_hartree_to_ns(index * delta_t):.2E} ns)"
     )
-    n = probability_densities[0][0].size
+    n = data[0][0].size
     # For n assuming that all datasets have the same size
     x = np.linspace(start=-n * delta_x * 0.5, stop=n * delta_x * 0.5, dtype=None, num=n)
-    plt.xlim(probability_densities[0][2], probability_densities[0][3])
+    plt.xlim(data[0][2], data[0][3])
     plt.ylim(0.0, 0.5)
-    for prob_data in probability_densities:
+    for prob_data in data:
         plt.plot(x, prob_data[0], label=prob_data[1])
     plt.legend()
     plt.savefig(

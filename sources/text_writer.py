@@ -28,11 +28,11 @@ def write_potential_wall_warnings(text, wall_potential, wall, sim_state, use_col
     text.write(f"Wall thickness is {thickness} bohr radii.\n")
     if thickness < sim_state.de_broglie_wave_length_bohr_radii:
         text.write(
-            "This thinner than the de Broglie wavelength of the particle.\n"
+            "This is thinner than the de Broglie wavelength of the particle.\n"
         )
     else:
         text.write(
-            "This thicker than the de Broglie wavelength of the particle.\n"
+            "This is thicker than the de Broglie wavelength of the particle.\n"
         )
     if time_times_potential > cp.pi:
         text.write(
