@@ -117,7 +117,7 @@ class SimState:
 
     def get_view_into_potential(self):
         return math_utils.cut_window(
-            arr=np.real(self.localised_potential_hartree),
+            arr=np.real(self.localised_potential_to_visualize_hartree),
             bottom=self.viewing_window_bottom_corner_voxel,
             top=self.viewing_window_top_corner_voxel,
         )

@@ -29,6 +29,6 @@ def init_potential_operator(V: np.ndarray, delta_time:float):
     for x in range(0, V.shape[0]):
         for y in range(0, V.shape[1]):
             for z in range(0, V.shape[2]):
-                angle = -V[V.shape[0] - x - 1, V.shape[1] - y - 1, V.shape[2] - z - 1] * delta_time
+                angle = V[V.shape[0] - x - 1, V.shape[1] - y - 1, V.shape[2] - z - 1] * delta_time
                 P_potential[x, y, z] = math_utils.exp_i(angle)
     return P_potential

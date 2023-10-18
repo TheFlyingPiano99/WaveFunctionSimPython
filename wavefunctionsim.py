@@ -142,8 +142,8 @@ def sim():
     measurement_tools.projected_probability.integrate_probability_density(
         np.real(sim_state.localised_potential_to_visualize_hartree)
     )
-    measurement_tools.projected_probability.scale_factor = 0.1 / 20.0
-    measurement_tools.projected_probability.offset = 0.1
+    measurement_tools.projected_probability.scale_factor = sim_state.config["view"]["potential_plot_scale"]
+    measurement_tools.projected_probability.offset = sim_state.config["view"]["potential_plot_offset"]
 
     # Run simulation
     sim_state, measurement_tools, iter_data = core_sim.run_iteration(

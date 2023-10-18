@@ -111,10 +111,15 @@ def initialize():
             full_init = False
         except OSError:
             print("No cached localized_potential.npy found.")
+
     if full_init:
         sim_state.localised_potential_hartree = np.zeros(
             shape=sim_state.tensor_shape, dtype=np.csingle
         )
+        sim_state.localised_potential_to_visualize_hartree = np.zeros(
+            shape=sim_state.tensor_shape, dtype=np.csingle
+        )
+
         print("Creating draining potential.")
         dp = sim_state.drain_potential_description
         sim_state.localised_potential_hartree = potential.add_draining_potential(
@@ -126,60 +131,139 @@ def initialize():
             exponent=dp.exponent,
             V=sim_state.localised_potential_hartree,
         )
+
         try:
-            interaction = sim_state.config["particle_interaction"]
-            r = interaction["radius_hartree"]
+            interaction = sim_state.config["particle_hard_interaction"]
+            r = interaction["particle_radius_bohr_radii"]
             v = interaction["potential_hartree"]
-            print("Creating particle interaction potential.")
-            sim_state.localised_potential_hartree = potential.particle_interaction_potential(
+            print("Creating particle hard interaction potential.")
+            tensor = potential.particle_hard_interaction_potential(
                 delta_x=sim_state.delta_x_bohr_radii,
                 particle_radius_bohr_radius=r,
                 potential_hartree=v,
-                V=sim_state.localised_potential_hartree,
+                V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
             )
-        except e:
+            sim_state.localised_potential_hartree += tensor
+            try:
+                visible = interaction["visible"]
+                if visible:
+                    sim_state.localised_potential_to_visualize_hartree += tensor
+            except KeyError:
+                pass
+        except KeyError:
             pass
+
+        try:
+            interaction = sim_state.config["particle_inv_squared_interaction"]
+            v = interaction["center_potential_hartree"]
+            print("Creating particle inverse square interaction potential.")
+            tensor = potential.particle_inv_square_interaction_potential(
+                delta_x=sim_state.delta_x_bohr_radii,
+                potential_hartree=v,
+                V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+            )
+            sim_state.localised_potential_hartree += tensor
+            try:
+                visible = interaction["visible"]
+                if visible:
+                    sim_state.localised_potential_to_visualize_hartree += tensor
+            except KeyError:
+                pass
+        except KeyError:
+            pass
+
         try:
             oscillator = sim_state.config["harmonic_oscillator_1d"]
-            omega = oscillator["angular_frequency"]
-            w = oscillator["width_bohr_radii"]
+            omega = oscillator["angular_frequency_radian_hartree_per_h_bar"]
             print("Creating harmonic oscillator.")
-            sim_state.localised_potential_to_visualize_hartree = potential.add_harmonic_oscillator_for_1D(
+            tensor = potential.add_harmonic_oscillator_for_1D(
                 delta_x=sim_state.delta_x_bohr_radii,
                 angular_frequency=omega,
                 V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
             )
-            sim_state.localised_potential_hartree += sim_state.localised_potential_to_visualize_hartree
-        except:
+            sim_state.localised_potential_hartree += tensor
+            try:
+                visible = oscillator["visible"]
+                if visible:
+                    sim_state.localised_potential_to_visualize_hartree += tensor
+            except KeyError:
+                pass
+        except KeyError:
             pass
-        for wall_1d in sim_state.config["walls_1d"]:
-            c = wall_1d["center_hartree"]
-            v = wall_1d["potential_hartree"]
-            t = wall_1d["thickness_bohr_radii"]
-            print("Creating wall.")
-            v_wall = potential.add_wall_for_1D(
-                delta_x=sim_state.delta_x_bohr_radii,
-                potential_hartree=v,
-                V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
-                thickness_bohr_radius=t,
-                center_bohr_radius=c
-            )
-            sim_state.localised_potential_to_visualize_hartree += v_wall
-            sim_state.localised_potential_hartree += v_wall
 
-        for double_slit in sim_state.config["double_slits"]:
-            print("Creating double-slit.")
-            space_between_slits = double_slit["distance_between_slits_bohr_radii"]
-            sim_state.localised_potential_hartree = potential.add_double_slit(
-                delta_x=sim_state.delta_x_bohr_radii,
-                center_bohr_radii=np.array(double_slit["center_bohr_radius_3"]),
-                thickness_bohr_radii=double_slit["thickness_bohr_radii"],
-                height_hartree=double_slit["potential_hartree"],
-                slit_width_bohr_radii=double_slit["slit_width_bohr_radii"],
-                shape=sim_state.tensor_shape,
-                space_between_slits_bohr_radii=space_between_slits,
-                V=sim_state.localised_potential_hartree,
-            )
+        try:
+            walls_arr = sim_state.config["walls_1d"]
+            for wall_1d in walls_arr:
+                c = wall_1d["center_bohr_radii"]
+                v = wall_1d["potential_hartree"]
+                t = wall_1d["thickness_bohr_radii"]
+                print("Creating wall.")
+                tensor = potential.add_wall_for_1D(
+                    delta_x=sim_state.delta_x_bohr_radii,
+                    potential_hartree=v,
+                    thickness_bohr_radius=t,
+                    center_bohr_radius=c,
+                    V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+                )
+                sim_state.localised_potential_hartree += tensor
+                try:
+                    visible = wall_1d["visible"]
+                    if visible:
+                        sim_state.localised_potential_to_visualize_hartree += tensor
+                except KeyError:
+                    pass
+        except KeyError:
+            pass
+
+        try:
+            walls_arr = sim_state.config["walls"]
+            for wall in walls_arr:
+                c = wall["center_bohr_radii_3"]
+                n = wall["wall_normal"]
+                v = wall["potential_hartree"]
+                t = wall["thickness_bohr_radii"]
+                print("Creating wall.")
+                tensor = potential.add_wall_for_1D(
+                    delta_x=sim_state.delta_x_bohr_radii,
+                    potential_hartree=v,
+                    thickness_bohr_radius=t,
+                    center_bohr_radius=c,
+                    V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+                )
+                sim_state.localised_potential_hartree += tensor
+                try:
+                    visible = wall_1d["visible"]
+                    if visible:
+                        sim_state.localised_potential_to_visualize_hartree += tensor
+                except KeyError:
+                    pass
+        except KeyError:
+            pass
+
+        try:
+            ds_array = sim_state.config["double_slits"]
+            for double_slit in ds_array:
+                print("Creating double-slit.")
+                space_between_slits = double_slit["distance_between_slits_bohr_radii"]
+                tensor = potential.add_double_slit(
+                    delta_x=sim_state.delta_x_bohr_radii,
+                    center_bohr_radii=np.array(double_slit["center_bohr_radius_3"]),
+                    thickness_bohr_radii=double_slit["thickness_bohr_radii"],
+                    height_hartree=double_slit["potential_hartree"],
+                    slit_width_bohr_radii=double_slit["slit_width_bohr_radii"],
+                    shape=sim_state.tensor_shape,
+                    space_between_slits_bohr_radii=space_between_slits,
+                    V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+                )
+                sim_state.localised_potential_hartree += tensor
+                try:
+                    visible = double_slit["visible"]
+                    if visible:
+                        sim_state.localised_potential_to_visualize_hartree += tensor
+                except KeyError:
+                    pass
+        except KeyError:
+            pass
 
         np.save(
             file="cache/localized_potential.npy",

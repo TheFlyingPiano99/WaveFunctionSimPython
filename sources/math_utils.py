@@ -63,7 +63,9 @@ def kinectic_energy(mass: float, velocity):
     return 0.5 * mass * velocity**2
 
 
-def get_de_broglie_wave_length_bohr_radii(momentum_h_bar_per_bohr_radius):
+def get_de_broglie_wave_length_bohr_radii(momentum_h_bar_per_bohr_radius: float):
+    if momentum_h_bar_per_bohr_radius == 0.0:
+        return math.inf
     return planck_constant / momentum_h_bar_per_bohr_radius
 
 

@@ -15,6 +15,32 @@ def get_title_text():
     return text.getvalue()
 
 
+def write_potential_wall_warnings(text, wall_potential, wall, sim_state, use_colors):
+    time_times_potential = wall_potential * sim_state.delta_time_h_bar_per_hartree
+    text.write(f"Obstacle wall potential is {wall_potential} hartree.\n")
+    if abs((time_times_potential / cp.pi) - int(time_times_potential / cp.pi)) < 0.05:
+        text.write(
+            (Fore.RED if use_colors else "")
+            + f"WARNING: delta_t * wall_max_potential too close to multiply of pi! ({time_times_potential})\n"
+            + (Style.RESET_ALL if use_colors else "")
+        )
+    thickness = wall["thickness_bohr_radii"]
+    text.write(f"Wall thickness is {thickness} bohr radii.\n")
+    if thickness < sim_state.de_broglie_wave_length_bohr_radii:
+        text.write(
+            "This thinner than the de Broglie wavelength of the particle.\n"
+        )
+    else:
+        text.write(
+            "This thicker than the de Broglie wavelength of the particle.\n"
+        )
+    if time_times_potential > cp.pi:
+        text.write(
+            (Fore.RED if use_colors else "")
+            + f"WARNING: delta_t * wall_max_potential = {time_times_potential} exceeds  pi!\n"
+            + (Style.RESET_ALL if use_colors else "")
+        )
+
 def get_potential_description_text(sim_state: sim_st.SimState, use_colors=False):
     text = io.StringIO()
     text.write(
@@ -22,40 +48,93 @@ def get_potential_description_text(sim_state: sim_st.SimState, use_colors=False)
         + "Localised potential energy:\n"
         + (Style.RESET_ALL if use_colors else "")
     )
-    text.write(
-        "Double slits:\n"
-    )
 
-    for slit in sim_state.config["double_slits"]:
-        wall_potential = slit["potential_hartree"]
-        time_times_potential = wall_potential * sim_state.delta_time_h_bar_per_hartree
-        text.write(f"Obstacle wall potential is {wall_potential} hartree.\n")
-        if abs((time_times_potential / cp.pi) - int(time_times_potential / cp.pi)) < 0.05:
-            text.write(
-                (Fore.RED if use_colors else "")
-                + f"WARNING: delta_t * wall_max_potential too close to multiply of pi! ({time_times_potential})\n"
-                + (Style.RESET_ALL if use_colors else "")
-            )
-        thickness = slit["thickness_bohr_radii"]
-        text.write(f"Wall thickness is {thickness} bohr radii.\n")
-        if thickness < sim_state.de_broglie_wave_length_bohr_radii:
-            text.write(
-                "This thickness is smaller than the de Broglie wavelength of the particle.\n"
-            )
-        if time_times_potential > cp.pi:
-            text.write(
-                (Fore.RED if use_colors else "")
-                + f"WARNING: delta_t * wall_max_potential = {time_times_potential} exceeds  pi!\n"
-                + (Style.RESET_ALL if use_colors else "")
-            )
+    try:
+        slits = sim_state.config["double_slits"]
+        text.write(
+            "Double slits:\n"
+        )
+        for slit in slits:
+            wall_potential = slit["potential_hartree"]
+            write_potential_wall_warnings(text, wall_potential, slit, sim_state, use_colors)
 
-        space_between_slits = slit["distance_between_slits_bohr_radii"]
-        if space_between_slits > sim_state.de_broglie_wave_length_bohr_radii:
+            space_between_slits = slit["distance_between_slits_bohr_radii"]
+            if space_between_slits > sim_state.de_broglie_wave_length_bohr_radii:
+                text.write(
+                    (Fore.RED if use_colors else "")
+                    + f"WARNING: Space between slits = {space_between_slits} esceeds de Brogile wavelength = {sim_state.de_broglie_wave_length_bohr_radii:.4f} of the particle!"
+                    + (Style.RESET_ALL if use_colors else "")
+                )
+            text.write("\n")
+    except KeyError:
+        pass
+
+    try:
+        walls = sim_state.config["walls"]
+        text.write(
+            "Walls:\n"
+        )
+        for i, wall in enumerate(walls):
             text.write(
-                (Fore.RED if use_colors else "")
-                + f"WARNING: Space between slits = {space_between_slits} esceeds de Brogile wavelength = {sim_state.de_broglie_wave_length_bohr_radii:.4f} of the particle!"
-                + (Style.RESET_ALL if use_colors else "")
+                f"{i + 1}.\n"
             )
+            wall_potential = wall["potential_hartree"]
+            write_potential_wall_warnings(text, wall_potential, wall, sim_state, use_colors)
+            thickness = wall["thickness_bohr_radii"]
+            text.write(f"Wall thickness is {thickness:.2f} bohr radii.\n")
+            text.write("\n")
+    except KeyError:
+        pass
+
+    try:
+        walls = sim_state.config["walls_1d"]
+        text.write(
+            "1D walls:\n"
+        )
+        for i, wall in enumerate(walls):
+            text.write(
+                f"{i + 1}.\n"
+            )
+            wall_potential = wall["potential_hartree"]
+            write_potential_wall_warnings(text, wall_potential, wall, sim_state, use_colors)
+            thickness = wall["thickness_bohr_radii"]
+            text.write(f"Wall thickness is {thickness:.2f} bohr radii.\n")
+            center = wall["center_bohr_radii"]
+            text.write(f"Wall center is at the x = {center:.2f} bohr radius coordinate.\n")
+            text.write("\n")
+    except KeyError:
+        pass
+
+    try:
+        interaction = sim_state.config["particle_hard_interaction"]
+        text.write("1D particle hard interaction potential:\n")
+        v = interaction["potential_hartree"]
+        text.write(f"Potential is {v} hartree.\n")
+        r = interaction["particle_radius_bohr_radii"]
+        text.write(f"Particle radius is {r} bohr radii.\n")
+        text.write("\n")
+    except KeyError:
+        pass
+
+    try:
+        interaction = sim_state.config["particle_inv_squared_interaction"]
+        text.write("1D particle inverse squared interaction potential:\n")
+        v = interaction["central_potential_hartree"]
+        text.write(f"Potential at unit distance is {v} hartree.\n")
+        text.write("\n")
+    except KeyError:
+        pass
+
+
+    try:
+        oscillator = sim_state.config["harmonic_oscillator_1d"]
+        text.write("1D particle harmonic oscillator:\n")
+        omega = oscillator["angular_frequency"]
+        text.write(f"Angular velocity is {omega} radian * hartree / h-bar.\n")
+        text.write("\n")
+    except KeyError:
+        pass
+
     drain_max = sim_state.config["drain"]["outer_potential_hartree"]
     text.write(
         f"Draining potential value at the outer edge is {drain_max:.1f} hartree.\n"
@@ -143,6 +222,11 @@ def get_sim_state_description_text(sim_state: sim_st.SimState, use_colors=False)
             + "WARNING: delta_time exceeds theoretical limit!\n"
             + (Style.RESET_ALL if use_colors else "")
         )
+    # Video
+    fps = sim_state.config["view"]["video_frame_rate"]
+    text.write(
+        f"Video frame rate is {fps} frame/s.\n"
+    )
 
     return text.getvalue()
 
