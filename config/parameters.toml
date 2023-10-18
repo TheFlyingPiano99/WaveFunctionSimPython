@@ -19,26 +19,48 @@ viewing_window_boundary_top_corner_bohr_radii_3 = [-30.0, -30.0, -30.0]   # Same
 outer_potential_hartree = 100.0
 interpolation_exponent = 3.0
 
-#[[walls]]
-#potential_hartree = 5
-#center_bohr_radii_3 = [0.0, 0.0, 0.0]
-#normal_vector_3 = [1.0, 0.0, 0.0]
-#thickness_bohr_radii = 2.0
-#visible=true
-
-#[[walls]]
-#potential_hartree = 5
-#center_bohr_radii_3 = [20.0, 0.0, 0.0]
-#normal_vector_3 = [1.0, 0.0, 1.0]
-#thickness_bohr_radii = 2.0
-#visible=true
-
-[[optical_grids]]
+[[walls]]
 potential_hartree = 10
+center_bohr_radii_3 = [0.0, 20.0, 0.0]
+normal_vector_3 = [0.0, 1.0, 0.0]
+thickness_bohr_radii = 10.0
+visible=true
+
+[[walls]]
+potential_hartree = 10
+center_bohr_radii_3 = [0.0, -20.0, 0.0]
+normal_vector_3 = [0.0, 1.0, 0.0]
+thickness_bohr_radii = 10.0
+visible=true
+
+[[walls]]
+potential_hartree = 5
 center_bohr_radii_3 = [0.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
-distance_between_nodes_bohr_radii = 3.0
+thickness_bohr_radii = 1.0
 visible=true
+
+[[walls]]
+potential_hartree = 5
+center_bohr_radii_3 = [4.0, 0.0, 0.0]
+normal_vector_3 = [1.0, 0.0, 0.0]
+thickness_bohr_radii = 1.0
+visible=true
+
+[[walls]]
+potential_hartree = 5
+center_bohr_radii_3 = [8.0, 0.0, 0.0]
+normal_vector_3 = [1.0, 0.0, 0.0]
+thickness_bohr_radii = 1.0
+visible=true
+
+#[[optical_grids]]
+#potential_hartree = 10
+#center_bohr_radii_3 = [0.0, 0.0, 0.0]
+#normal_vector_3 = [1.0, 0.0, 0.0]
+#distance_between_nodes_bohr_radii = 3.0
+#node_in_one_direction = 11
+#visible=true
 
 #[[double_slits]]
 #center_bohr_radius_3 = [-10, 0, 0]
@@ -80,8 +102,10 @@ video_frame_rate = 25
 [view.volumetric]
 camera_rotation_speed = 0.5
 camera_azimuth = -5.0
+camera_elevation = 0.0
 light_direction = [-1.0, 1.0, 1.0]
-light_rotation_speed = 0.1
+light_rotation_speed = 0.001
+light_elevation_speed = 0.0
 
 [view.per_axis_plot]
 title = "Interaction between 1D particles in harmonic oscillator"

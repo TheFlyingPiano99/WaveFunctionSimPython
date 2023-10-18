@@ -248,6 +248,7 @@ def initialize():
                 c = np.array(grid["center_bohr_radii_3"], dtype=float)
                 n = math_utils.normalize(np.array(grid["normal_vector_3"], dtype=float))
                 d = grid["distance_between_nodes_bohr_radii"]
+                i = grid["node_in_one_direction"]
                 print("Creating optical grid.")
                 tensor = potential.add_optical_grid(
                     delta_x=sim_state.delta_x_bohr_radii,
@@ -255,6 +256,7 @@ def initialize():
                     distance_between_nodes_bohr_radii=d,
                     center_bohr_radius=c,
                     normal=n,
+                    node_count=i,
                     V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
                 )
                 sim_state.localised_potential_hartree += tensor

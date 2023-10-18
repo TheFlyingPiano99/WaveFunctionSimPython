@@ -20,8 +20,10 @@ class VolumetricVisualization:
     cam_rotation_speed = 0.0
     cam_elevation_speed = 0.1
     light_rotation_speed = 0.1
+    light_elevation_speed = 0.0
     elevation = 45.0
     azimuth = 0.0
+    light_elevation_axis: np.array
 
     def __init__(
         self, volume_data: np.ndarray, secondary_volume_data: np.ndarray, cam_rotation_speed=0.0, azimuth=0.0
@@ -154,9 +156,16 @@ class VolumetricVisualization:
             self.elevation
             + self.cam_elevation_speed * iter_count * delta_time_h_bar_per_hartree
         )
-        self.volume.light_direction = (
-            math_utils.rotate(self.volume.light_direction, math_utils.prefered_up(), delta_time_h_bar_per_hartree * self.light_rotation_speed)
-        )
+        if self.light_rotation_speed > 0.0:
+            self.volume.light_direction = (
+                math_utils.rotate(self.volume.light_direction, math_utils.prefered_up(), delta_time_h_bar_per_hartree * self.light_rotation_speed)
+            )
+
+        if self.light_elevation_speed != 0.0:
+            self.volume.light_direction = (
+                math_utils.rotate(self.volume.light_direction, np.array([1,0,0], dtype=np.float_), delta_time_h_bar_per_hartree * self.light_elevation_speed)
+            )
+
         self.canvas.update()
         self.text1.text = f"Probability density (Elapsed time = {iter_count * delta_time_h_bar_per_hartree:.5f} ħ/E = {math_utils.h_bar_per_hartree_to_ns(iter_count * delta_time_h_bar_per_hartree):.2E} ns)"
         return self.canvas

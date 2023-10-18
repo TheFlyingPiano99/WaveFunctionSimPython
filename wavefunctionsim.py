@@ -53,8 +53,11 @@ def sim():
         cam_rotation_speed=sim_state.config["view"]["volumetric"]["camera_rotation_speed"],
         azimuth=sim_state.config["view"]["volumetric"]["camera_azimuth"],
     )
+    measurement_tools.volumetric.elevation = sim_state.config["view"]["volumetric"]["camera_elevation"]
     measurement_tools.volumetric.set_light_direction(sim_state.config["view"]["volumetric"]["light_direction"])
     measurement_tools.volumetric.light_rotation_speed = sim_state.config["view"]["volumetric"]["light_rotation_speed"]
+    measurement_tools.volumetric.light_elevation_speed = sim_state.config["view"]["volumetric"]["light_elevation_speed"]
+
     measurement_tools.animation_writer_3D = animation.AnimationWriter(
         "output/probability_density_time_development_3D.mp4"
     )

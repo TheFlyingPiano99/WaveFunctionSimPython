@@ -311,7 +311,7 @@ def add_wall(V: np.ndarray, delta_x: float, center_bohr_radius: np.array, normal
     return  V
 
 @jit(nopython=True)
-def add_optical_grid(V: np.ndarray, delta_x: float, center_bohr_radius: np.array, normal: np.array, distance_between_nodes_bohr_radii: float, potential_hartree: float):
+def add_optical_grid(V: np.ndarray, delta_x: float, center_bohr_radius: np.array, normal: np.array, distance_between_nodes_bohr_radii: float, potential_hartree: float, node_count: int):
     for x in range(V.shape[0]):
         for y in range(V.shape[1]):
             for z in range(V.shape[2]):
@@ -321,13 +321,17 @@ def add_optical_grid(V: np.ndarray, delta_x: float, center_bohr_radius: np.array
                 right = np.cross(normal, math_utils.prefered_up())
                 up = np.cross(right, normal)
                 if (abs(np.dot(normal, r - center_bohr_radius)) < 10.0
-                    and abs(np.dot(right, r - center_bohr_radius)) < distance_between_nodes_bohr_radii * 5
-                    and abs(np.dot(up, r - center_bohr_radius)) < distance_between_nodes_bohr_radii * 5
+                    and abs(np.dot(right, r - center_bohr_radius)) < distance_between_nodes_bohr_radii * node_count * 0.6
+                    and abs(np.dot(up, r - center_bohr_radius)) < distance_between_nodes_bohr_radii * node_count * 0.6
                 ):
-                    for u in range(-3, 4):
-                        for v in range(-3, 4):
-                            current_center = (center_bohr_radius
-                                              + distance_between_nodes_bohr_radii * (right * float(u) + up * float(v)))
+                    for u in range(node_count):
+                        for v in range(node_count):
+                            current_center = (
+                                center_bohr_radius
+                                + distance_between_nodes_bohr_radii
+                                * (right * float(u - float(node_count) * 0.5) + up * float(v - float(node_count) * 0.5))
+                            )
+
                             d = math_utils.vector_length(current_center - r)
                             V[x, y, z] += potential_hartree * math.exp(-0.5 * d**2)
     return  V

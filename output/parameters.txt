@@ -11,5 +11,36 @@ The maximal viable time resolution < 0.2797645484037223 h-bar / hartree
 Time resolution is delta = 0.05 h-bar / hartree.
 Video frame rate is 25 frame/s.
 Localised potential energy:
+Walls:
+1.
+Obstacle wall potential is 10 hartree.
+Wall thickness is 10.0 bohr radii.
+This is thicker than the de Broglie wavelength of the particle.
+Wall thickness is 10.00 bohr radii.
+
+2.
+Obstacle wall potential is 10 hartree.
+Wall thickness is 10.0 bohr radii.
+This is thicker than the de Broglie wavelength of the particle.
+Wall thickness is 10.00 bohr radii.
+
+3.
+Obstacle wall potential is 5 hartree.
+Wall thickness is 1.0 bohr radii.
+This is thinner than the de Broglie wavelength of the particle.
+Wall thickness is 1.00 bohr radii.
+
+4.
+Obstacle wall potential is 5 hartree.
+Wall thickness is 1.0 bohr radii.
+This is thinner than the de Broglie wavelength of the particle.
+Wall thickness is 1.00 bohr radii.
+
+5.
+Obstacle wall potential is 5 hartree.
+Wall thickness is 1.0 bohr radii.
+This is thinner than the de Broglie wavelength of the particle.
+Wall thickness is 1.00 bohr radii.
+
 Draining potential value at the outer edge is 100.0 hartree.
 Draining potential exponent is 3.0.
