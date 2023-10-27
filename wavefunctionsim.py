@@ -66,7 +66,7 @@ def sim():
     )
     measurement_tools.measurement_plane = measurement.MeasurementPlane(
         delta_x=sim_state.delta_x_bohr_radii,
-        location_bohr_radii=28.0,
+        location_bohr_radii=30.0,
         simulated_box_width=sim_state.simulated_volume_width_bohr_radii,
         viewing_window_bottom_voxel=sim_state.viewing_window_bottom_corner_voxel,
         viewing_window_top_voxel=sim_state.viewing_window_top_corner_voxel,

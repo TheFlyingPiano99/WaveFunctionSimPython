@@ -18,7 +18,7 @@ def init_kinetic_operator(N: int, delta_x: float, delta_time: float, shape: np.s
                 if f[2] > 0.5:
                     f[2] = 1.0 - f[2]
                 k = 2.0 * np.pi * f / delta_x
-                angle = np.dot(k, k) * delta_time / 4.0
+                angle = -np.dot(k, k) * delta_time / 4.0
                 P_kinetic[x, y, z] = math_utils.exp_i(angle)
     return P_kinetic
 
@@ -29,6 +29,6 @@ def init_potential_operator(V: np.ndarray, delta_time:float):
     for x in range(0, V.shape[0]):
         for y in range(0, V.shape[1]):
             for z in range(0, V.shape[2]):
-                angle = V[V.shape[0] - x - 1, V.shape[1] - y - 1, V.shape[2] - z - 1] * delta_time
+                angle = -V[V.shape[0] - x - 1, V.shape[1] - y - 1, V.shape[2] - z - 1] * delta_time
                 P_potential[x, y, z] = math_utils.exp_i(angle)
     return P_potential

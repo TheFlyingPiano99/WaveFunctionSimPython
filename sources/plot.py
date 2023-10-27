@@ -74,7 +74,7 @@ def plot_canvas(plane_probability_density, plane_dwell_time_density, index):
     matplotlib.image.imsave(
         fname=os.path.join(dir, f"measurement_plane_probability_{index:04d}.png"),
         arr=plane_probability_density,
-        cmap="gist_heat",
+        cmap="Reds",
         dpi=100,
         vmin=0.0,
         vmax=max(0.0000001, np.max(plane_probability_density)),
@@ -85,7 +85,7 @@ def plot_canvas(plane_probability_density, plane_dwell_time_density, index):
     matplotlib.image.imsave(
         fname=os.path.join(dir, f"measurement_dwell_time_{index:04d}.png"),
         arr=plane_dwell_time_density,
-        cmap="gist_heat",
+        cmap="Reds",
         dpi=100,
         vmin=0.0,
         vmax=max(0.0000001, np.max(plane_dwell_time_density)),

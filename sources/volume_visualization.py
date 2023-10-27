@@ -31,7 +31,7 @@ class VolumetricVisualization:
         volume_data = volume_data * self.density_scale
         # Prepare canvas
         self.canvas = scene.SceneCanvas(
-            keys="interactive", bgcolor="black", size=(1024, 768), show=False
+            keys="interactive", bgcolor="white", size=(1024, 768), show=False
         )
         self.view = self.canvas.central_widget.add_view()
 
@@ -112,7 +112,7 @@ class VolumetricVisualization:
         self.text1 = scene.visuals.Text(
             f"Probability density (Elapsed time = {0.0} ħ/E)",
             parent=self.canvas.scene,
-            color="white",
+            color="black",
         )
         self.text1.font_size = 16
         self.text1.pos = self.canvas.size[0] // 2, self.canvas.size[1] // 14
