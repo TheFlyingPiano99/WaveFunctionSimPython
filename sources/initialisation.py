@@ -298,12 +298,12 @@ def initialize():
         tensor = potential.add_coulomb_potential(
             V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
             delta_x=sim_state.delta_x_bohr_radii,
-            center_bohr_radius=np.array([0.0, 30.0, 0.0]),
+            center_bohr_radius=np.array([0.0, 40.0, 0.0]),
             normal=np.array([0.0, -1.0, 0.0]),
-            potential_hartree=10.0,
+            charge=50.0,
         )
         sim_state.localised_potential_hartree += tensor
-        sim_state.localised_potential_to_visualize_hartree += tensor
+        sim_state.coulomb_potential = tensor
 
         np.save(
             file="cache/localized_potential.npy",

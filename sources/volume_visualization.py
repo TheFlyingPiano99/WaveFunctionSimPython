@@ -26,7 +26,7 @@ class VolumetricVisualization:
     light_elevation_axis: np.array
 
     def __init__(
-        self, volume_data: np.ndarray, secondary_volume_data: np.ndarray, cam_rotation_speed=0.0, azimuth=0.0
+        self, volume_data: np.ndarray, secondary_volume_data: np.ndarray, coulomb_volume_data: np.ndarray, cam_rotation_speed=0.0, azimuth=0.0
     ):
         volume_data = volume_data * self.density_scale
         # Prepare canvas
@@ -52,8 +52,17 @@ class VolumetricVisualization:
             }
             """
 
+        class CoulombColorMap(BaseColormap):
+            glsl_map = """
+            vec4 translucent_blue(float t) {
+                float tScaled = min(t, 1.0);
+                return vec4(tScaled, tScaled*tScaled, pow(tScaled, 0.5), max(0, tScaled*1.001 - 0.001) * 0.03);
+            }
+            """
+
         self.primary_color_map = ProbabilityDensityColorMap()
         self.secondary_color_map = PotentialColorMap()
+        self.coulomb_color_map = CoulombColorMap()
         self.clim1 = (
             0.0,
             volume_data.astype(np.float32).max() * 0.01,
@@ -61,6 +70,10 @@ class VolumetricVisualization:
         self.clim2 = (
             secondary_volume_data.astype(np.float32).min(),
             secondary_volume_data.astype(np.float32).max(),
+        )
+        self.clim3 = (
+            coulomb_volume_data.astype(np.float32).min(),
+            coulomb_volume_data.astype(np.float32).max(),
         )
 
         volumes = [
@@ -83,6 +96,16 @@ class VolumetricVisualization:
                 ),
                 self.clim2,
                 self.secondary_color_map,
+            ),
+            (
+                np.pad(
+                    array=coulomb_volume_data.astype(np.float32),
+                    pad_width=1,
+                    mode="constant",
+                    constant_values=0.0,
+                ),
+                self.clim3,
+                self.coulomb_color_map,
             ),
         ]
         # Create the volume visuals

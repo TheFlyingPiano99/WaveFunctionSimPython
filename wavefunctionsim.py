@@ -50,6 +50,7 @@ def sim():
     measurement_tools.volumetric = volume_visualization.VolumetricVisualization(
         volume_data=sim_state.get_view_into_probability_density(),
         secondary_volume_data=sim_state.get_view_into_potential(),
+        coulomb_volume_data=sim_state.get_view_into_coulomb_potential(),
         cam_rotation_speed=sim_state.config["view"]["volumetric"]["camera_rotation_speed"],
         azimuth=sim_state.config["view"]["volumetric"]["camera_azimuth"],
     )
@@ -84,10 +85,10 @@ def sim():
                 sim_state.viewing_window_top_corner_voxel
                 - sim_state.viewing_window_bottom_corner_voxel
             )
-            * np.array([0.5, 0, 0]),
+            * np.array([0, 0.5, 0]),
             dtype=int,
         ),
-        label="First half",
+        label="Substrate",
     )
     measurement_tools.measurement_volume_second_half = measurement.AAMeasurementVolume(
         bottom_corner=np.array(
@@ -96,11 +97,11 @@ def sim():
                 sim_state.viewing_window_top_corner_voxel
                 - sim_state.viewing_window_bottom_corner_voxel
             )
-            * np.array([0.5, 0, 0]),
+            * np.array([0, 0.5, 0]),
             dtype=int,
         ),
         top_corner=sim_state.viewing_window_top_corner_voxel,
-        label="Second half",
+        label="Floating gate",
     )
 
     # Setup "per axis" probability density:

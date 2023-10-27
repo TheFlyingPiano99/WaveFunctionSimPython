@@ -30,6 +30,7 @@ class SimState:
     probability_density: np.ndarray
     localised_potential_hartree: np.ndarray
     localised_potential_to_visualize_hartree: np.ndarray
+    coulomb_potential: np.ndarray
     use_cache = True
 
     def __init__(self, config):
@@ -118,6 +119,13 @@ class SimState:
     def get_view_into_potential(self):
         return math_utils.cut_window(
             arr=np.real(self.localised_potential_to_visualize_hartree),
+            bottom=self.viewing_window_bottom_corner_voxel,
+            top=self.viewing_window_top_corner_voxel,
+        )
+
+    def get_view_into_coulomb_potential(self):
+        return math_utils.cut_window(
+            arr=np.real(self.coulomb_potential),
             bottom=self.viewing_window_bottom_corner_voxel,
             top=self.viewing_window_top_corner_voxel,
         )

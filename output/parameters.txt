@@ -20,9 +20,37 @@ Wall thickness is 10.00 bohr radii.
 
 2.
 Obstacle wall potential is 20 hartree.
-Wall thickness is 4.0 bohr radii.
+Wall thickness is 10.0 bohr radii.
 This is thicker than the de Broglie wavelength of the particle.
-Wall thickness is 4.00 bohr radii.
+Wall thickness is 10.00 bohr radii.
+
+3.
+Obstacle wall potential is 20 hartree.
+Wall thickness is 10.0 bohr radii.
+This is thicker than the de Broglie wavelength of the particle.
+Wall thickness is 10.00 bohr radii.
+
+4.
+Obstacle wall potential is 20 hartree.
+Wall thickness is 10.0 bohr radii.
+This is thicker than the de Broglie wavelength of the particle.
+Wall thickness is 10.00 bohr radii.
+
+5.
+Obstacle wall potential is 20 hartree.
+Wall thickness is 10.0 bohr radii.
+This is thicker than the de Broglie wavelength of the particle.
+Wall thickness is 10.00 bohr radii.
+
+6.
+Obstacle wall potential is 10 hartree.
+Wall thickness is 1.0 bohr radii.
+This is thinner than the de Broglie wavelength of the particle.
+Wall thickness is 1.00 bohr radii.
 
 Draining potential value at the outer edge is -100.0 hartree.
 Draining potential exponent is 3.0.
+Total iteration count is 3000.
+Total simulated time is 90.0000 h-bar / hartree.
+Elapsed system time during iteration was 0:06:34.524194.
+Average system time of an iteration was 0.1315 s.

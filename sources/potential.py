@@ -311,14 +311,14 @@ def add_wall(V: np.ndarray, delta_x: float, center_bohr_radius: np.array, normal
     return  V
 
 @jit(nopython=True)
-def add_coulomb_potential(V: np.ndarray, delta_x: float, center_bohr_radius: np.array, normal: np.array, potential_hartree: float):
+def add_coulomb_potential(V: np.ndarray, delta_x: float, center_bohr_radius: np.array, normal: np.array, charge: float):
     for x in range(V.shape[0]):
         for y in range(V.shape[1]):
             for z in range(V.shape[2]):
                 r = math_utils.transform_corner_origin_to_center_origin_system(
                     np.array([x, y, z]) * delta_x, delta_x * V.shape[0]
                 )
-                V[x, y, z] += potential_hartree / max(abs(np.dot(normal, r - center_bohr_radius))**0.5, 0.00000001)
+                V[x, y, z] += -charge * max(abs(np.dot(normal, r - center_bohr_radius)), 0.00000001)
     return  V
 
 @jit(nopython=True)
