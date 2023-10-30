@@ -133,13 +133,13 @@ class VolumetricVisualization:
         self.view.camera = cam  # Select turntable at first
 
         self.text1 = scene.visuals.Text(
-            f"Probability density (Elapsed time = {0.0} ħ/E)",
+            f"Probability density\n(Elapsed time = {0.0} ħ/hartree)",
             parent=self.canvas.scene,
             color="black",
         )
-        self.text1.font_size = 16
+        self.text1.font_size = 32
         self.text1.pos = self.canvas.size[0] // 2, self.canvas.size[1] // 14
-        self.text1.text = f"Probability density (Elapsed time = {0.0:.5f} ħ/E = {math_utils.h_bar_per_hartree_to_ns(0.0):.2E} ns)"
+        self.text1.text = f"Probability density\n(Elapsed time = {0.0:.5f} ħ/hartree = {math_utils.h_bar_per_hartree_to_ns(0.0):.2E} ns)"
 
         # Create Axis:
         # TODO
@@ -190,7 +190,7 @@ class VolumetricVisualization:
             )
 
         self.canvas.update()
-        self.text1.text = f"Probability density (Elapsed time = {iter_count * delta_time_h_bar_per_hartree:.5f} ħ/E = {math_utils.h_bar_per_hartree_to_ns(iter_count * delta_time_h_bar_per_hartree):.2E} ns)"
+        self.text1.text = f"Probability density\n(Elapsed time = {iter_count * delta_time_h_bar_per_hartree:.5f} ħ/hartree = {math_utils.h_bar_per_hartree_to_ns(iter_count * delta_time_h_bar_per_hartree):.2E} ns)"
         return self.canvas
 
     def render_to_png(self, index):

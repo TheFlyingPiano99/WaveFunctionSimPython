@@ -294,6 +294,7 @@ def initialize():
         except KeyError:
             pass
 
+        """
         print("Creating Coulomb potential.")
         tensor = potential.add_coulomb_potential(
             V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
@@ -304,6 +305,7 @@ def initialize():
         )
         sim_state.localised_potential_hartree += tensor
         sim_state.coulomb_potential = tensor
+        """
 
         np.save(
             file="cache/localized_potential.npy",

@@ -5,16 +5,17 @@ import sources.math_utils as math_utils
 from PIL import Image
 import os
 
+font_size = 14
 
 def plot_probability_evolution(probability_evolutions, delta_t, index, show_fig=False):
     # Path:
     dir = "output/probability_evolution/"
     if not os.path.exists(dir):
         os.mkdir(dir)
-
+    matplotlib.rcParams.update({'font.size': font_size})
     plt.clf()  # Clear figure
     plt.grid(True)
-    plt.xlabel("Elapsed time [ħ/E]")
+    plt.xlabel("Elapsed time [ħ/hartree]")
     plt.ylabel("Probability")
     plt.title("Probability of particle being found in different regions")
     n = probability_evolutions[0][0].size
@@ -31,6 +32,8 @@ def plot_probability_evolution(probability_evolutions, delta_t, index, show_fig=
 def plot_per_axis_probability_density(
     title: str, data: tuple, delta_x: float, delta_t: float, index: int, potential_scale: float, show_fig=False
 ):
+    matplotlib.rcParams.update({'font.size': font_size})
+
     dir = "output/per_axis_probability_density/"
     if not os.path.exists(dir):
         os.mkdir(dir)
@@ -41,7 +44,7 @@ def plot_per_axis_probability_density(
     plt.ylabel(f"Probability density / Potential [{1.0 / potential_scale:.1f} hartree]")
     plt.title(
         title
-        + f"\n(Elapsed time = {index * delta_t:.5f} ħ/E = {math_utils.h_bar_per_hartree_to_ns(index * delta_t):.2E} ns)"
+        + f"\n(Elapsed time = {index * delta_t:.5f} ħ/hartree = {math_utils.h_bar_per_hartree_to_ns(index * delta_t):.2E} ns)"
     )
     n = data[0][0].size
     # For n assuming that all datasets have the same size

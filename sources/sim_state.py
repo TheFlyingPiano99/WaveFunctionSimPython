@@ -61,6 +61,7 @@ class SimState:
         )
         self.N = config["volume"]["number_of_samples_per_axis"]
         self.tensor_shape = (self.N, self.N, self.N)
+        self.coulomb_potential = np.zeros(shape=self.tensor_shape)
         self.delta_x_bohr_radii = self.simulated_volume_width_bohr_radii / self.N
         self.upper_limit_on_delta_time_h_per_hartree = (
             4.0
