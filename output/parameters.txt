@@ -26,3 +26,7 @@ Particle radius is 1.0 bohr radii.
 1D particle harmonic oscillator:
 Draining potential value at the outer edge is -100.0 hartree.
 Draining potential exponent is 3.0.
+Total iteration count is 3000.
+Total simulated time is 90.0000 h-bar / hartree.
+Elapsed system time during iteration was 0:06:57.261894.
+Average system time of an iteration was 0.1391 s.
