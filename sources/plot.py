@@ -50,7 +50,7 @@ def plot_per_axis_probability_density(
     # For n assuming that all datasets have the same size
     x = np.linspace(start=-n * delta_x * 0.5, stop=n * delta_x * 0.5, dtype=None, num=n)
     plt.xlim(data[0][2], data[0][3])
-    plt.ylim(0.0, 0.5)
+    plt.ylim(0.0, 0.25)
     for prob_data in data:
         plt.plot(x, prob_data[0], label=prob_data[1])
     plt.legend()
