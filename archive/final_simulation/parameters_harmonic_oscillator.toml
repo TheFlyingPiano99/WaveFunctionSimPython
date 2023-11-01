@@ -20,80 +20,6 @@ outer_potential_hartree = -100.0
 interpolation_exponent = 3.0
 
 
-#[[walls]]
-#potential_hartree = 10
-#center_bohr_radii_3 = [0.0, 20.0, 0.0]
-#normal_vector_3 = [0.0, 1.0, 0.0]
-#thickness_bohr_radii = 10.0
-#visible=true
-
-#[[walls]]
-#potential_hartree = 10
-#center_bohr_radii_3 = [0.0, -20.0, 0.0]
-#normal_vector_3 = [0.0, 1.0, 0.0]
-#thickness_bohr_radii = 10.0
-#visible=true
-
-#[[walls]]
-#potential_hartree = 20
-#center_bohr_radii_3 = [0.0, 30.0, 0.0]
-#normal_vector_3 = [0.0, 1.0, 0.0]
-#thickness_bohr_radii = 10.0
-#visible=true
-
-#[[walls]]
-#potential_hartree = 20
-#center_bohr_radii_3 = [30.0, 0.0, 0.0]
-#normal_vector_3 = [1.0, 0.0, 0.0]
-#thickness_bohr_radii = 10.0
-#visible=true
-
-#[[walls]]
-#potential_hartree = 20
-#center_bohr_radii_3 = [-30.0, 0.0, 0.0]
-#normal_vector_3 = [1.0, 0.0, 0.0]
-#thickness_bohr_radii = 10.0
-#visible=true
-
-#[[walls]]
-#potential_hartree = 20
-#center_bohr_radii_3 = [0.0, 0.0, -30.0]
-#normal_vector_3 = [0.0, 0.0, 1.0]
-#thickness_bohr_radii = 10.0
-#visible=true
-
-#[[walls]]
-#potential_hartree = 20
-#center_bohr_radii_3 = [0.0, 0.0, 30.0]
-#normal_vector_3 = [0.0, 0.0, 1.0]
-#thickness_bohr_radii = 10.0
-#visible=true
-
-
-#[[walls]]
-#potential_hartree = 10
-#center_bohr_radii_3 = [0.0, 0.0, 0.0]
-#normal_vector_3 = [0.0, 1.0, 0.0]
-#thickness_bohr_radii = 1.0
-#visible=true
-
-#[[optical_grids]]
-#potential_hartree = 8.0
-#center_bohr_radii_3 = [0.0, 0.0, 0.0]
-#normal_vector_3 = [1.0, 0.0, 0.0]
-#distance_between_nodes_bohr_radii = 4.0
-#node_in_one_direction = 11
-#visible=true
-
-#[[double_slits]]
-#center_bohr_radius_3 = [0, 0, 0]
-#normal = [1, 0, 0]
-#potential_hartree = 20.0
-#thickness_bohr_radii = 3.0
-#slit_width_bohr_radii = 0.5
-#distance_between_slits_bohr_radii = 2.0
-#visible = true
-
 [particle_hard_interaction]
 particle_radius_bohr_radii = 1.0
 potential_hartree = 20.0
@@ -102,7 +28,7 @@ potential_hartree = 20.0
 #central_potential_hartree = 20.0
 
 [harmonic_oscillator_1d]
-angular_frequency_radian_hartree_per_h_bar = 0.1415
+angular_frequency_radian_hartree_per_h_bar = 0.1571
 visible = true
 
 #[[walls_1d]]
