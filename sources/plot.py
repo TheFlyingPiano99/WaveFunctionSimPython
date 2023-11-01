@@ -34,15 +34,15 @@ def plot_per_axis_probability_density(
     title: str, data: tuple, delta_x: float, delta_t: float, index: int, potential_scale: float, show_fig=False
 ):
     matplotlib.rcParams.update({'font.size': font_size})
+    plt.clf()  # Clear figure
 
     dir = "output/per_axis_probability_density/"
     if not os.path.exists(dir):
         os.mkdir(dir)
 
-    plt.clf()  # Clear figure
     plt.grid(True)
     plt.xlabel("Location [Bohr radius]")
-    plt.ylabel(f"Probability density / Potential [{1.0 / potential_scale:.1f} hartree]")
+    plt.ylabel(f"Probability density / Potential [{1.0 / potential_scale:.1f} hartree]", fontsize=font_size * 0.9)
     plt.title(f"Elapsed time = {index * delta_t:.2f} ħ/hartree = {math_utils.h_bar_per_hartree_to_fs(index * delta_t):.2f} fs")
     n = data[0][0].size
     # For n assuming that all datasets have the same size
@@ -52,6 +52,7 @@ def plot_per_axis_probability_density(
     for prob_data in data:
         plt.plot(x, prob_data[0], label=prob_data[1])
     plt.legend()
+    plt.subplots_adjust(left=0.14, bottom=0.12, right=0.95, top=0.9)
     plt.savefig(
         os.path.join(
             dir,
