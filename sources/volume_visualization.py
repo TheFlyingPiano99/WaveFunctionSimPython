@@ -56,7 +56,7 @@ class VolumetricVisualization:
             glsl_map = """
             vec4 translucent_blue(float t) {
                 float tScaled = min(t, 1.0);
-                return vec4(tScaled, tScaled*tScaled, pow(tScaled, 0.5), max(0, tScaled*1.001 - 0.001) * 0.03);
+                return vec4(tScaled, tScaled*tScaled, pow(tScaled, 0.5), max(0, tScaled*1.001 - 0.001) * 0.01);
             }
             """
 
@@ -133,13 +133,13 @@ class VolumetricVisualization:
         self.view.camera = cam  # Select turntable at first
 
         self.text1 = scene.visuals.Text(
-            f"Probability density\n(Elapsed time = {0.0} ħ/hartree)",
+            f"Elapsed time = {0.0} ħ/hartree",
             parent=self.canvas.scene,
             color="black",
         )
-        self.text1.font_size = 32
+        self.text1.font_size = 36
         self.text1.pos = self.canvas.size[0] // 2, self.canvas.size[1] // 14
-        self.text1.text = f"Probability density\n(Elapsed time = {0.0:.5f} ħ/hartree = {math_utils.h_bar_per_hartree_to_ns(0.0):.2E} ns)"
+        self.text1.text = f"Elapsed time = {0.0:.2f} ħ/hartree = {math_utils.h_bar_per_hartree_to_fs(0.0):.2f} fs"
 
         # Create Axis:
         # TODO
@@ -190,7 +190,7 @@ class VolumetricVisualization:
             )
 
         self.canvas.update()
-        self.text1.text = f"Probability density\n(Elapsed time = {iter_count * delta_time_h_bar_per_hartree:.5f} ħ/hartree = {math_utils.h_bar_per_hartree_to_ns(iter_count * delta_time_h_bar_per_hartree):.2E} ns)"
+        self.text1.text = f"Elapsed time = {iter_count * delta_time_h_bar_per_hartree:.2f} ħ/hartree = {math_utils.h_bar_per_hartree_to_fs(iter_count * delta_time_h_bar_per_hartree):.2f} fs"
         return self.canvas
 
     def render_to_png(self, index):

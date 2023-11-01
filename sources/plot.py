@@ -2,10 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image
 import sources.math_utils as math_utils
+from matplotlib.image import NonUniformImage
 from PIL import Image
 import os
 
-font_size = 14
+font_size = 16 # 18 would be too big
 
 def plot_probability_evolution(probability_evolutions, delta_t, index, show_fig=False):
     # Path:
@@ -42,10 +43,7 @@ def plot_per_axis_probability_density(
     plt.grid(True)
     plt.xlabel("Location [Bohr radius]")
     plt.ylabel(f"Probability density / Potential [{1.0 / potential_scale:.1f} hartree]")
-    plt.title(
-        title
-        + f"\n(Elapsed time = {index * delta_t:.5f} ħ/hartree = {math_utils.h_bar_per_hartree_to_ns(index * delta_t):.2E} ns)"
-    )
+    plt.title(f"Elapsed time = {index * delta_t:.2f} ħ/hartree = {math_utils.h_bar_per_hartree_to_fs(index * delta_t):.2f} fs")
     n = data[0][0].size
     # For n assuming that all datasets have the same size
     x = np.linspace(start=-n * delta_x * 0.5, stop=n * delta_x * 0.5, dtype=None, num=n)
@@ -70,26 +68,53 @@ def plot_per_axis_probability_density(
     return np.array(img)
 
 
-def plot_canvas(plane_probability_density, plane_dwell_time_density, index):
+def plot_canvas(plane_probability_density, plane_dwell_time_density, index, delta_x, delta_t):
+    # Probability density:
     dir = "output/canvas_probability/"
     if not os.path.exists(dir):
         os.mkdir(dir)
-    matplotlib.image.imsave(
-        fname=os.path.join(dir, f"measurement_plane_probability_{index:04d}.png"),
-        arr=plane_probability_density,
-        cmap="Reds",
-        dpi=100,
-        vmin=0.0,
-        vmax=max(0.0000001, np.max(plane_probability_density)),
-    )
+
+    plt.clf()
+
+    matplotlib.rcParams.update({'font.size': 14})
+    plt.imshow(plane_probability_density,
+               cmap="Reds",
+               interpolation="bilinear",
+               vmin=0.0,
+               vmax=max(0.0000000001, np.max(plane_probability_density)),
+               )
+    plt.colorbar()
+    plt.xlabel("X coordinate [Bohr radius]")
+    plt.ylabel("Y coordinate [Bohr radius]")
+    plt.xlim(0, plane_probability_density.shape[0])
+    plt.ylim(0, plane_probability_density.shape[1])
+    plt.xticks(ticks=np.linspace(0, plane_probability_density.shape[0], 5),
+               labels=np.linspace(-plane_probability_density.shape[0] * delta_x * 0.5, plane_probability_density.shape[0] * delta_x * 0.5, 5))
+    plt.yticks(ticks=np.linspace(0, plane_probability_density.shape[1], 5),
+               labels=np.linspace(-plane_probability_density.shape[1] * delta_x * 0.5, plane_probability_density.shape[1] * delta_x * 0.5, 5))
+    plt.title(f"Elapsed time = {index * delta_t:.2f} ħ/hartree = {math_utils.h_bar_per_hartree_to_fs(index * delta_t):.2f} fs\n ")
+    plt.savefig(fname=os.path.join(dir, f"measurement_plane_probability_{index:04d}.png"))
+
+    # Dwell time:
     dir = "output/canvas_dwell_time/"
     if not os.path.exists(dir):
         os.mkdir(dir)
-    matplotlib.image.imsave(
-        fname=os.path.join(dir, f"measurement_dwell_time_{index:04d}.png"),
-        arr=plane_dwell_time_density,
-        cmap="Reds",
-        dpi=100,
-        vmin=0.0,
-        vmax=max(0.0000001, np.max(plane_dwell_time_density)),
-    )
+
+    plt.clf()
+    plt.imshow(plane_dwell_time_density,
+               cmap="Reds",
+               interpolation="bilinear",
+               vmin=0.0,
+               vmax=max(0.0000000001, np.max(plane_dwell_time_density)),
+               )
+    plt.colorbar()
+    plt.xlabel("X coordinate [Bohr radius]")
+    plt.ylabel("Y coordinate [Bohr radius]")
+    plt.xlim(0, plane_dwell_time_density.shape[0])
+    plt.ylim(0, plane_dwell_time_density.shape[1])
+    plt.xticks(ticks=np.linspace(0, plane_dwell_time_density.shape[0], 5),
+               labels=np.linspace(-plane_dwell_time_density.shape[0] * delta_x * 0.5, plane_dwell_time_density.shape[0] * delta_x * 0.5, 5))
+    plt.yticks(ticks=np.linspace(0, plane_probability_density.shape[1], 5),
+               labels=np.linspace(-plane_dwell_time_density.shape[1] * delta_x * 0.5, plane_dwell_time_density.shape[1] * delta_x * 0.5, 5))
+    plt.title(f"Elapsed time = {index * delta_t:.2f} ħ/hartree = {math_utils.h_bar_per_hartree_to_fs(index * delta_t):.2f} fs\n ")
+    plt.savefig(fname=os.path.join(dir, f"measurement_plane_dwell_time_{index:04d}.png"))

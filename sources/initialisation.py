@@ -294,18 +294,39 @@ def initialize():
         except KeyError:
             pass
 
-        """
-        print("Creating Coulomb potential.")
-        tensor = potential.add_coulomb_potential(
-            V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
-            delta_x=sim_state.delta_x_bohr_radii,
-            center_bohr_radius=np.array([0.0, 40.0, 0.0]),
-            normal=np.array([0.0, -1.0, 0.0]),
-            charge=50.0,
-        )
-        sim_state.localised_potential_hartree += tensor
-        sim_state.coulomb_potential = tensor
-        """
+        try:
+            coulomb_potential = sim_state.config["coulomb_potential"]
+            print("Creating Coulomb potential.")
+            tensor = potential.add_coulomb_potential(
+                V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+                delta_x=sim_state.delta_x_bohr_radii,
+                center_bohr_radius=np.array(coulomb_potential["center_bohr_radii_3"]),
+                gradient_dir=np.array(coulomb_potential["gradient_direction"]),
+                charge=coulomb_potential["charge_elementary_charge"],
+            )
+            sim_state.localised_potential_hartree += tensor
+            visible = coulomb_potential["visible"]
+            if visible:
+                sim_state.coulomb_potential = tensor
+        except KeyError:
+            pass
+
+        try:
+            gradient = sim_state.config["linear_potential_gradient"]
+            print("Creating linear potential gradient.")
+            tensor = potential.add_linear_potential_gradient(
+                V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+                delta_x=sim_state.delta_x_bohr_radii,
+                center_bohr_radius=np.array(gradient["center_bohr_radii_3"]),
+                gradient_dir=np.array(gradient["gradient_direction"]),
+                gradient_val=gradient["gradient_magnitude_hartree_per_bohr_radius"],
+            )
+            sim_state.localised_potential_hartree += tensor
+            visible = gradient["visible"]
+            if visible:
+                sim_state.coulomb_potential = tensor
+        except KeyError:
+            pass
 
         np.save(
             file="cache/localized_potential.npy",

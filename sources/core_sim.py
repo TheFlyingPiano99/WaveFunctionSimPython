@@ -170,6 +170,8 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
                 plane_probability_density=measurement_tools.measurement_plane.get_probability_density(),
                 plane_dwell_time_density=measurement_tools.measurement_plane.get_dwell_time(),
                 index=iter_data.i,
+                delta_x=sim_state.delta_x_bohr_radii,
+                delta_t=sim_state.delta_time_h_bar_per_hartree
             )
 
         sim_state.wave_tensor = time_evolution(

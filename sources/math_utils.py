@@ -85,6 +85,9 @@ def relativistic_energy(momentum, rest_mass: float):
 def h_bar_per_hartree_to_ns(t: float):
     return t * 2.4188843265857 * 10 ** (-8)
 
+def h_bar_per_hartree_to_fs(t: float):
+    return h_bar_per_hartree_to_ns(t) * 10**6
+
 
 def cut_window(arr: np.ndarray, bottom: np.array, top: np.array):
     return arr[bottom[0] : top[0], bottom[1] : top[1], bottom[2] : top[2]]

@@ -311,14 +311,25 @@ def add_wall(V: np.ndarray, delta_x: float, center_bohr_radius: np.array, normal
     return  V
 
 @jit(nopython=True)
-def add_coulomb_potential(V: np.ndarray, delta_x: float, center_bohr_radius: np.array, normal: np.array, charge: float):
+def add_coulomb_potential(V: np.ndarray, delta_x: float, center_bohr_radius: np.array, gradient_dir: np.array, charge: float):
     for x in range(V.shape[0]):
         for y in range(V.shape[1]):
             for z in range(V.shape[2]):
                 r = math_utils.transform_corner_origin_to_center_origin_system(
                     np.array([x, y, z]) * delta_x, delta_x * V.shape[0]
                 )
-                V[x, y, z] += -charge * max(abs(np.dot(normal, r - center_bohr_radius)), 0.00000001)
+                V[x, y, z] += charge / max(abs(np.dot(gradient_dir, r - center_bohr_radius)), 0.00000001)
+    return  V
+
+@jit(nopython=True)
+def add_linear_potential_gradient(V: np.ndarray, delta_x: float, center_bohr_radius: np.array, gradient_dir: np.array, gradient_val: float):
+    for x in range(V.shape[0]):
+        for y in range(V.shape[1]):
+            for z in range(V.shape[2]):
+                r = math_utils.transform_corner_origin_to_center_origin_system(
+                    np.array([x, y, z]) * delta_x, delta_x * V.shape[0]
+                )
+                V[x, y, z] -= gradient_val * abs(np.dot(gradient_dir, r - center_bohr_radius))
     return  V
 
 @jit(nopython=True)
