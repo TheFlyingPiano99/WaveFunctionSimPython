@@ -16,9 +16,9 @@ def plot_probability_evolution(probability_evolutions, delta_t, index, show_fig=
     matplotlib.rcParams.update({'font.size': font_size})
     plt.clf()  # Clear figure
     plt.grid(True)
-    plt.xlabel("Elapsed time [ħ/hartree]")
+    plt.xlabel("Elapsed time [ħ/Hartree]")
     plt.ylabel("Probability")
-    plt.title("Probability of particle being found in different regions")
+    plt.title("Probability of particle in different regions")
     n = probability_evolutions[0][0].size
     x = np.linspace(start=0, stop=n * delta_t, dtype=None, num=n)
     plt.xlim(0, n * delta_t)
@@ -42,8 +42,8 @@ def plot_per_axis_probability_density(
 
     plt.grid(True)
     plt.xlabel("Location [Bohr radius]")
-    plt.ylabel(f"Probability density / Potential [{1.0 / potential_scale:.1f} hartree]", fontsize=font_size * 0.9)
-    plt.title(f"Elapsed time = {index * delta_t:.2f} ħ/hartree = {math_utils.h_bar_per_hartree_to_fs(index * delta_t):.2f} fs")
+    plt.ylabel(f"Probability density / Potential [{1.0 / potential_scale:.1f} Hartree]", fontsize=font_size * 0.9)
+    plt.title(f"Elapsed time = {index * delta_t:.2f} ħ/Hartree = {math_utils.h_bar_per_hartree_to_fs(index * delta_t):.2f} fs")
     n = data[0][0].size
     # For n assuming that all datasets have the same size
     x = np.linspace(start=-n * delta_x * 0.5, stop=n * delta_x * 0.5, dtype=None, num=n)
@@ -93,7 +93,7 @@ def plot_canvas(plane_probability_density, plane_dwell_time_density, index, delt
                labels=np.linspace(-plane_probability_density.shape[0] * delta_x * 0.5, plane_probability_density.shape[0] * delta_x * 0.5, 5))
     plt.yticks(ticks=np.linspace(0, plane_probability_density.shape[1], 5),
                labels=np.linspace(-plane_probability_density.shape[1] * delta_x * 0.5, plane_probability_density.shape[1] * delta_x * 0.5, 5))
-    plt.title(f"Elapsed time = {index * delta_t:.2f} ħ/hartree = {math_utils.h_bar_per_hartree_to_fs(index * delta_t):.2f} fs\n ")
+    plt.title(f"Elapsed time = {index * delta_t:.2f} ħ/Hartree = {math_utils.h_bar_per_hartree_to_fs(index * delta_t):.2f} fs\n ")
     plt.savefig(fname=os.path.join(dir, f"measurement_plane_probability_{index:04d}.png"))
 
     # Dwell time:
@@ -117,5 +117,5 @@ def plot_canvas(plane_probability_density, plane_dwell_time_density, index, delt
                labels=np.linspace(-plane_dwell_time_density.shape[0] * delta_x * 0.5, plane_dwell_time_density.shape[0] * delta_x * 0.5, 5))
     plt.yticks(ticks=np.linspace(0, plane_probability_density.shape[1], 5),
                labels=np.linspace(-plane_dwell_time_density.shape[1] * delta_x * 0.5, plane_dwell_time_density.shape[1] * delta_x * 0.5, 5))
-    plt.title(f"Elapsed time = {index * delta_t:.2f} ħ/hartree = {math_utils.h_bar_per_hartree_to_fs(index * delta_t):.2f} fs\n ")
+    plt.title(f"Elapsed time = {index * delta_t:.2f} ħ/Hartree = {math_utils.h_bar_per_hartree_to_fs(index * delta_t):.2f} fs\n ")
     plt.savefig(fname=os.path.join(dir, f"measurement_plane_dwell_time_{index:04d}.png"))

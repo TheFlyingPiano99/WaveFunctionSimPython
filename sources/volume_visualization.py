@@ -133,13 +133,13 @@ class VolumetricVisualization:
         self.view.camera = cam  # Select turntable at first
 
         self.text1 = scene.visuals.Text(
-            f"Elapsed time = {0.0} ħ/hartree",
+            f"Elapsed time = {0.0} ħ/Hartree",
             parent=self.canvas.scene,
             color="black",
         )
         self.text1.font_size = 36
         self.text1.pos = self.canvas.size[0] // 2, self.canvas.size[1] // 14
-        self.text1.text = f"Elapsed time = {0.0:.2f} ħ/hartree = {math_utils.h_bar_per_hartree_to_fs(0.0):.2f} fs"
+        self.text1.text = f"Elapsed time = {0.0:.2f} ħ/Hartree = {math_utils.h_bar_per_hartree_to_fs(0.0):.2f} fs"
 
         # Create Axis:
         # TODO

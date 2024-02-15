@@ -5,8 +5,8 @@
 
 ["wave_packet"]
 particle_mass = 1.0
-initial_wp_position_bohr_radii_3 = [0.0, 15.0, 0.0]
-initial_wp_velocity_bohr_radii_hartree_per_h_bar = [0.0, 0.0, 0.0]
+initial_wp_position_bohr_radii_3 = [0.0, 10.0, 0.0]
+initial_wp_velocity_bohr_radii_hartree_per_h_bar = [0.0, -3.0, 0.0]
 wp_width_bohr_radii = 2.0
 
 ["volume"]
@@ -57,23 +57,25 @@ visible=false
 
 
 [[walls]]
-potential_hartree = 8
+potential_hartree = 5
 center_bohr_radii_3 = [0.0, 0.0, 0.0]
 normal_vector_3 = [0.0, 1.0, 0.0]
-thickness_bohr_radii = 1.0
+thickness_bohr_radii = 2.0
 visible=true
 
-#[coulomb_potential]
-#charge_elementary_charge = 200.0
+[coulomb_potential]
+charge_density_elementary_charge_per_bohr_radius = 10.0
+center_bohr_radii_3 = [0.0, 10.0, 0.0]
+gradient_direction = [0.0, 1.0, 0.0]
+oxide_start_bohr_radii = 9
+oxide_end_bohr_radii = 100
+visible = false
+
+#[linear_potential_gradient]
 #center_bohr_radii_3 = [0.0, 40.0, 0.0]
 #gradient_direction = [0.0, 1.0, 0.0]
+#gradient_magnitude_hartree_per_bohr_radius = 0.25
 #visible = true
-
-[linear_potential_gradient]
-center_bohr_radii_3 = [0.0, 40.0, 0.0]
-gradient_direction = [0.0, 1.0, 0.0]
-gradient_magnitude_hartree_per_bohr_radius = 0.25
-visible = true
 
 [iteration]
 delta_time_h_bar_per_hartree = 0.01
@@ -91,7 +93,7 @@ video_frame_rate = 25
 camera_rotation_speed = 2.0
 camera_azimuth = -10.0
 camera_elevation = 10.0
-light_direction = [-1.0, -1.0, 1.0]
+light_direction = [-1.0, 1.0, 1.0]
 light_rotation_speed = 0.001
 light_elevation_speed = 0.0
 

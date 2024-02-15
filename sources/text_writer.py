@@ -17,7 +17,7 @@ def get_title_text():
 
 def write_potential_wall_warnings(text, wall_potential, wall, sim_state, use_colors):
     time_times_potential = wall_potential * sim_state.delta_time_h_bar_per_hartree
-    text.write(f"Obstacle wall potential is {wall_potential} hartree.\n")
+    text.write(f"Obstacle wall potential is {wall_potential} Hartree.\n")
     if abs((time_times_potential / cp.pi) - int(time_times_potential / cp.pi)) < 0.05:
         text.write(
             (Fore.RED if use_colors else "")
@@ -109,7 +109,7 @@ def get_potential_description_text(sim_state: sim_st.SimState, use_colors=False)
         interaction = sim_state.config["particle_hard_interaction"]
         text.write("1D particle hard interaction potential:\n")
         v = interaction["potential_hartree"]
-        text.write(f"Potential is {v} hartree.\n")
+        text.write(f"Potential is {v} Hartree.\n")
         r = interaction["particle_radius_bohr_radii"]
         text.write(f"Particle radius is {r} bohr radii.\n")
         text.write("\n")
@@ -120,7 +120,7 @@ def get_potential_description_text(sim_state: sim_st.SimState, use_colors=False)
         interaction = sim_state.config["particle_inv_squared_interaction"]
         text.write("1D particle inverse squared interaction potential:\n")
         v = interaction["central_potential_hartree"]
-        text.write(f"Potential at unit distance is {v} hartree.\n")
+        text.write(f"Potential at unit distance is {v} Hartree.\n")
         text.write("\n")
     except KeyError:
         pass
@@ -130,14 +130,14 @@ def get_potential_description_text(sim_state: sim_st.SimState, use_colors=False)
         oscillator = sim_state.config["harmonic_oscillator_1d"]
         text.write("1D particle harmonic oscillator:\n")
         omega = oscillator["angular_frequency"]
-        text.write(f"Angular velocity is {omega} radian * hartree / h-bar.\n")
+        text.write(f"Angular velocity is {omega} radian * Hartree / h-bar.\n")
         text.write("\n")
     except KeyError:
         pass
 
     drain_max = sim_state.config["drain"]["outer_potential_hartree"]
     text.write(
-        f"Draining potential value at the outer edge is {drain_max:.1f} hartree.\n"
+        f"Draining potential value at the outer edge is {drain_max:.1f} Hartree.\n"
     )
     exponent = sim_state.config["drain"]["interpolation_exponent"]
     text.write(f"Draining potential exponent is {exponent:.1f}.\n")
@@ -160,7 +160,7 @@ def get_sim_state_description_text(sim_state: sim_st.SimState, use_colors=False)
     )
     text.write(
         f"Mass of the particle is {sim_state.particle_mass} electron rest mass.\n"
-        f"Initial velocity of the particle is {velocity_magnitude} Bohr radius hartree / h-bar.\n"
+        f"Initial velocity of the particle is {velocity_magnitude} Bohr radius Hartree / h-bar.\n"
     )
 
     momentum_magnitude = (

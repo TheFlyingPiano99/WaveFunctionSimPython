@@ -302,14 +302,16 @@ def initialize():
                 delta_x=sim_state.delta_x_bohr_radii,
                 center_bohr_radius=np.array(coulomb_potential["center_bohr_radii_3"]),
                 gradient_dir=np.array(coulomb_potential["gradient_direction"]),
-                charge=coulomb_potential["charge_elementary_charge"],
+                charge_density=coulomb_potential["charge_density_elementary_charge_per_bohr_radius"],
+                oxide_start_bohr_radii=coulomb_potential["oxide_start_bohr_radii"],
+                oxide_end_bohr_radii=coulomb_potential["oxide_end_bohr_radii"]
             )
             sim_state.localised_potential_hartree += tensor
             visible = coulomb_potential["visible"]
             if visible:
-                sim_state.coulomb_potential = tensor
+                sim_state.localised_potential_to_visualize_hartree += tensor
         except KeyError:
-            pass
+            print("No Coulomb potential created")
 
         try:
             gradient = sim_state.config["linear_potential_gradient"]
