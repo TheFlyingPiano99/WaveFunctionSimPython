@@ -190,7 +190,7 @@ class VolumetricVisualization:
             )
 
         self.canvas.update()
-        self.text1.text = f"Elapsed time = {iter_count * delta_time_h_bar_per_hartree:.2f} ħ/hartree = {math_utils.h_bar_per_hartree_to_fs(iter_count * delta_time_h_bar_per_hartree):.2f} fs"
+        self.text1.text = f"Elapsed time = {iter_count * delta_time_h_bar_per_hartree:.2f} ħ/Hartree = {math_utils.h_bar_per_hartree_to_fs(iter_count * delta_time_h_bar_per_hartree):.2f} fs"
         return self.canvas
 
     def render_to_png(self, index):
