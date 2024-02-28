@@ -4,16 +4,16 @@ Python implementation of a simulation using a numeric approximation of the time-
 ---
 
 ## Requirements
-CUDA-Enabled NVIDIA GPU
-CUDA Toolkit v12.x
-Python 3.11 or newer
+CUDA-Enabled NVIDIA GPU  
+CUDA Toolkit v12.x  
+Python 3.11 or newer  
 
 ## How to install
 
 - Download Python from https://www.python.org/downloads/ and install it on your computer.
 - Download the CUDA Toolkit from https://developer.nvidia.com/cuda-downloads] and install it on your computer.
 - Download and install Git version control system from https://git-scm.com/downloads.
-- Open a command-line and clone this repository by entering
+- Open a command-line and clone this repository by entering  
 `git clone https://github.com/TheFlyingPiano99/WaveFunctionSimPython.git`
 - Enter the cloned folder by `cd WaveFunctionSimPython`
 - Create a Python virtual environment for this application using `python -m venv .venv`
