@@ -10,14 +10,35 @@ import os
 import filecmp
 from colorama import Fore, Style
 import sources.math_utils as math_utils
+import sys
 
+def is_toml(file_name):
+    return file_name.endswith('.toml')
 
 def initialize():
-    # We use hartree atomic unit system
     initialisation_start_time_s = time.time()
     use_cache = True
-    try:
-        with open("config/parameters.toml", mode="r") as f:
+    config_dir = "config/"
+    if os.path.exists(config_dir):
+        conf_files = list(filter(is_toml, os.listdir(config_dir)))
+        if len(conf_files) == 1:
+            selected_conf_file = conf_files[0]
+        elif len(conf_files) > 1:
+            answer = -1
+            while not answer in range(len(conf_files)):
+                print("Available configuration files:")
+                for idx, file  in enumerate(conf_files):
+                    print(f"{idx} {file}")
+                print("Select one by entering its index number:", end=" ")
+                answer = int(input())
+            selected_conf_file = conf_files[answer]
+        else:
+            print("No config file found under config folder.")
+            print("Exiting application.")
+            sys.exit(0)
+        # Opening the selected file:
+        with open(config_dir + selected_conf_file, mode="r") as f:
+            print(f"Opening {selected_conf_file}")
             config = toml.load(f)
             try:
                 if not os.path.exists("cache/"):
@@ -26,17 +47,17 @@ def initialize():
                     cached_config = toml.load(cache_f)
                     if not cached_config == config:
                         print(
-                            "Changes detected in 'parameters.toml'.\n"
+                            "Configuration file is different from the one used last time.\n"
                             "Falling back to full initialisation."
                         )
                         use_cache = False
             except OSError as e:
                 use_cache = False
-    except OSError as e:
-        print(
-            Fore.RED + "No 'config/parameters.toml' found!" + Style.RESET_ALL + "\n"
-            "Exiting application."
-        )
+    else:
+        print("No config folder found.")
+        print("Exiting application.")
+        sys.exit(0)
+
     sim_state = sim_st.SimState(config)
     sim_state.use_cache = use_cache
 

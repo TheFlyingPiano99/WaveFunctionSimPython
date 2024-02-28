@@ -1,0 +1,58 @@
+# We simulate the time-development of the wave function in an NxNxN sized cube
+# The origin of the coordinate system is in the center of the simulated volume
+# We use right-handed system, where +Y is the upward direction
+# Values are given in hartree atomic unit system
+
+["wave_packet"]
+particle_mass = 1.0
+initial_wp_position_bohr_radii_3 = [-15.0, 0.0, 0.0]
+initial_wp_velocity_bohr_radii_hartree_per_h_bar = [3.0, 0.0, 0.0]
+wp_width_bohr_radii = 2.0
+
+["volume"]
+simulated_volume_width_bohr_radii = 120.0 #Including draining potential regions
+number_of_samples_per_axis = 512         #Including draining potential regions
+viewing_window_boundary_bottom_corner_bohr_radii_3 = [30.0, 30.0, 30.0]   # Same as the inner boundary of the draining potential
+viewing_window_boundary_top_corner_bohr_radii_3 = [-30.0, -30.0, -30.0]   # Same as the inner boundary of the draining potential
+
+["drain"]
+outer_potential_hartree = -100.0
+interpolation_exponent = 3.0
+
+[[optical_grids]]
+potential_hartree = 25.0
+center_bohr_radii_3 = [0.0, 0.0, 0.0]
+normal_vector_3 = [1.0, 0.0, 0.0]
+distance_between_nodes_bohr_radii = 8.0
+node_in_one_direction = 11
+visible=true
+
+
+[iteration]
+delta_time_h_bar_per_hartree = 0.03
+total_iteration_count = 3000
+animation_frame_step_interval = 2
+png_step_interval = 10
+measurement_plane_capture_interval = 10
+probability_plot_interval = 50
+per_axis_probability_denisty_interval = 2
+
+[view]
+video_frame_rate = 25
+
+[view.volumetric]
+camera_rotation_speed = 2.0
+camera_azimuth = -10.0
+camera_elevation = 45.0
+light_direction = [-1.0, 1.0, 1.0]
+light_rotation_speed = 0.001
+light_elevation_speed = 0.0
+
+[view.per_axis_plot]
+title = "Interaction between 1D particles in harmonic oscillator"
+x_axis_label = "A particle"
+y_axis_label = "B particle"
+z_axis_label = "C particle"
+potential_label = "Potential"
+potential_plot_offset = -0.34
+potential_plot_scale = 0.02

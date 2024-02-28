@@ -32,7 +32,7 @@ def sim():
         while not answer in {"y", "n"}:
             print(
                 "Output directory is not empty.\n"
-                'Continuing will override previous files under "./output/".\n'
+                'Continuing will possibly override files under "./output/".\n'
                 "Would you still like to continue [y/n]?",
                 end=" ",
             )
