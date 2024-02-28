@@ -1,0 +1,62 @@
+Simulation state:
+Mass of the particle is 1.0 electron rest mass.
+Initial velocity of the particle is 3.0 Bohr radius hartree / h-bar.
+Initial mean momentum of particle is 3.0 h-bar / Bohr radius.
+De Broglie wavelength associated with the particle is 2.0944 Bohr radii.
+Initial mean kinetic energy of the particle is 4.5 hartree.
+Width of simulated volume is w = 120.0 Bohr radii.
+Number of samples per axis is N = 256.
+Space resolution is delta_x = 0.46875 Bohr radii.
+The maximal viable time resolution < 0.2797645484037223 h-bar / hartree
+Time resolution is delta = 0.005 h-bar / hartree.
+Video frame rate is 25 frame/s.
+Localised potential energy:
+Walls:
+1.
+Obstacle wall potential is 20 hartree.
+WARNING: delta_t * wall_max_potential too close to multiply of pi! (0.1)
+Wall thickness is 15.0 bohr radii.
+This is thicker than the de Broglie wavelength of the particle.
+Wall thickness is 15.00 bohr radii.
+
+2.
+Obstacle wall potential is 20 hartree.
+WARNING: delta_t * wall_max_potential too close to multiply of pi! (0.1)
+Wall thickness is 10.0 bohr radii.
+This is thicker than the de Broglie wavelength of the particle.
+Wall thickness is 10.00 bohr radii.
+
+3.
+Obstacle wall potential is 20 hartree.
+WARNING: delta_t * wall_max_potential too close to multiply of pi! (0.1)
+Wall thickness is 10.0 bohr radii.
+This is thicker than the de Broglie wavelength of the particle.
+Wall thickness is 10.00 bohr radii.
+
+4.
+Obstacle wall potential is 20 hartree.
+WARNING: delta_t * wall_max_potential too close to multiply of pi! (0.1)
+Wall thickness is 10.0 bohr radii.
+This is thicker than the de Broglie wavelength of the particle.
+Wall thickness is 10.00 bohr radii.
+
+5.
+Obstacle wall potential is 20 hartree.
+WARNING: delta_t * wall_max_potential too close to multiply of pi! (0.1)
+Wall thickness is 10.0 bohr radii.
+This is thicker than the de Broglie wavelength of the particle.
+Wall thickness is 10.00 bohr radii.
+
+6.
+Obstacle wall potential is 8 hartree.
+WARNING: delta_t * wall_max_potential too close to multiply of pi! (0.04)
+Wall thickness is 1.0 bohr radii.
+This is thinner than the de Broglie wavelength of the particle.
+Wall thickness is 1.00 bohr radii.
+
+Draining potential value at the outer edge is -100.0 hartree.
+Draining potential exponent is 3.0.
+Total iteration count is 10000.
+Total simulated time is 50.0000 h-bar / hartree.
+Elapsed system time during iteration was 0:33:02.142346.
+Average system time of an iteration was 0.1982 s.
