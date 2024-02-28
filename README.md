@@ -28,7 +28,7 @@ This might take a while.
 The simulator uses a configuration file located under `<project folder>/config/`
 This file uses the Tom's Obvious Minimal Language.
 If you want to learn about TOML, browse https://toml.io/en/.
-Read the provided configuration files in `config` and under `archive` to discover the available options.
+Read the provided configuration files in `<project folder>/config/` and under `<project folder>/archive/final_configs/` to discover the available options.
 
 ### Running the simulation
 If you start the application, it will check the content of the `<project folder>/cache/` folder.
