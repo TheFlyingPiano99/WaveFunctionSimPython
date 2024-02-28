@@ -8,7 +8,7 @@ import sources.measurement as measurement
 from alive_progress import alive_bar
 import sources.signal_handling as signal_handling
 import os
-import sources.snapshot_io as snapshot
+import sources.snapshot_io as snapshot_io
 from sources.iter_data import IterData
 import keyboard
 import sys
@@ -66,9 +66,9 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
         and os.path.exists("cache/data_snapshot.txt")
         and os.path.exists("cache/wave_snapshot.npy")
     ):
-        print("Snapshot of interrupted simulation detected.")
-        sim_state, iter_data = snapshot.read_snapshot(sim_state, iter_data)
-        snapshot.remove_snapshot()
+        sim_state, iter_data = snapshot_io.read_snapshot(sim_state, iter_data)
+        snapshot_io.remove_snapshot()
+        print(Fore.BLUE + "Snapshot of an interrupted simulation loaded.\nResuming previous wave function." + Style.RESET_ALL)
 
     print(Fore.GREEN + "Simulating " + Style.RESET_ALL + "(Press <Ctrl-c> to quit.)")
 
@@ -79,13 +79,14 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
 
     # Main iteration loop:
     """
+    # This progress bar was problematic in some consoles:
     with alive_bar(iter_data.total_iteration_count) as bar:
         for j in range(iter_data.i):
             bar()
     """
     for iter_data.i in tqdm(range(start_index, iter_data.total_iteration_count)):
         if iter_data.is_quit:
-            snapshot.write_snapshot(sim_state, iter_data)
+            snapshot_io.write_snapshot(sim_state, iter_data)
             sys.exit(0)
 
         iter_start_time_s = time.time()
@@ -93,6 +94,7 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
             sim_state.wave_tensor
         )
 
+        # Update all measurement tools:
         measurement_tools.measurement_volume_full.integrate_probability_density(
             sim_state.probability_density
         )
@@ -121,6 +123,8 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
             measurement_tools.z_axis_probability_density.integrate_probability_density(
                 sim_state.probability_density
             )
+
+        # Plot state:
         if iter_data.i % iter_data.per_axis_probability_denisty_plot_interval == 0:
             measurement_tools.per_axis_density_plot = plot.plot_per_axis_probability_density(
                 title=sim_state.config["view"]["per_axis_plot"]["title"],
@@ -174,6 +178,7 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
                 delta_t=sim_state.delta_time_h_bar_per_hartree
             )
 
+        # Main time development step:
         sim_state.wave_tensor = time_evolution(
             wave_tensor=sim_state.wave_tensor,
             kinetic_operator=sim_state.kinetic_operator,
@@ -182,7 +187,7 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
         iter_time = time.time() - iter_start_time_s
         iter_data.elapsed_system_time_s += iter_time
 
-    # Calculate resulting time statistics:
+    # Calculate resulting time statistics after the iteration:
     iter_data.total_simulated_time = (
         sim_state.delta_time_h_bar_per_hartree * iter_data.total_iteration_count
     )

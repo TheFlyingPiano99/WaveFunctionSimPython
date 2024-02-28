@@ -1,7 +1,7 @@
 # We simulate the time-development of the wave function in an NxNxN sized cube
 # The origin of the coordinate system is in the center of the simulated volume
-# We use right-handed system, where +Y is the upward direction
-# Values are given in hartree atomic unit system
+# We use a right-handed system, where +Y is the upward direction
+# Values are given in Hartree atomic unit system
 
 ["wave_packet"]
 particle_mass = 1.0
@@ -52,10 +52,10 @@ light_rotation_speed = 0.001
 light_elevation_speed = 0.0
 
 [view.per_axis_plot]
-title = "Interaction between 1D particles in harmonic oscillator"
-x_axis_label = "A particle"
-y_axis_label = "B particle"
-z_axis_label = "C particle"
+title = "Projection of the probability density onto axes"
+x_axis_label = "X-axis"
+y_axis_label = "Y-axis"
+z_axis_label = "Z-axis"
 potential_label = "Potential"
 potential_plot_offset = -0.34
 potential_plot_scale = 0.02
