@@ -25,20 +25,22 @@ def sim():
     print(text_writer.get_title_text())
 
     out_dir = "output/"
-    if os.path.exists(out_dir):
-        if os.listdir(out_dir):
-            answer = ""
-            while not answer in {"y", "n"}:
-                print(
-                    "Output directory is not empty.\n"
-                    'Continuing will override previous files under "./output/".\n'
-                    "Would you still like to continue [y/n]?",
-                    end=" ",
-                )
-                answer = input()
-                if answer == "n":
-                    print("Exiting application.")
-                    sys.exit(0)
+    if not os.path.exists(out_dir):
+        os.mkdir(out_dir)
+    if os.listdir(out_dir):
+        answer = ""
+        while not answer in {"y", "n"}:
+            print(
+                "Output directory is not empty.\n"
+                'Continuing will override previous files under "./output/".\n'
+                "Would you still like to continue [y/n]?",
+                end=" ",
+            )
+            answer = input()
+            if answer == "n":
+                print("Exiting application.")
+                sys.exit(0)
+
     print("\n")
     sim_state = init.initialize()
     text_writer.write_sim_state(sim_state)
