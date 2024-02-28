@@ -13,7 +13,7 @@ Video frame rate is 25 frame/s.
 Localised potential energy:
 Double slits:
 Obstacle wall potential is 20.0 hartree.
-Wall thickness is 3.0 bohr radii.
+Wall thickness is 3.0 Bohr radii.
 This is thicker than the de Broglie wavelength of the particle.
 WARNING: Space between slits = 3.0 esceeds de Brogile wavelength = 2.0944 of the particle!
 Draining potential value at the outer edge is -100.0 hartree.

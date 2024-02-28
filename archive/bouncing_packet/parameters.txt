@@ -10,7 +10,7 @@ The maximal viable time resolution < 0.3183098861837907 h-bar / hartree
 Time resolution is delta = 0.238732414637843 h-bar / hartree.
 ***************************************************************************************
 Initializing wave packet
-Wave packet width is 1.0 bohr radii.
+Wave packet width is 1.0 Bohr radii.
 Sum of probabilities = 7.999999999999939
 Sum of probabilities after normalization = 1.0
 Initializing kinetic energy operator

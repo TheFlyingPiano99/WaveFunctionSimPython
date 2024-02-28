@@ -71,7 +71,7 @@ def initialize():
     sim_state.wp_width_bohr_radii = sim_state.config["wave_packet"][
         "wp_width_bohr_radii"
     ]
-    print(f"Wave packet width is {sim_state.wp_width_bohr_radii} bohr radii.")
+    print(f"Wave packet width is {sim_state.wp_width_bohr_radii} Bohr radii.")
     a = sim_state.wp_width_bohr_radii * 2.0
 
     full_init = True

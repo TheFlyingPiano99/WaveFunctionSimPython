@@ -15,44 +15,44 @@ Walls:
 1.
 Obstacle wall potential is 20 hartree.
 WARNING: delta_t * wall_max_potential too close to multiply of pi! (0.1)
-Wall thickness is 15.0 bohr radii.
+Wall thickness is 15.0 Bohr radii.
 This is thicker than the de Broglie wavelength of the particle.
-Wall thickness is 15.00 bohr radii.
+Wall thickness is 15.00 Bohr radii.
 
 2.
 Obstacle wall potential is 20 hartree.
 WARNING: delta_t * wall_max_potential too close to multiply of pi! (0.1)
-Wall thickness is 10.0 bohr radii.
+Wall thickness is 10.0 Bohr radii.
 This is thicker than the de Broglie wavelength of the particle.
-Wall thickness is 10.00 bohr radii.
+Wall thickness is 10.00 Bohr radii.
 
 3.
 Obstacle wall potential is 20 hartree.
 WARNING: delta_t * wall_max_potential too close to multiply of pi! (0.1)
-Wall thickness is 10.0 bohr radii.
+Wall thickness is 10.0 Bohr radii.
 This is thicker than the de Broglie wavelength of the particle.
-Wall thickness is 10.00 bohr radii.
+Wall thickness is 10.00 Bohr radii.
 
 4.
 Obstacle wall potential is 20 hartree.
 WARNING: delta_t * wall_max_potential too close to multiply of pi! (0.1)
-Wall thickness is 10.0 bohr radii.
+Wall thickness is 10.0 Bohr radii.
 This is thicker than the de Broglie wavelength of the particle.
-Wall thickness is 10.00 bohr radii.
+Wall thickness is 10.00 Bohr radii.
 
 5.
 Obstacle wall potential is 20 hartree.
 WARNING: delta_t * wall_max_potential too close to multiply of pi! (0.1)
-Wall thickness is 10.0 bohr radii.
+Wall thickness is 10.0 Bohr radii.
 This is thicker than the de Broglie wavelength of the particle.
-Wall thickness is 10.00 bohr radii.
+Wall thickness is 10.00 Bohr radii.
 
 6.
 Obstacle wall potential is 8 hartree.
 WARNING: delta_t * wall_max_potential too close to multiply of pi! (0.04)
-Wall thickness is 1.0 bohr radii.
+Wall thickness is 1.0 Bohr radii.
 This is thinner than the de Broglie wavelength of the particle.
-Wall thickness is 1.00 bohr radii.
+Wall thickness is 1.00 Bohr radii.
 
 Draining potential value at the outer edge is -100.0 hartree.
 Draining potential exponent is 3.0.

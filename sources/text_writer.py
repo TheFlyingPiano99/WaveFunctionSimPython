@@ -25,7 +25,7 @@ def write_potential_wall_warnings(text, wall_potential, wall, sim_state, use_col
             + (Style.RESET_ALL if use_colors else "")
         )
     thickness = wall["thickness_bohr_radii"]
-    text.write(f"Wall thickness is {thickness} bohr radii.\n")
+    text.write(f"Wall thickness is {thickness} Bohr radii.\n")
     if thickness < sim_state.de_broglie_wave_length_bohr_radii:
         text.write(
             "This is thinner than the de Broglie wavelength of the particle.\n"
@@ -81,7 +81,7 @@ def get_potential_description_text(sim_state: sim_st.SimState, use_colors=False)
             wall_potential = wall["potential_hartree"]
             write_potential_wall_warnings(text, wall_potential, wall, sim_state, use_colors)
             thickness = wall["thickness_bohr_radii"]
-            text.write(f"Wall thickness is {thickness:.2f} bohr radii.\n")
+            text.write(f"Wall thickness is {thickness:.2f} Bohr radii.\n")
             text.write("\n")
     except KeyError:
         pass
@@ -98,9 +98,9 @@ def get_potential_description_text(sim_state: sim_st.SimState, use_colors=False)
             wall_potential = wall["potential_hartree"]
             write_potential_wall_warnings(text, wall_potential, wall, sim_state, use_colors)
             thickness = wall["thickness_bohr_radii"]
-            text.write(f"Wall thickness is {thickness:.2f} bohr radii.\n")
+            text.write(f"Wall thickness is {thickness:.2f} Bohr radii.\n")
             center = wall["center_bohr_radii"]
-            text.write(f"Wall center is at the x = {center:.2f} bohr radius coordinate.\n")
+            text.write(f"Wall center is at the x = {center:.2f} Bohr radius coordinate.\n")
             text.write("\n")
     except KeyError:
         pass
@@ -111,7 +111,7 @@ def get_potential_description_text(sim_state: sim_st.SimState, use_colors=False)
         v = interaction["potential_hartree"]
         text.write(f"Potential is {v} Hartree.\n")
         r = interaction["particle_radius_bohr_radii"]
-        text.write(f"Particle radius is {r} bohr radii.\n")
+        text.write(f"Particle radius is {r} Bohr radii.\n")
         text.write("\n")
     except KeyError:
         pass

@@ -14,15 +14,15 @@ Localised potential energy:
 Walls:
 1.
 Obstacle wall potential is 20 hartree.
-Wall thickness is 10.0 bohr radii.
+Wall thickness is 10.0 Bohr radii.
 This is thicker than the de Broglie wavelength of the particle.
-Wall thickness is 10.00 bohr radii.
+Wall thickness is 10.00 Bohr radii.
 
 2.
 Obstacle wall potential is 10 hartree.
-Wall thickness is 2.0 bohr radii.
+Wall thickness is 2.0 Bohr radii.
 This is thinner than the de Broglie wavelength of the particle.
-Wall thickness is 2.00 bohr radii.
+Wall thickness is 2.00 Bohr radii.
 
 Draining potential value at the outer edge is -100.0 hartree.
 Draining potential exponent is 3.0.
