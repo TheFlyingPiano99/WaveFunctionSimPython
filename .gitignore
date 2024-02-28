@@ -4,6 +4,7 @@
 *.zip
 *.gif
 *.mp4
+.venv
 sources/__pycache__/*
 cache/*
 

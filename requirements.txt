@@ -13,4 +13,4 @@ tqdm
 PyQt5
 imageio[ffmpeg]
 PyOpenGL
-cupy
+cupy-cuda12x
