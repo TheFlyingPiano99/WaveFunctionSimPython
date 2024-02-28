@@ -31,7 +31,7 @@ If you want to learn about TOML, browse https://toml.io/en/.
 Read the provided configuration file to find out the options.
 
 ### Running the simulation
-If you start the application, it will check the content of the cache folder.
+If you start the application, it will check the content of the `<project folder>/cache/` folder.
 If the configuration file hasn't changed since the last run, and there are cached datasets under the `cache` folder, it will try to use these cached files to speed up the initialization phase.
 Always read the prompts of the program!
 
