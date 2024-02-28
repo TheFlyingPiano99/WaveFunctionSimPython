@@ -5,7 +5,7 @@ Python implementation of a simulation using a numeric approximation of the time-
 
 ## Requirements
 CUDA-Enabled NVIDIA GPU
-CUDA Toolkit
+CUDA Toolkit v12.x
 Python 3.11 or newer
 
 ## How to install
