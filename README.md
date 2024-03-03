@@ -12,8 +12,9 @@ Python 3.11 or newer
 
 - Download Python from https://www.python.org/downloads/ and install it on your computer.  
 On Linux use  
-`sudo apt update  
-sudo apt install python3
+`
+    sudo apt update
+    sudo apt install python3
 `
 - Download the CUDA Toolkit from https://developer.nvidia.com/cuda-downloads and install it on your computer.
 - Download and install Git version control system from https://git-scm.com/downloads.
