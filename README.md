@@ -11,7 +11,7 @@ Python 3.11 or newer
 ## How to install
 
 - Download Python from https://www.python.org/downloads/ and install it on your computer.  
-On Linux use APT:
+On Linux systems alternatively you can use APT:
 ```
     sudo apt update
     sudo apt install python3
@@ -23,7 +23,7 @@ On Linux use APT:
 - Enter the cloned folder by `cd WaveFunctionSimPython`
 - Create a Python virtual environment for this application using `python -m venv .venv`
 - Activate the environment by running one of the `activate.*` scripts under the Scripts folder in the newly created `.venv` folder.  
-  On Linux systems us:
+  On Linux systems use:
   ```
   source .venv/bin/activate
   ```
