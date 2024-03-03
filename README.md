@@ -11,7 +11,7 @@ Python 3.11 or newer
 ## How to install
 
 - Download Python from https://www.python.org/downloads/ and install it on your computer.  
-On Linux use  
+On Linux use APT:
 ```
     sudo apt update
     sudo apt install python3
