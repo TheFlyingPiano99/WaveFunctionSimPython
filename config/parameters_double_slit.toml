@@ -39,9 +39,11 @@ png_step_interval = 10
 measurement_plane_capture_interval = 10
 probability_plot_interval = 50
 per_axis_probability_denisty_interval = 2
+wave_function_save_interval = 2
 
 [view]
 video_frame_rate = 25
+enable_visual_output = true
 
 [view.volumetric]
 camera_rotation_speed = 2.0
@@ -59,3 +61,7 @@ z_axis_label = "Z-axis"
 potential_label = "Potential"
 potential_plot_offset = -0.34
 potential_plot_scale = 0.02
+
+[paths]
+cache_dir = "../wave_cache"
+output_dir = "../wave_function_outputs/output01"

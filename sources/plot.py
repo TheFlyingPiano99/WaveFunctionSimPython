@@ -8,11 +8,11 @@ import os
 
 font_size = 16 # 18 would be too big
 
-def plot_probability_evolution(probability_evolutions, delta_t, index, show_fig=False):
+def plot_probability_evolution(out_dir, probability_evolutions, delta_t, index, show_fig=False):
     # Path:
-    dir = "output/probability_evolution/"
+    dir = os.path.join(out_dir, "probability_evolution/")
     if not os.path.exists(dir):
-        os.mkdir(dir)
+        os.makedirs(dir, exist_ok=True)
     matplotlib.rcParams.update({'font.size': font_size})
     plt.clf()  # Clear figure
     plt.grid(True)
@@ -31,14 +31,14 @@ def plot_probability_evolution(probability_evolutions, delta_t, index, show_fig=
 
 
 def plot_per_axis_probability_density(
-    title: str, data: tuple, delta_x: float, delta_t: float, index: int, potential_scale: float, show_fig=False
+    out_dir, title: str, data: tuple, delta_x: float, delta_t: float, index: int, potential_scale: float, show_fig=False
 ):
     matplotlib.rcParams.update({'font.size': font_size})
     plt.clf()  # Clear figure
 
-    dir = "output/per_axis_probability_density/"
+    dir = os.path.join(out_dir, "per_axis_probability_density/")
     if not os.path.exists(dir):
-        os.mkdir(dir)
+        os.makedirs(dir, exist_ok=True)
 
     plt.grid(True)
     plt.xlabel("Location [Bohr radius]")
@@ -69,11 +69,11 @@ def plot_per_axis_probability_density(
     return np.array(img)
 
 
-def plot_canvas(plane_probability_density, plane_dwell_time_density, index, delta_x, delta_t):
+def plot_canvas(out_dir, plane_probability_density, plane_dwell_time_density, index, delta_x, delta_t):
     # Probability density:
-    dir = "output/canvas_probability/"
+    dir = os.path.join(out_dir, "canvas_probability/")
     if not os.path.exists(dir):
-        os.mkdir(dir)
+        os.makedirs(dir, exist_ok=True)
 
     plt.clf()
 
@@ -98,9 +98,9 @@ def plot_canvas(plane_probability_density, plane_dwell_time_density, index, delt
     plt.savefig(fname=os.path.join(dir, f"measurement_plane_probability_{index:04d}.png"))
 
     # Dwell time:
-    dir = "output/canvas_dwell_time/"
+    dir = os.path.join(out_dir, "canvas_dwell_time/")
     if not os.path.exists(dir):
-        os.mkdir(dir)
+        os.makedirs(dir, exist_ok=True)
 
     plt.clf()
     plt.imshow(plane_dwell_time_density,

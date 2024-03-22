@@ -36,14 +36,17 @@ def initialize():
             print("No config file found under config folder.")
             print("Exiting application.")
             sys.exit(0)
+
+
         # Opening the selected file:
         with open(config_dir + selected_conf_file, mode="r") as f:
             print(f"Opening {selected_conf_file}")
             config = toml.load(f)
+            sim_state = sim_st.SimState(config)
             try:
-                if not os.path.exists("cache/"):
-                    os.mkdir("cache/")
-                with open("cache/cached_parameters.toml", mode="r") as cache_f:
+                if not os.path.exists(sim_state.cache_dir):
+                    os.makedirs(sim_state.cache_dir, exist_ok=True)
+                with open(os.path.join(sim_state.cache_dir, "cached_parameters.toml"), mode="r") as cache_f:
                     cached_config = toml.load(cache_f)
                     if not cached_config == config:
                         print(
@@ -58,8 +61,24 @@ def initialize():
         print("Exiting application.")
         sys.exit(0)
 
-    sim_state = sim_st.SimState(config)
     sim_state.use_cache = use_cache
+
+
+    # Warn user about not empty output directory:
+    if not os.path.exists(sim_state.output_dir):
+        os.makedirs(sim_state.output_dir, exist_ok=True)
+    if os.listdir(sim_state.output_dir):
+        answer = ""
+        while not answer in {"y", "n"}:
+            print("\n" + Fore.RED + "Output directory is not empty!\n"
+                'Continuing will possibly override files under "' + sim_state.output_dir + '".' + Style.RESET_ALL + "\n"
+                                                                              "Would you still like to continue [y/n]?",
+                end=" ",
+                )
+            answer = input()
+            if answer == "n":
+                print("Exiting application.")
+                sys.exit(0)
 
     # Maximal kinetic energy
     print(text_writer.get_sim_state_description_text(sim_state, use_colors=True))
@@ -77,7 +96,7 @@ def initialize():
     full_init = True
     if use_cache:
         try:
-            sim_state.wave_tensor = cp.load(file="cache/gaussian_wave_packet.npy")
+            sim_state.wave_tensor = cp.load(file=os.path.join(sim_state.cache_dir, "gaussian_wave_packet.npy"))
             full_init = False
         except OSError:
             print("No cached gaussian_wave_packet.npy found.")
@@ -93,22 +112,22 @@ def initialize():
                 sim_state.tensor_shape
             )
         )
-        cp.save(file="cache/gaussian_wave_packet.npy", arr=sim_state.wave_tensor)
+        cp.save(file=os.path.join(sim_state.cache_dir, "gaussian_wave_packet.npy"), arr=sim_state.wave_tensor)
     # Normalize:
     sim_state.probability_density = cp.asnumpy(cp.square(cp.abs(sim_state.wave_tensor)))
     sum_probability = cp.sum(sim_state.probability_density)
-    print(f"Sum of probabilities = {sum_probability}")
+    print(f"Sum of probabilities = {sum_probability:.8f}")
     sim_state.wave_tensor = sim_state.wave_tensor / (sum_probability**0.5)
     sim_state.probability_density = cp.asnumpy(cp.square(cp.abs(sim_state.wave_tensor)))
     sum_probability = cp.sum(sim_state.probability_density)
-    print(f"Sum of probabilities after normalization = {sum_probability}")
+    print(f"Sum of probabilities after normalization = {sum_probability:.8f}")
     # Operators:
     print("Initializing kinetic energy operator")
 
     full_init = True
     if use_cache:
         try:
-            sim_state.kinetic_operator = cp.asarray(np.load(file="cache/kinetic_operator.npy"))
+            sim_state.kinetic_operator = cp.asarray(np.load(file=os.path.join(sim_state.cache_dir, "kinetic_operator.npy")))
             full_init = False
         except OSError:
             print("No cached kinetic_operator.npy found.")
@@ -119,7 +138,7 @@ def initialize():
             sim_state.delta_time_h_bar_per_hartree,
             sim_state.tensor_shape
         ))
-        cp.save(file="cache/kinetic_operator.npy", arr=sim_state.kinetic_operator)
+        cp.save(file=os.path.join(sim_state.cache_dir, "kinetic_operator.npy"), arr=sim_state.kinetic_operator)
 
     print("Initializing potential energy operator")
     print(text_writer.get_potential_description_text(sim_state, use_colors=True))
@@ -127,8 +146,8 @@ def initialize():
     full_init = True
     if use_cache:
         try:
-            sim_state.localised_potential_hartree = np.load(file="cache/localized_potential.npy")
-            sim_state.localised_potential_to_visualize_hartree = np.load(file="cache/localized_potential_to_visualize.npy")
+            sim_state.localised_potential_hartree = np.load(file=os.path.join(sim_state.cache_dir, "localized_potential.npy"))
+            sim_state.localised_potential_to_visualize_hartree = np.load(file=os.path.join(sim_state.cache_dir, "localized_potential_to_visualize.npy"))
             full_init = False
         except OSError:
             print("No cached localized_potential.npy found.")
@@ -352,15 +371,15 @@ def initialize():
             pass
 
         np.save(
-            file="cache/localized_potential.npy",
+            file=os.path.join(sim_state.cache_dir, "localized_potential.npy"),
             arr=sim_state.localised_potential_hartree,
         )
-        np.save(file="cache/localized_potential_to_visualize.npy", arr=sim_state.localised_potential_to_visualize_hartree)
+        np.save(file=os.path.join(sim_state.cache_dir, "localized_potential_to_visualize.npy"), arr=sim_state.localised_potential_to_visualize_hartree)
 
     full_init = True
     if use_cache:
         try:
-            sim_state.potential_operator = cp.load(file="cache/potential_operator.npy")
+            sim_state.potential_operator = cp.load(file=os.path.join(sim_state.cache_dir, "potential_operator.npy"))
             full_init = False
         except OSError:
             print("No cached potential_operator.npy found.")
@@ -370,16 +389,16 @@ def initialize():
             V=sim_state.localised_potential_hartree,
             delta_time=sim_state.delta_time_h_bar_per_hartree,
         ))
-        cp.save(file="cache/potential_operator.npy", arr=sim_state.potential_operator)
+        cp.save(file=os.path.join(sim_state.cache_dir, "potential_operator.npy"), arr=sim_state.potential_operator)
     try:
-        with open("cache/cached_parameters.toml", mode="w") as cache_f:
+        with open(os.path.join(sim_state.cache_dir, "cached_parameters.toml"), mode="w") as cache_f:
             toml.dump(config, cache_f)
     except OSError as e:
         print("Error while creating parameter cache: " )
         print(e)
 
     print(
-        f"Time spent with initialisation: {time.time() - initialisation_start_time_s} s."
+        f"Time spent with initialisation: {(time.time() - initialisation_start_time_s):.2f} s."
     )
 
     return sim_state

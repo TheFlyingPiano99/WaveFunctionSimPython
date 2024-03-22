@@ -1,4 +1,4 @@
-Simulation state:
+Simulated system state:
 Mass of the particle is 1.0 electron rest mass.
 Initial velocity of the particle is 3.0 Bohr radius hartree / h-bar.
 Initial mean momentum of particle is 3.0 h-bar / Bohr radius.

@@ -193,12 +193,12 @@ class VolumetricVisualization:
         self.text1.text = f"Elapsed time = {iter_count * delta_time_h_bar_per_hartree:.2f} ħ/Hartree = {math_utils.h_bar_per_hartree_to_fs(iter_count * delta_time_h_bar_per_hartree):.2f} fs"
         return self.canvas
 
-    def render_to_png(self, index):
+    def render_to_png(self, out_dir, index):
         img = self.render()
-        dir = "output/probability_density_3D/"
+        dir = os.path.join(out_dir, "probability_density_3D/")
         file_name = f"probability_density_3D_{index:04d}.png"
         if not os.path.exists(dir):
-            os.mkdir(dir)
+            os.makedirs(dir, exist_ok=True)
         io.write_png(filename=os.path.join(dir, file_name), data=img)
 
     def get_canvas(self):

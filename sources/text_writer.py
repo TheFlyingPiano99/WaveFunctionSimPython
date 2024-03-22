@@ -5,6 +5,7 @@ import io
 from datetime import timedelta
 from colorama import Fore, Back, Style
 import cupy as cp
+import os
 
 def get_title_text():
     text = io.StringIO()
@@ -62,7 +63,7 @@ def get_potential_description_text(sim_state: sim_st.SimState, use_colors=False)
             if space_between_slits > sim_state.de_broglie_wave_length_bohr_radii:
                 text.write(
                     (Fore.RED if use_colors else "")
-                    + f"WARNING: Space between slits = {space_between_slits} esceeds de Brogile wavelength = {sim_state.de_broglie_wave_length_bohr_radii:.4f} of the particle!"
+                    + f"WARNING: Space between slits = {space_between_slits} exceeds the de Brogile wavelength = {sim_state.de_broglie_wave_length_bohr_radii:.4f} of the particle!"
                     + (Style.RESET_ALL if use_colors else "")
                 )
             text.write("\n")
@@ -148,7 +149,7 @@ def get_sim_state_description_text(sim_state: sim_st.SimState, use_colors=False)
     text = io.StringIO()
     text.write(
         (Fore.GREEN if use_colors else "")
-        + "Simulation state:\n"
+        + "Simulated system state:\n"
         + (Style.RESET_ALL if use_colors else "")
     )
     velocity_magnitude = (
@@ -247,11 +248,11 @@ def get_finish_text(iter_data):
 
 
 def write_sim_state(sim_state: sim_st.SimState):
-    with open("output/parameters.txt", mode="w") as f:
+    with open(os.path.join(sim_state.output_dir, "parameters.txt"), mode="w") as f:
         f.write(get_sim_state_description_text(sim_state))
         f.write(get_potential_description_text(sim_state))
 
 
-def append_iter_data(iter_data: core_sim.IterData):
-    with open("output/parameters.txt", mode="a") as f:
+def append_iter_data(iter_data: core_sim.IterData, sim_state: sim_st.SimState):
+    with open(os.path.join(sim_state.output_dir, "parameters.txt"), mode="a") as f:
         f.write(get_finish_text(iter_data))

@@ -51,8 +51,7 @@ def merged_time_evolution(
     return cp.fft.fftn(moment_space_wave_tensor, norm="backward")
 
 
-def run_iteration(sim_state: sim_st.SimState, measurement_tools):
-    # Setup iteration parameters:
+def init_iter_data(sim_state: sim_st.SimState):
     iter_data = IterData()
     iter_data.animation_frame_step_interval = sim_state.config["iteration"]["animation_frame_step_interval"]
     iter_data.png_step_interval = sim_state.config["iteration"]["png_step_interval"]
@@ -60,14 +59,117 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
     iter_data.probability_plot_interval = sim_state.config["iteration"]["probability_plot_interval"]
     iter_data.total_iteration_count = sim_state.config["iteration"]["total_iteration_count"]
     iter_data.per_axis_probability_denisty_plot_interval = sim_state.config["iteration"]["per_axis_probability_denisty_interval"]
+    iter_data.wave_function_save_interval = sim_state.config["iteration"]["wave_function_save_interval"]
+    return iter_data
+
+def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools):
+    # Update all measurement tools:
+    measurement_tools.measurement_volume_full.integrate_probability_density(
+        sim_state.probability_density
+    )
+    measurement_tools.measurement_volume_first_half.integrate_probability_density(
+        sim_state.probability_density
+    )
+    measurement_tools.measurement_volume_second_half.integrate_probability_density(
+        sim_state.probability_density
+    )
+
+    measurement_tools.measurement_plane.integrate(
+        sim_state.probability_density,
+        sim_state.delta_time_h_bar_per_hartree,
+    )
 
     if (
+            iter_data.i % iter_data.per_axis_probability_denisty_plot_interval == 0
+            or iter_data.i % iter_data.animation_frame_step_interval == 0
+    ):
+        measurement_tools.x_axis_probability_density.integrate_probability_density(
+            sim_state.probability_density
+        )
+        measurement_tools.y_axis_probability_density.integrate_probability_density(
+            sim_state.probability_density
+        )
+        measurement_tools.z_axis_probability_density.integrate_probability_density(
+            sim_state.probability_density
+        )
+
+    # Plot state:
+    if iter_data.i % iter_data.per_axis_probability_denisty_plot_interval == 0:
+        measurement_tools.per_axis_density_plot = plot.plot_per_axis_probability_density(
+            out_dir=sim_state.output_dir,
+            title=sim_state.config["view"]["per_axis_plot"]["title"],
+            data=[
+                measurement_tools.x_axis_probability_density.get_probability_density_with_label(),
+                measurement_tools.y_axis_probability_density.get_probability_density_with_label(),
+                measurement_tools.z_axis_probability_density.get_probability_density_with_label(),
+                measurement_tools.projected_probability.get_probability_density_with_label(),
+            ],
+            delta_x=sim_state.delta_x_bohr_radii,
+            delta_t=sim_state.delta_time_h_bar_per_hartree,
+            potential_scale=sim_state.config["view"]["per_axis_plot"]["potential_plot_scale"],
+            index=iter_data.i,
+            show_fig=False,
+        )
+    if (
+            iter_data.i % iter_data.animation_frame_step_interval == 0
+            or iter_data.i % iter_data.png_step_interval == 0
+    ):
+        measurement_tools.volumetric.update(
+            sim_state.get_view_into_probability_density(),
+            iter_count=iter_data.i,
+            delta_time_h_bar_per_hartree=sim_state.delta_time_h_bar_per_hartree,
+        )
+    if iter_data.i % iter_data.animation_frame_step_interval == 0:
+        measurement_tools.animation_writer_3D.add_frame(
+            measurement_tools.volumetric.render()
+        )
+        measurement_tools.animation_writer_per_axis.add_frame(
+            measurement_tools.per_axis_density_plot
+        )
+    if iter_data.i % iter_data.png_step_interval == 0:
+        measurement_tools.volumetric.render_to_png(out_dir=sim_state.output_dir, index=iter_data.i)
+    if iter_data.i % iter_data.probability_plot_interval == 0:
+        plot.plot_probability_evolution(
+            out_dir=sim_state.output_dir,
+            probability_evolutions=[
+                measurement_tools.measurement_volume_full.get_probability_evolution(),
+                measurement_tools.measurement_volume_first_half.get_probability_evolution(),
+                measurement_tools.measurement_volume_second_half.get_probability_evolution(),
+            ],
+            delta_t=sim_state.delta_time_h_bar_per_hartree,
+            index=iter_data.i,
+            show_fig=False,
+        )
+    if iter_data.i % iter_data.measurement_plane_capture_interval == 0:
+        plot.plot_canvas(
+            out_dir=sim_state.output_dir,
+            plane_probability_density=measurement_tools.measurement_plane.get_probability_density(),
+            plane_dwell_time_density=measurement_tools.measurement_plane.get_dwell_time(),
+            index=iter_data.i,
+            delta_x=sim_state.delta_x_bohr_radii,
+            delta_t=sim_state.delta_time_h_bar_per_hartree
+        )
+
+def write_wave_function_to_file(sim_state: sim_st.SimState, iter_data):
+    if iter_data.i % iter_data.wave_function_save_interval == 0:
+        if not os.path.exists(os.path.join(sim_state.output_dir, f"wave_function")):
+            os.makedirs(os.path.join(sim_state.output_dir, f"wave_function"), exist_ok=True)
+        try:
+            cp.save(arr=sim_state.get_view_into_raw_wave_function(), file=os.path.join(sim_state.output_dir, f"wave_function/wave_function_{iter_data.i:04d}.npy"))
+        except IOError:
+            print(Fore.RED + "\nERROR: Failed writing file: "+ os.path.join(sim_state.output_dir, f"wave_function/wave_function_{iter_data.i:04d}.npy") + Style.RESET_ALL)
+
+
+def run_iteration(sim_state: sim_st.SimState, measurement_tools):
+    # Setup iteration parameters:
+    iter_data = init_iter_data(sim_state)
+    if (
         sim_state.use_cache
-        and os.path.exists("cache/data_snapshot.txt")
-        and os.path.exists("cache/wave_snapshot.npy")
+        and os.path.exists(os.path.join(sim_state.cache_dir, "data_snapshot.txt"))
+        and os.path.exists(os.path.join(sim_state.cache_dir, "wave_snapshot.npy"))
     ):
         sim_state, iter_data = snapshot_io.read_snapshot(sim_state, iter_data)
-        snapshot_io.remove_snapshot()
+        snapshot_io.remove_snapshot(sim_state)
         print(Fore.BLUE + "Snapshot of an interrupted simulation loaded.\nResuming previous wave function." + Style.RESET_ALL)
 
     print(Fore.GREEN + "Simulating " + Style.RESET_ALL + "(Press <Ctrl-c> to quit.)")
@@ -84,108 +186,33 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
         for j in range(iter_data.i):
             bar()
     """
-    for iter_data.i in tqdm(range(start_index, iter_data.total_iteration_count)):
-        if iter_data.is_quit:
-            snapshot_io.write_snapshot(sim_state, iter_data)
-            sys.exit(0)
+    with tqdm(total=iter_data.total_iteration_count) as progress_bar:
+        for iter_data.i in range(start_index, iter_data.total_iteration_count):
+            if iter_data.is_quit:
+                snapshot_io.write_snapshot(sim_state, iter_data)
+                sys.exit(0)
 
-        iter_start_time_s = time.time()
-        sim_state.probability_density = math_utils.square_of_abs(
-            sim_state.wave_tensor
-        )
-
-        # Update all measurement tools:
-        measurement_tools.measurement_volume_full.integrate_probability_density(
-            sim_state.probability_density
-        )
-        measurement_tools.measurement_volume_first_half.integrate_probability_density(
-            sim_state.probability_density
-        )
-        measurement_tools.measurement_volume_second_half.integrate_probability_density(
-            sim_state.probability_density
-        )
-
-        measurement_tools.measurement_plane.integrate(
-            sim_state.probability_density,
-            sim_state.delta_time_h_bar_per_hartree,
-        )
-
-        if (
-            iter_data.i % iter_data.per_axis_probability_denisty_plot_interval == 0
-            or iter_data.i % iter_data.animation_frame_step_interval == 0
-        ):
-            measurement_tools.x_axis_probability_density.integrate_probability_density(
-                sim_state.probability_density
-            )
-            measurement_tools.y_axis_probability_density.integrate_probability_density(
-                sim_state.probability_density
-            )
-            measurement_tools.z_axis_probability_density.integrate_probability_density(
-                sim_state.probability_density
+            iter_start_time_s = time.time()
+            sim_state.probability_density = math_utils.square_of_abs(
+                sim_state.wave_tensor
             )
 
-        # Plot state:
-        if iter_data.i % iter_data.per_axis_probability_denisty_plot_interval == 0:
-            measurement_tools.per_axis_density_plot = plot.plot_per_axis_probability_density(
-                title=sim_state.config["view"]["per_axis_plot"]["title"],
-                data=[
-                    measurement_tools.x_axis_probability_density.get_probability_density_with_label(),
-                    measurement_tools.y_axis_probability_density.get_probability_density_with_label(),
-                    measurement_tools.z_axis_probability_density.get_probability_density_with_label(),
-                    measurement_tools.projected_probability.get_probability_density_with_label(),
-                ],
-                delta_x=sim_state.delta_x_bohr_radii,
-                delta_t=sim_state.delta_time_h_bar_per_hartree,
-                potential_scale=sim_state.config["view"]["per_axis_plot"]["potential_plot_scale"],
-                index=iter_data.i,
-                show_fig=False,
-            )
-        if (
-            iter_data.i % iter_data.animation_frame_step_interval == 0
-            or iter_data.i % iter_data.png_step_interval == 0
-        ):
-            measurement_tools.volumetric.update(
-                sim_state.get_view_into_probability_density(),
-                iter_count=iter_data.i,
-                delta_time_h_bar_per_hartree=sim_state.delta_time_h_bar_per_hartree,
-            )
-        if iter_data.i % iter_data.animation_frame_step_interval == 0:
-            measurement_tools.animation_writer_3D.add_frame(
-                measurement_tools.volumetric.render()
-            )
-            measurement_tools.animation_writer_per_axis.add_frame(
-                measurement_tools.per_axis_density_plot
-            )
-        if iter_data.i % iter_data.png_step_interval == 0:
-            measurement_tools.volumetric.render_to_png(iter_data.i)
-        if iter_data.i % iter_data.probability_plot_interval == 0:
-            plot.plot_probability_evolution(
-                [
-                    measurement_tools.measurement_volume_full.get_probability_evolution(),
-                    measurement_tools.measurement_volume_first_half.get_probability_evolution(),
-                    measurement_tools.measurement_volume_second_half.get_probability_evolution(),
-                ],
-                delta_t=sim_state.delta_time_h_bar_per_hartree,
-                index=iter_data.i,
-                show_fig=False,
-            )
-        if iter_data.i % iter_data.measurement_plane_capture_interval == 0:
-            plot.plot_canvas(
-                plane_probability_density=measurement_tools.measurement_plane.get_probability_density(),
-                plane_dwell_time_density=measurement_tools.measurement_plane.get_dwell_time(),
-                index=iter_data.i,
-                delta_x=sim_state.delta_x_bohr_radii,
-                delta_t=sim_state.delta_time_h_bar_per_hartree
-            )
+            write_wave_function_to_file(sim_state=sim_state, iter_data=iter_data)
 
-        # Main time development step:
-        sim_state.wave_tensor = time_evolution(
-            wave_tensor=sim_state.wave_tensor,
-            kinetic_operator=sim_state.kinetic_operator,
-            potential_operator=sim_state.potential_operator,
-        )
-        iter_time = time.time() - iter_start_time_s
-        iter_data.elapsed_system_time_s += iter_time
+            if sim_state.enable_visual_output:
+                measure_and_render(iter_data, sim_state, measurement_tools)
+
+            # Main time development step:
+            sim_state.wave_tensor = time_evolution(
+                wave_tensor=sim_state.wave_tensor,
+                kinetic_operator=sim_state.kinetic_operator,
+                potential_operator=sim_state.potential_operator,
+            )
+            iter_time = time.time() - iter_start_time_s
+            iter_data.elapsed_system_time_s += iter_time
+            progress_bar.n = iter_data.i
+            progress_bar.refresh()
+
 
     # Calculate resulting time statistics after the iteration:
     iter_data.total_simulated_time = (

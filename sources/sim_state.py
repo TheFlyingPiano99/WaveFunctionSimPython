@@ -32,8 +32,22 @@ class SimState:
     localised_potential_to_visualize_hartree: np.ndarray
     coulomb_potential: np.ndarray
     use_cache = True
+    output_dir: str = ""
+    cache_dir: str = ""
+    enable_visual_output: bool = True
 
     def __init__(self, config):
+        # Load paths:
+        try:
+            self.cache_dir = config["paths"]["cache_dir"]
+        except KeyError:
+            self.cache_dir = "cache/"
+
+        try:
+            self.output_dir = config["paths"]["output_dir"]
+        except KeyError:
+            self.output_dir = "output/"
+
         self.config = config
         self.particle_mass = config["wave_packet"]["particle_mass"]
         self.initial_wp_velocity_bohr_radii_hartree_per_h_bar = np.array(
@@ -109,6 +123,20 @@ class SimState:
                     i
                 ] = self.viewing_window_top_corner_voxel[i]
                 self.viewing_window_top_corner_voxel[i] = temp
+
+        try:
+            self.enable_visual_output = config["view"]["enable_visual_output"]
+        except KeyError:
+            self.enable_visual_output = True
+
+
+    def get_view_into_raw_wave_function(self):
+        return math_utils.cut_window(
+            arr=self.wave_tensor,
+            bottom=self.viewing_window_bottom_corner_voxel,
+            top=self.viewing_window_top_corner_voxel,
+        )
+
 
     def get_view_into_probability_density(self):
         return math_utils.cut_window(
