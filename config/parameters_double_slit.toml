@@ -3,23 +3,25 @@
 # We use a right-handed system, where +Y is the upward direction
 # Values are given in Hartree atomic unit system
 
-["wave_packet"]
+[wave_packet]
 particle_mass = 1.0
 initial_wp_position_bohr_radii_3 = [-20.0, 0.0, 0.0]
 initial_wp_velocity_bohr_radii_hartree_per_h_bar = [3.0, 0.0, 0.0]
 wp_width_bohr_radii = 2.0
 
-["volume"]
+[volume]
 simulated_volume_width_bohr_radii = 120.0 #Including draining potential regions
 number_of_samples_per_axis = 512         #Including draining potential regions
 viewing_window_boundary_bottom_corner_bohr_radii_3 = [30.0, 30.0, 30.0]   # Same as the inner boundary of the draining potential
 viewing_window_boundary_top_corner_bohr_radii_3 = [-30.0, -30.0, -30.0]   # Same as the inner boundary of the draining potential
 
-["drain"]
+[drain]
 outer_potential_hartree = -100.0
 interpolation_exponent = 3.0
 
-
+#[pre_initialized_potential]
+#path = "../wave_resources/pre_init_pot_01.npy"
+#visible = true
 
 [[double_slits]]
 center_bohr_radius_3 = [0, 0, 0]
@@ -63,5 +65,5 @@ potential_plot_offset = -0.34
 potential_plot_scale = 0.02
 
 [paths]
-cache_dir = "../wave_cache"
-output_dir = "../wave_function_outputs/output01"
+cache_dir = "./cache"
+output_dir = "./output"

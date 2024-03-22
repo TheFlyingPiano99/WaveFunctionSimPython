@@ -160,6 +160,32 @@ def initialize():
             shape=sim_state.tensor_shape, dtype=np.csingle
         )
 
+        # Load pre-initialized potential:
+        try:
+            pre_init_pot_conf = sim_state.config["pre_initialized_potential"]
+            print("Loading pre-initialized potential")
+            if os.path.exists(pre_init_pot_conf["path"]):
+                try:
+                    pre_init_pot = np.load(file=pre_init_pot_conf["path"])
+                    if pre_init_pot.shape == sim_state.localised_potential_hartree.shape:
+                        sim_state.localised_potential_hartree += pre_init_pot
+                        try:
+                            visible = pre_init_pot_conf["visible"]
+                            if visible:
+                                sim_state.localised_potential_to_visualize_hartree += pre_init_pot
+                        except KeyError:
+                            pass
+
+                    else:
+                        print(Fore.RED + "Pre-initialized potential has the wrong tensor shape!" + Style.RESET_ALL)
+                except IOError:
+                    print(Fore.RED + "Found pre-initialized potential but failed to load!" + Style.RESET_ALL)
+            else:
+                print(Fore.RED + "Path to pre-initialized potential (" + pre_init_pot_conf["path"] + ") is invalid!" + Style.RESET_ALL)
+        except KeyError:
+            print("No pre-initialized potential in configuration.")
+
+
         print("Creating draining potential.")
         dp = sim_state.drain_potential_description
         sim_state.localised_potential_hartree = potential.add_draining_potential(

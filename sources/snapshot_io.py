@@ -7,7 +7,7 @@ from sources.iter_data import IterData
 
 
 def write_snapshot(sim_state: SimState, iter_data: IterData):
-    print("Creating snapshot. Please wait for the application to exit by itself!")
+    print("\nCreating snapshot. Please wait for the application to exit by itself!")
     try:
         cp.save(arr=sim_state.wave_tensor, file=os.path.join(sim_state.cache_dir, "wave_snapshot.npy"))
     except IOError:
@@ -33,7 +33,6 @@ def write_snapshot(sim_state: SimState, iter_data: IterData):
 
 def read_snapshot(sim_state: SimState, iter_data: IterData):
     if os.path.exists(os.path.join(sim_state.cache_dir, "wave_snapshot.npy")):
-        print("PATH TO SNAPSHOT: " + sim_state.cache_dir + os.path.join(sim_state.cache_dir, "wave_snapshot.npy"))
         try:
             wave_snapshot = np.load(file=os.path.join(sim_state.cache_dir, "wave_snapshot.npy"))
             sim_state.wave_tensor = cp.asarray(wave_snapshot)

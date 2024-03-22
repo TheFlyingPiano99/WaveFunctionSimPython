@@ -141,3 +141,7 @@ z_axis_label = "C particle"
 potential_label = "Potential"
 potential_plot_offset = -0.34
 potential_plot_scale = 0.02
+
+[paths]
+cache_dir = "./cache"
+output_dir = "./output"
