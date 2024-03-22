@@ -5,6 +5,7 @@
 *.gif
 *.mp4
 .venv
+.idea
 sources/__pycache__/*
 cache/*
 output/*

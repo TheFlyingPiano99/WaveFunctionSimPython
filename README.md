@@ -21,17 +21,17 @@ On Linux systems alternatively you can use APT:
 - Open a command-line and clone this repository by entering  
 `git clone https://github.com/TheFlyingPiano99/WaveFunctionSimPython.git`
 - Enter the cloned folder by `cd WaveFunctionSimPython`
-- Create a Python virtual environment for this application using `python -m venv .venv`
+- Create a Python virtual environment for this application using `python3 -m venv .venv`
 - Activate the environment by running one of the `activate.*` scripts under the Scripts folder in the newly created `.venv` folder.  
   On Linux systems use:
   ```
   source .venv/bin/activate
   ```
   (To deactivate later, use the `deactivate` command)
-- While the virtual environment is active (This can be seen from the presence of the `(.venv)` label at the beginning of the prompt.), upgrade pip: `python -m pip install --upgrade pip`
-- Install the required packages by typing: `python -m pip install -r requirements.txt`
+- While the virtual environment is active (This can be seen from the presence of the `(.venv)` label at the beginning of the prompt.), upgrade pip: `python3 -m pip install --upgrade pip`
+- Install the required packages by typing: `python3 -m pip install -r requirements.txt`
 This might take a while.
-- After everything is installed, run the application by: `python wavefunctionsim.py`
+- After everything is installed, run the application by: `python3 wavefunctionsim.py`
 
 ## How to use
 ### Configuration

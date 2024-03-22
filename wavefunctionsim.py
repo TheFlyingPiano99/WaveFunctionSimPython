@@ -24,6 +24,21 @@ class MeasurementTools:
 def sim():
     print(text_writer.get_title_text())
 
+    # Check display availability
+    have_display = "DISPLAY" in os.environ
+    if not have_display:
+        exitval = os.system('python -c "import matplotlib.pyplot as plt; plt.figure()"')
+        have_display = (exitval == 0)
+    if have_display:
+        print("Display connected.\n")
+    else:
+        print("Display not connected.\n")
+
+    if not have_display:    # Create virtual display if no physical connected
+        from xvfbwrapper import Xvfb
+        vdisplay = Xvfb()
+        vdisplay.start()
+
     out_dir = "output/"
     if not os.path.exists(out_dir):
         os.mkdir(out_dir)
@@ -165,6 +180,8 @@ def sim():
     print(text_writer.get_finish_text(iter_data))
     text_writer.append_iter_data(iter_data)
 
+    if not have_display:
+        vdisplay.stop()
 
 if __name__ == "__main__":
     sim()
