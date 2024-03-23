@@ -17,6 +17,7 @@ On Linux systems alternatively you can use APT:
     sudo apt install python3
 ```
 - Download the CUDA Toolkit from https://developer.nvidia.com/cuda-downloads and install it on your computer.
+- On Linux systems with no physical display connected, make sure to also install X virtual framebuffer by `sudo apt install xvfb`.
 - Download and install Git version control system from https://git-scm.com/downloads.
 - Open a command-line and clone this repository by entering  
 `git clone https://github.com/TheFlyingPiano99/WaveFunctionSimPython.git`
@@ -31,7 +32,10 @@ On Linux systems alternatively you can use APT:
 - While the virtual environment is active (This can be seen from the presence of the `(.venv)` label at the beginning of the prompt.), upgrade pip: `python3 -m pip install --upgrade pip`
 - Install the required packages by typing: `python3 -m pip install -r requirements.txt`
 This might take a while.
-- After everything is installed, run the application by: `python3 wavefunctionsim.py`
+- After everything is installed, run the application by:
+  ```
+  python3 wavefunctionsim.py
+  ```
 
 ## How to use
 ### Configuration
