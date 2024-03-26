@@ -35,6 +35,7 @@ class SimState:
     output_dir: str = ""
     cache_dir: str = ""
     enable_visual_output: bool = True
+    simulation_method: str = "power_series"
 
     def __init__(self, config):
         # Load paths:

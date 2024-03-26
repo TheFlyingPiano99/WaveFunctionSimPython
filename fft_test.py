@@ -1,6 +1,8 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+from cupy import cupyx.scipy.ndimage.laplace
+
 
 N = 32
 array = cp.zeros(shape=[N], dtype=cp.complex_)

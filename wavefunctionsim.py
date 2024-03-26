@@ -23,7 +23,6 @@ class MeasurementTools:
 
 def sim():
     print(text_writer.get_title_text())
-
     print("\n")
     sim_state = init.initialize()
 
@@ -175,6 +174,7 @@ def sim():
 
     if not have_display and sim_state.enable_visual_output:
         vdisplay.stop()
+
 
 if __name__ == "__main__":
     sim()

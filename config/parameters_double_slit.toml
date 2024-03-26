@@ -45,7 +45,7 @@ wave_function_save_interval = 2
 
 [view]
 video_frame_rate = 25
-enable_visual_output = true
+enable_visual_output = false
 
 [view.volumetric]
 camera_rotation_speed = 2.0

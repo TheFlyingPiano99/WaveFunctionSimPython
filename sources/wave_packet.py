@@ -40,7 +40,7 @@ def init_gaussian_wave_packet(
     initial_momentum_h_per_bohr_radius_3: np.array,
     shape: np.shape
 ):
-    wave_tensor = np.zeros(shape=shape, dtype=cp.csingle)
+    wave_tensor = np.zeros(shape=shape, dtype=cp.complex128)
     for x in range(0, N):
         for y in range(0, N):
             for z in range(0, N):

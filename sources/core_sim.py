@@ -14,9 +14,9 @@ import keyboard
 import sys
 from colorama import Fore, Style
 from tqdm import tqdm
+from cupyx.scipy import ndimage
 
-
-def time_evolution(wave_tensor, kinetic_operator, potential_operator):
+def fft_time_evolution(wave_tensor, kinetic_operator, potential_operator):
     moment_space_wave_tensor = cp.fft.fftn(wave_tensor, norm="forward")
     moment_space_wave_tensor = cp.multiply(kinetic_operator, moment_space_wave_tensor)
     wave_tensor = cp.fft.fftn(moment_space_wave_tensor, norm="backward")
@@ -26,7 +26,7 @@ def time_evolution(wave_tensor, kinetic_operator, potential_operator):
     return cp.fft.fftn(moment_space_wave_tensor, norm="backward")
 
 
-def merged_time_evolution(
+def merged_fft_time_evolution(
     wave_tensor,
     kinetic_operator,
     potential_operator,
@@ -49,6 +49,30 @@ def merged_time_evolution(
     moment_space_wave_tensor = cp.fft.fftn(wave_tensor, norm="forward")
     moment_space_wave_tensor = cp.multiply(kinetic_operator, moment_space_wave_tensor)
     return cp.fft.fftn(moment_space_wave_tensor, norm="backward")
+
+
+def power_series_time_evolution(sim_state: sim_st.SimState, p: int, next_s_kernel: cp.ElementwiseKernel, s, v: cp.ndarray, pingpong_idx: int):
+    shape = sim_state.wave_tensor.shape
+    grid = 64
+    print("Power Series Iteration:")
+    for n in range(1, p):
+        next_s_kernel(
+            (grid, grid, grid),
+            (shape[0] // grid, shape[1] // grid, shape[2] // grid),
+            (
+                s[1 - pingpong_idx],
+                s[pingpong_idx],
+                v,
+                sim_state.wave_tensor,
+                cp.double(sim_state.delta_time_h_bar_per_hartree),
+                cp.double(sim_state.delta_x_bohr_radii),
+                cp.double(sim_state.particle_mass),
+                cp.double(n),
+                cp.int32(shape[0])
+            )
+        )
+        pingpong_idx = 1 - pingpong_idx
+    return sim_state.wave_tensor
 
 
 def init_iter_data(sim_state: sim_st.SimState):
@@ -179,6 +203,35 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
 
     start_index = iter_data.i  # Needed because of snapshots
 
+    if sim_state.simulation_method == "power_series":   # Define the kernel
+        next_s_kernel = cp.RawKernel(r'''
+            #include <cupy/complex.cuh>
+            
+            extern "C" __global__
+            void next_s(
+                complex<double>* s_prev, complex<double>* s_next, complex<float>* v, complex<double>* wave_function,
+                double delta_t, double delta_x, double mass, double n, int array_size
+            )
+            {
+                int i = blockIdx.x * blockDim.x + threadIdx.x;
+                int j = blockIdx.y * blockDim.y + threadIdx.y;
+                int k = blockIdx.z * blockDim.z + threadIdx.z;
+                int idx = i * array_size * array_size + j * array_size + k; 
+                complex<double> laplace_s =
+                    -1.0 * s_prev[idx] 
+                ;
+                complex<double> s = complex<double>(0.0, 1.0) * complex<double>(delta_t / n, 0.0)
+                    * (complex<double>(1.0 / 2.0 / mass, 0.0) * laplace_s - complex<double>(v[idx]) * s_prev[idx]);
+                s_next[idx] = s;
+                wave_function[idx] += s; 
+            }
+                    
+        ''', 'next_s')
+        s = [cp.zeros(shape=sim_state.wave_tensor.shape, dtype=sim_state.wave_tensor.dtype), cp.copy(sim_state.wave_tensor)]
+        s[1] = cp.copy(sim_state.wave_tensor)
+        v = cp.asarray(sim_state.localised_potential_hartree)
+        pingpong_idx = 0
+
     # Main iteration loop:
     """
     # This progress bar was problematic in some consoles:
@@ -203,11 +256,17 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
                 measure_and_render(iter_data, sim_state, measurement_tools)
 
             # Main time development step:
-            sim_state.wave_tensor = time_evolution(
-                wave_tensor=sim_state.wave_tensor,
-                kinetic_operator=sim_state.kinetic_operator,
-                potential_operator=sim_state.potential_operator,
-            )
+            if sim_state.simulation_method == "fft":
+                sim_state.wave_tensor = fft_time_evolution(
+                    wave_tensor=sim_state.wave_tensor,
+                    kinetic_operator=sim_state.kinetic_operator,
+                    potential_operator=sim_state.potential_operator,
+                )
+            elif sim_state.simulation_method == "power_series":
+                power_series_time_evolution(sim_state=sim_state, p=10, next_s_kernel=next_s_kernel, s=s, v=v, pingpong_idx=pingpong_idx)
+            else:
+                print("ERROR: Undefined simulation method")
+
             iter_time = time.time() - iter_start_time_s
             iter_data.elapsed_system_time_s += iter_time
             progress_bar.n = iter_data.i

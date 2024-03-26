@@ -121,27 +121,29 @@ def initialize():
     sim_state.probability_density = cp.asnumpy(cp.square(cp.abs(sim_state.wave_tensor)))
     sum_probability = cp.sum(sim_state.probability_density)
     print(f"Sum of probabilities after normalization = {sum_probability:.8f}")
-    # Operators:
-    print("Initializing kinetic energy operator")
 
-    full_init = True
-    if use_cache:
-        try:
-            sim_state.kinetic_operator = cp.asarray(np.load(file=os.path.join(sim_state.cache_dir, "kinetic_operator.npy")))
-            full_init = False
-        except OSError:
-            print("No cached kinetic_operator.npy found.")
-    if full_init:
-        sim_state.kinetic_operator = cp.asarray(operators.init_kinetic_operator(
-            sim_state.N,
-            sim_state.delta_x_bohr_radii,
-            sim_state.delta_time_h_bar_per_hartree,
-            sim_state.tensor_shape
-        ))
-        cp.save(file=os.path.join(sim_state.cache_dir, "kinetic_operator.npy"), arr=sim_state.kinetic_operator)
+    if sim_state.simulation_method == "fft":
+        # Operators:
+        print("Initializing kinetic energy operator")
 
-    print("Initializing potential energy operator")
-    print(text_writer.get_potential_description_text(sim_state, use_colors=True))
+        full_init = True
+        if use_cache:
+            try:
+                sim_state.kinetic_operator = cp.asarray(np.load(file=os.path.join(sim_state.cache_dir, "kinetic_operator.npy")))
+                full_init = False
+            except OSError:
+                print("No cached kinetic_operator.npy found.")
+        if full_init:
+            sim_state.kinetic_operator = cp.asarray(operators.init_kinetic_operator(
+                sim_state.N,
+                sim_state.delta_x_bohr_radii,
+                sim_state.delta_time_h_bar_per_hartree,
+                sim_state.tensor_shape
+            ))
+            cp.save(file=os.path.join(sim_state.cache_dir, "kinetic_operator.npy"), arr=sim_state.kinetic_operator)
+
+        print("Initializing potential energy operator")
+        print(text_writer.get_potential_description_text(sim_state, use_colors=True))
 
     full_init = True
     if use_cache:
@@ -154,7 +156,7 @@ def initialize():
 
     if full_init:
         sim_state.localised_potential_hartree = np.zeros(
-            shape=sim_state.tensor_shape, dtype=np.csingle
+            shape=sim_state.tensor_shape, dtype=np.complex64
         )
         sim_state.localised_potential_to_visualize_hartree = np.zeros(
             shape=sim_state.tensor_shape, dtype=np.csingle
@@ -403,19 +405,20 @@ def initialize():
         np.save(file=os.path.join(sim_state.cache_dir, "localized_potential_to_visualize.npy"), arr=sim_state.localised_potential_to_visualize_hartree)
 
     full_init = True
-    if use_cache:
-        try:
-            sim_state.potential_operator = cp.load(file=os.path.join(sim_state.cache_dir, "potential_operator.npy"))
-            full_init = False
-        except OSError:
-            print("No cached potential_operator.npy found.")
-    if full_init:
-        print("Creating potential operator.")
-        sim_state.potential_operator = cp.asarray(operators.init_potential_operator(
-            V=sim_state.localised_potential_hartree,
-            delta_time=sim_state.delta_time_h_bar_per_hartree,
-        ))
-        cp.save(file=os.path.join(sim_state.cache_dir, "potential_operator.npy"), arr=sim_state.potential_operator)
+    if sim_state.simulation_method == "fft":
+        if use_cache:
+            try:
+                sim_state.potential_operator = cp.load(file=os.path.join(sim_state.cache_dir, "potential_operator.npy"))
+                full_init = False
+            except OSError:
+                print("No cached potential_operator.npy found.")
+        if full_init:
+            print("Creating potential operator.")
+            sim_state.potential_operator = cp.asarray(operators.init_potential_operator(
+                V=sim_state.localised_potential_hartree,
+                delta_time=sim_state.delta_time_h_bar_per_hartree,
+            ))
+            cp.save(file=os.path.join(sim_state.cache_dir, "potential_operator.npy"), arr=sim_state.potential_operator)
     try:
         with open(os.path.join(sim_state.cache_dir, "cached_parameters.toml"), mode="w") as cache_f:
             toml.dump(config, cache_f)
