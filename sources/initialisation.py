@@ -103,13 +103,22 @@ def initialize():
 
     if full_init:
         sim_state.wave_tensor = cp.asarray(
-            wave_packet.init_gaussian_wave_packet(
+            wave_packet.init_gaussian_wave_packet_double_precision(
                 sim_state.N,
                 sim_state.delta_x_bohr_radii,
                 a,
                 sim_state.initial_wp_position_bohr_radii_3,
                 sim_state.initial_wp_momentum_h_per_bohr_radius,
-                sim_state.tensor_shape
+                sim_state.tensor_shape,
+            )
+            if sim_state.double_precision_wave_tensor else
+            wave_packet.init_gaussian_wave_packet_single_precision(
+                sim_state.N,
+                sim_state.delta_x_bohr_radii,
+                a,
+                sim_state.initial_wp_position_bohr_radii_3,
+                sim_state.initial_wp_momentum_h_per_bohr_radius,
+                sim_state.tensor_shape,
             )
         )
         cp.save(file=os.path.join(sim_state.cache_dir, "gaussian_wave_packet.npy"), arr=sim_state.wave_tensor)

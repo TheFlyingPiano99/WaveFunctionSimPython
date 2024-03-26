@@ -19,8 +19,10 @@ def test_func():
                 int i = blockIdx.x * blockDim.x + threadIdx.x;
                 int j = blockIdx.y * blockDim.y + threadIdx.y;
                 int k = blockIdx.z * blockDim.z + threadIdx.z;
-                int idx = i * size * size + j * size + k; 
-                out[idx] = complex<double>((double)i, (double)j); 
+                int idx = i * size * size + j * size + k;
+                for (int n = 1; n < ) {
+                    out[idx] = complex<double>((double)i, (double)j); 
+                } 
             }
         """,
         "test_kernel"

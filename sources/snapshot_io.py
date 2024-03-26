@@ -36,8 +36,8 @@ def read_snapshot(sim_state: SimState, iter_data: IterData):
         try:
             wave_snapshot = np.load(file=os.path.join(sim_state.cache_dir, "wave_snapshot.npy"))
             sim_state.wave_tensor = cp.asarray(wave_snapshot)
-        except IOError:
-            print("No previous wave tensor found!")
+        except:
+            print("No usable previous wave tensor found!")
     try:
         with io.open(os.path.join(sim_state.cache_dir, "data_snapshot.txt"), mode="r") as f:
             data = f.read()

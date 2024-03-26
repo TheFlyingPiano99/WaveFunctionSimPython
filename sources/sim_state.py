@@ -36,6 +36,7 @@ class SimState:
     cache_dir: str = ""
     enable_visual_output: bool = True
     simulation_method: str = "fft"
+    double_precision_wave_tensor: bool = False
 
     def __init__(self, config):
         # Load paths:
@@ -55,6 +56,11 @@ class SimState:
                 self.simulation_method = "fft"
         except KeyError:
             self.simulation_method = "fft"
+
+        try:
+            self.double_precision_wave_tensor = config["volume"]["double_precision_wave_tensor"]
+        except KeyError:
+            self.double_precision_wave_tensor = False
 
         self.config = config
         self.particle_mass = config["wave_packet"]["particle_mass"]

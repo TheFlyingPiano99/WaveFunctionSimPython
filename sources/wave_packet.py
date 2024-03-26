@@ -32,15 +32,41 @@ def wave_packet(x, y):
     return wave_0_x(x) * wave_0_y(y)
 
 @jit(nopython=True)
-def init_gaussian_wave_packet(
+def init_gaussian_wave_packet_double_precision(
     N: int,
     delta_x_bohr_radii: float,
     a: float,
     r_0_bohr_radii_3: np.array,
     initial_momentum_h_per_bohr_radius_3: np.array,
-    shape: np.shape
+    shape: np.shape,
 ):
-    wave_tensor = np.zeros(shape=shape, dtype=cp.complex128)
+    wave_tensor = np.zeros(shape=shape, dtype=np.complex128)
+    for x in range(0, N):
+        for y in range(0, N):
+            for z in range(0, N):
+                r = (
+                    np.array([x, y, z]) * delta_x_bohr_radii
+                    - np.array([1.0, 1.0, 1.0]) * N * delta_x_bohr_radii * 0.5
+                )
+                wave_tensor[x, y, z] = (
+                    (2.0 / math.pi / a**2) ** (3.0 / 4.0)
+                    * math_utils.exp_i(np.dot(initial_momentum_h_per_bohr_radius_3, r))
+                    * math.exp(
+                        -np.dot(r - r_0_bohr_radii_3, r - r_0_bohr_radii_3) / a**2
+                    )
+                )
+    return wave_tensor
+
+@jit(nopython=True)
+def init_gaussian_wave_packet_single_precision(
+    N: int,
+    delta_x_bohr_radii: float,
+    a: float,
+    r_0_bohr_radii_3: np.array,
+    initial_momentum_h_per_bohr_radius_3: np.array,
+    shape: np.shape,
+):
+    wave_tensor = np.zeros(shape=shape, dtype=np.complex64)
     for x in range(0, N):
         for y in range(0, N):
             for z in range(0, N):
