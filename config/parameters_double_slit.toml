@@ -42,6 +42,7 @@ measurement_plane_capture_interval = 10
 probability_plot_interval = 50
 per_axis_probability_denisty_interval = 2
 wave_function_save_interval = 2
+method = "fft"
 
 [view]
 video_frame_rate = 25

@@ -35,7 +35,7 @@ class SimState:
     output_dir: str = ""
     cache_dir: str = ""
     enable_visual_output: bool = True
-    simulation_method: str = "power_series"
+    simulation_method: str = "fft"
 
     def __init__(self, config):
         # Load paths:
@@ -48,6 +48,13 @@ class SimState:
             self.output_dir = config["paths"]["output_dir"]
         except KeyError:
             self.output_dir = "output/"
+
+        try:
+            self.simulation_method = config["iteration"]["method"]
+            if self.simulation_method not in ["fft", "power_series"]:
+                self.simulation_method = "fft"
+        except KeyError:
+            self.simulation_method = "fft"
 
         self.config = config
         self.particle_mass = config["wave_packet"]["particle_mass"]

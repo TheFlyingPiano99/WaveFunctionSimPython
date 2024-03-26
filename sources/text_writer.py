@@ -251,6 +251,7 @@ def write_sim_state(sim_state: sim_st.SimState):
     with open(os.path.join(sim_state.output_dir, "parameters.txt"), mode="w") as f:
         f.write(get_sim_state_description_text(sim_state))
         f.write(get_potential_description_text(sim_state))
+        f.write(f"Simulation method: {sim_state.simulation_method}")
 
 
 def append_iter_data(iter_data: core_sim.IterData, sim_state: sim_st.SimState):
