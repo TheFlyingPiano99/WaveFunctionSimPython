@@ -37,6 +37,7 @@ class SimState:
     enable_visual_output: bool = True
     simulation_method: str = "fft"
     double_precision_wave_tensor: bool = False
+    enable_wave_function_save: bool = True
 
     def __init__(self, config):
         # Load paths:
@@ -142,6 +143,10 @@ class SimState:
             self.enable_visual_output = config["view"]["enable_visual_output"]
         except KeyError:
             self.enable_visual_output = True
+        try:
+            self.enable_wave_function_save = config["iteration"]["enable_wave_function_save"]
+        except KeyError:
+            self.enable_wave_function_save = True
 
 
     def get_view_into_raw_wave_function(self):

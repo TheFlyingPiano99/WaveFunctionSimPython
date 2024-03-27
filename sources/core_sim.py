@@ -55,24 +55,28 @@ def power_series_time_evolution(sim_state: sim_st.SimState, p: int, next_s_kerne
     shape = sim_state.wave_tensor.shape
     grid_size = (64, 64, 64)
     block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
-    next_s_kernel(
-        grid_size,
-        block_size,
-        (
-            s[0],
-            s[1],
-            v,
-            sim_state.wave_tensor,
-            cp.double(sim_state.delta_time_h_bar_per_hartree) if sim_state.double_precision_wave_tensor
-            else cp.float32(sim_state.delta_time_h_bar_per_hartree),
-            cp.double(sim_state.delta_x_bohr_radii) if sim_state.double_precision_wave_tensor
-            else cp.float32(sim_state.delta_x_bohr_radii),
-            cp.double(sim_state.particle_mass) if sim_state.double_precision_wave_tensor
-            else cp.float32(sim_state.particle_mass),
-            cp.int32(shape[0]),
-            cp.int32(p)
+    pingpong_idx = 0
+    s[1 - pingpong_idx] = cp.copy(sim_state.wave_tensor)
+    for n in range(1, p + 1):
+        next_s_kernel(
+            grid_size,
+            block_size,
+            (
+                s[1 - pingpong_idx],
+                s[pingpong_idx],
+                v,
+                sim_state.wave_tensor,
+                cp.double(sim_state.delta_time_h_bar_per_hartree) if sim_state.double_precision_wave_tensor
+                else cp.float32(sim_state.delta_time_h_bar_per_hartree),
+                cp.double(sim_state.delta_x_bohr_radii) if sim_state.double_precision_wave_tensor
+                else cp.float32(sim_state.delta_x_bohr_radii),
+                cp.double(sim_state.particle_mass) if sim_state.double_precision_wave_tensor
+                else cp.float32(sim_state.particle_mass),
+                cp.int32(shape[0]),
+                cp.int32(n)
+            )
         )
-    )
+        pingpong_idx = 1 - pingpong_idx
     return sim_state.wave_tensor
 
 
@@ -205,21 +209,18 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
     start_index = iter_data.i  # Needed because of snapshots
 
     if sim_state.simulation_method == "power_series":   # Define the kernel
-        next_s_kernel = cp.RawKernel(r'''
+        format_kernel_source = r'''
             #include <cupy/complex.cuh>
-            #include <cooperative_groups.h>
-            namespace cg = cooperative_groups;
             
             extern "C" __global__
             void next_s(
-                complex<{0}>* s0, complex<{0}>* s1, complex<float>* v, complex<{0}>* wave_function,
-                {0} delta_t, {0} delta_x, {0} mass, int array_size, int p
+                complex<{0}>* s_prev, complex<{0}>* s_next, const complex<float>* v, complex<{0}>* wave_function,
+                {0} delta_t, {0} delta_x, {0} mass, int array_size, int n
             )
             {{
-                cg::cluster_group cluster = cg::this_cluster();
-                int i = blockIdx.x * blockDim.x + threadIdx.x;
+                int k = blockIdx.x * blockDim.x + threadIdx.x;
                 int j = blockIdx.y * blockDim.y + threadIdx.y;
-                int k = blockIdx.z * blockDim.z + threadIdx.z;
+                int i = blockIdx.z * blockDim.z + threadIdx.z;
                 int idx = i * array_size * array_size + j * array_size + k;
                 int idx_n00 = 0;
                 if (i > 0) {{
@@ -263,30 +264,26 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
                 else {{
                     idx_00p = i * array_size * array_size + j * array_size + k; 
                 }}
-                int pingpong_idx = 0;
-                s1[idx] = wave_function[idx];
-                for (int n = 1; n <= p; n++) {{
-                    cluster.sync(); // Sync all threads in the cluster group
-                    complex<{0}>* s_prev = (pingpong_idx)? s0 : s1;
-                    complex<{0}>* s_next = (pingpong_idx)? s1 : s0;
-                    pingpong_idx = 1 - pingpong_idx;
-                    complex<{0}> laplace_s = (
-                          s_prev[idx_n00]
-                        + s_prev[idx_p00]
-                        + s_prev[idx_0n0]
-                        -6.0{1} * s_prev[idx]
-                        + s_prev[idx_0p0]
-                        + s_prev[idx_00n]
-                        + s_prev[idx_00p]
-                    ) / delta_x / delta_x;
-                    complex<{0}> s = complex<{0}>(0.0{1}, 1.0{1}) * complex<{0}>(delta_t / ({0})n, 0.0{1})
-                        * (complex<{0}>(1.0{1} / 2.0{1} / mass, 0.0{1}) * laplace_s - complex<{0}>(v[idx]) * s_prev[idx]);
-                    s_next[idx] = s;
-                    wave_function[idx] += s; 
-                }}
+
+                complex<{0}> laplace_s = (
+                      s_prev[idx_n00]
+                    + s_prev[idx_p00]
+                    + s_prev[idx_0n0]
+                    -6.0{1} * s_prev[idx]
+                    + s_prev[idx_0p0]
+                    + s_prev[idx_00n]
+                    + s_prev[idx_00p]
+                ) / delta_x / delta_x;
+                
+                complex<{0}> s = complex<{0}>(0.0{1}, 1.0{1}) * complex<{0}>(delta_t / ({0})n, 0.0{1})
+                    * (complex<{0}>(1.0{1} / 2.0{1} / mass, 0.0{1}) * laplace_s - complex<{0}>(v[idx]) * s_prev[idx]);
+                s_next[idx] = s;
+                wave_function[idx] += s; 
             }}
-                    
-        '''.format("double" if sim_state.double_precision_wave_tensor else "float", "" if sim_state.double_precision_wave_tensor else "f"),
+        '''.format("double" if sim_state.double_precision_wave_tensor else "float", "" if sim_state.double_precision_wave_tensor else "f")
+        print("Kernel source:")
+        print(format_kernel_source)
+        next_s_kernel = cp.RawKernel(format_kernel_source,
         'next_s',
         enable_cooperative_groups=False)
         s = [
@@ -294,6 +291,7 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
             cp.zeros(shape=sim_state.wave_tensor.shape, dtype=sim_state.wave_tensor.dtype)
         ]   # s is used as a pair of pingpong buffers to store power series elements
         v = cp.asarray(sim_state.localised_potential_hartree)   # Copy to GPU
+        p = 9
 
     # Main iteration loop:
     """
@@ -313,7 +311,8 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
                 sim_state.wave_tensor
             )
 
-            write_wave_function_to_file(sim_state=sim_state, iter_data=iter_data)
+            if sim_state.enable_wave_function_save:
+                write_wave_function_to_file(sim_state=sim_state, iter_data=iter_data)
 
             if sim_state.enable_visual_output:
                 measure_and_render(iter_data, sim_state, measurement_tools)
@@ -326,7 +325,7 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
                     potential_operator=sim_state.potential_operator,
                 )
             elif sim_state.simulation_method == "power_series":
-                power_series_time_evolution(sim_state=sim_state, p=10, next_s_kernel=next_s_kernel, s=s, v=v)
+                power_series_time_evolution(sim_state=sim_state, p=p, next_s_kernel=next_s_kernel, s=s, v=v)
             else:
                 print("ERROR: Undefined simulation method")
 
