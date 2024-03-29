@@ -60,16 +60,20 @@ class AAMeasurementVolume:
         self.probability_evolution = np.empty(shape=0, dtype=np.float64)
 
     def integrate_probability_density(self, probability_density):
-        self.probability = np.sum(
+        self.probability = min(np.sum(
             probability_density[
                 self.bottom_corner[0] : self.top_corner[0],
                 self.bottom_corner[1] : self.top_corner[1],
                 self.bottom_corner[2] : self.top_corner[2],
             ]
-        )
+        ), 10.0)
         self.probability_evolution = np.append(
             arr=self.probability_evolution, values=self.probability
         )
+
+    def clear(self):
+        self.probability = 0.0
+        self.probability_evolution = np.empty(shape=0, dtype=np.float64)
 
     def get_probability(self):
         return self.probability

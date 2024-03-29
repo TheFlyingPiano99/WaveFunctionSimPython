@@ -18,13 +18,15 @@ def plot_probability_evolution(out_dir, probability_evolutions, delta_t, index, 
     plt.grid(True)
     plt.xlabel("Elapsed time [ħ/Hartree]")
     plt.ylabel("Probability")
-    plt.title("Probability of particle in different regions")
-    n = probability_evolutions[0][0].size
+    plt.title("Integrated probability density")
+    n = probability_evolutions[0][0].size # Assuming that all lists are of the same size
     x = np.linspace(start=0, stop=n * delta_t, dtype=None, num=n)
     plt.xlim(0, n * delta_t)
+    plt.ylim(0.0, 2.0)
     for prob_data in probability_evolutions:
         plt.plot(x, prob_data[0], label=prob_data[1])
     plt.legend()
+    plt.tight_layout()
     plt.savefig(os.path.join(dir, f"probability_evolution_{index:04d}.png"))
     if show_fig:
         plt.show()

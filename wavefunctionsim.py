@@ -54,7 +54,7 @@ def sim():
     )
 
     measurement_tools = 0
-    if sim_state.enable_visual_output:
+    if True:
         measurement_tools = MeasurementTools()
         measurement_tools.volumetric = volume_visualization.VolumetricVisualization(
             volume_data=sim_state.get_view_into_probability_density(),
@@ -86,6 +86,7 @@ def sim():
             top_corner=sim_state.viewing_window_top_corner_voxel,
             label="Full volume",
         )
+        '''
         measurement_tools.measurement_volume_first_half = measurement.AAMeasurementVolume(
             bottom_corner=sim_state.viewing_window_bottom_corner_voxel,
             top_corner=np.array(
@@ -112,6 +113,7 @@ def sim():
             top_corner=sim_state.viewing_window_top_corner_voxel,
             label="Floating gate",
         )
+        '''
 
         # Setup "per axis" probability density:
         measurement_tools.x_axis_probability_density = measurement.ProjectedMeasurement(

@@ -96,12 +96,14 @@ def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools)
     measurement_tools.measurement_volume_full.integrate_probability_density(
         sim_state.probability_density
     )
+    '''
     measurement_tools.measurement_volume_first_half.integrate_probability_density(
         sim_state.probability_density
     )
     measurement_tools.measurement_volume_second_half.integrate_probability_density(
         sim_state.probability_density
     )
+    '''
 
     measurement_tools.measurement_plane.integrate(
         sim_state.probability_density,
@@ -162,8 +164,8 @@ def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools)
             out_dir=sim_state.output_dir,
             probability_evolutions=[
                 measurement_tools.measurement_volume_full.get_probability_evolution(),
-                measurement_tools.measurement_volume_first_half.get_probability_evolution(),
-                measurement_tools.measurement_volume_second_half.get_probability_evolution(),
+                #measurement_tools.measurement_volume_first_half.get_probability_evolution(),
+                #measurement_tools.measurement_volume_second_half.get_probability_evolution(),
             ],
             delta_t=sim_state.delta_time_h_bar_per_hartree,
             index=iter_data.i,
@@ -190,156 +192,192 @@ def write_wave_function_to_file(sim_state: sim_st.SimState, iter_data):
 
 
 def run_iteration(sim_state: sim_st.SimState, measurement_tools):
-    # Setup iteration parameters:
-    iter_data = init_iter_data(sim_state)
-    if (
-        sim_state.use_cache
-        and os.path.exists(os.path.join(sim_state.cache_dir, "data_snapshot.txt"))
-        and os.path.exists(os.path.join(sim_state.cache_dir, "wave_snapshot.npy"))
-    ):
-        sim_state, iter_data = snapshot_io.read_snapshot(sim_state, iter_data)
-        snapshot_io.remove_snapshot(sim_state)
-        print(Fore.BLUE + "Snapshot of an interrupted simulation loaded.\nResuming previous wave function." + Style.RESET_ALL)
+    sim_state.use_cache = False # For the p iteration
+    probability_evolutions = []
+    probability_divergence_iteration_count = []
+    is_diverged = False
+    copy_of_initial_wave_function = cp.copy(sim_state.wave_tensor)
+    min_p = 0
+    max_p = 10
+    diverngence_idx_file = open(os.path.join(sim_state.output_dir, "iteration_idx_of_divergence.txt"), 'w')
+    for p in range(min_p, max_p + 1):  # For the p iteration
+        is_diverged = False # For comparison
+        sim_state.simulation_method = "fft" if p == 0 else "power_series" # For p comparison
+        sim_state.wave_tensor = cp.copy(copy_of_initial_wave_function)  # For p comparison
+        measurement_tools.measurement_volume_full.clear()   # For p comparison
+        print(f"p = {p}")   # For the p iteration
+        # Setup iteration parameters:
+        iter_data = init_iter_data(sim_state)
+        if (
+            sim_state.use_cache
+            and os.path.exists(os.path.join(sim_state.cache_dir, "data_snapshot.txt"))
+            and os.path.exists(os.path.join(sim_state.cache_dir, "wave_snapshot.npy"))
+        ):
+            sim_state, iter_data = snapshot_io.read_snapshot(sim_state, iter_data)
+            snapshot_io.remove_snapshot(sim_state)
+            print(Fore.BLUE + "Snapshot of an interrupted simulation loaded.\nResuming previous wave function." + Style.RESET_ALL)
 
-    print(Fore.GREEN + "Simulating " + Style.RESET_ALL + "(Press <Ctrl-c> to quit.)")
+        print(Fore.GREEN + "Simulating " + Style.RESET_ALL + "(Press <Ctrl-c> to quit.)")
 
-    iter_data.is_quit = False
-    signal_handling.register_signal_handler(iter_data)
+        iter_data.is_quit = False
+        signal_handling.register_signal_handler(iter_data)
 
-    start_index = iter_data.i  # Needed because of snapshots
+        start_index = iter_data.i  # Needed because of snapshots
 
-    if sim_state.simulation_method == "power_series":   # Define the kernel
-        format_kernel_source = r'''
-            #include <cupy/complex.cuh>
-            
-            extern "C" __global__
-            void next_s(
-                complex<{0}>* s_prev, complex<{0}>* s_next, const complex<float>* v, complex<{0}>* wave_function,
-                {0} delta_t, {0} delta_x, {0} mass, int array_size, int n
-            )
-            {{
-                int k = blockIdx.x * blockDim.x + threadIdx.x;
-                int j = blockIdx.y * blockDim.y + threadIdx.y;
-                int i = blockIdx.z * blockDim.z + threadIdx.z;
-                int idx = i * array_size * array_size + j * array_size + k;
-                int idx_n00 = 0;
-                if (i > 0) {{
-                    idx_n00 = (i - 1) * array_size * array_size + j * array_size + k; 
-                }}
-                else {{
-                    idx_n00 = (i) * array_size * array_size + j * array_size + k; 
-                }}
-                int idx_p00 = 0;
-                if (i < array_size - 1) {{
-                    idx_p00 = (i + 1) * array_size * array_size + j * array_size + k; 
-                }}
-                else {{
-                    idx_p00 = (i) * array_size * array_size + j * array_size + k; 
-                }}
-                int idx_0n0 = 0;
-                if (j > 0) {{
-                    idx_0n0 = i * array_size * array_size + (j - 1) * array_size + k; 
-                }}
-                else {{
-                    idx_0n0 = i * array_size * array_size + (j) * array_size + k; 
-                }}
-                int idx_0p0 = 0;
-                if (j < array_size - 1) {{
-                    idx_0p0 = i * array_size * array_size + (j + 1) * array_size + k; 
-                }}
-                else {{
-                    idx_0p0 = i * array_size * array_size + (j) * array_size + k; 
-                }}
-                int idx_00n = 0;
-                if (k > 0) {{
-                    idx_00n = i * array_size * array_size + j * array_size + k - 1; 
-                }}
-                else {{
-                    idx_00n = i * array_size * array_size + j * array_size + k; 
-                }}
-                int idx_00p = 0;
-                if (k < array_size - 1) {{
-                    idx_00p = i * array_size * array_size + j * array_size + k + 1; 
-                }}
-                else {{
-                    idx_00p = i * array_size * array_size + j * array_size + k; 
-                }}
-
-                complex<{0}> laplace_s = (
-                      s_prev[idx_n00]
-                    + s_prev[idx_p00]
-                    + s_prev[idx_0n0]
-                    -6.0{1} * s_prev[idx]
-                    + s_prev[idx_0p0]
-                    + s_prev[idx_00n]
-                    + s_prev[idx_00p]
-                ) / delta_x / delta_x;
+        if sim_state.simulation_method == "power_series":   # Define the kernel
+            format_kernel_source = r'''
+                #include <cupy/complex.cuh>
                 
-                complex<{0}> s = complex<{0}>(0.0{1}, 1.0{1}) * complex<{0}>(delta_t / ({0})n, 0.0{1})
-                    * (complex<{0}>(1.0{1} / 2.0{1} / mass, 0.0{1}) * laplace_s - complex<{0}>(v[idx]) * s_prev[idx]);
-                s_next[idx] = s;
-                wave_function[idx] += s; 
-            }}
-        '''.format("double" if sim_state.double_precision_wave_tensor else "float", "" if sim_state.double_precision_wave_tensor else "f")
-        print("Kernel source:")
-        print(format_kernel_source)
-        next_s_kernel = cp.RawKernel(format_kernel_source,
-        'next_s',
-        enable_cooperative_groups=False)
-        s = [
-            cp.zeros(shape=sim_state.wave_tensor.shape, dtype=sim_state.wave_tensor.dtype),
-            cp.zeros(shape=sim_state.wave_tensor.shape, dtype=sim_state.wave_tensor.dtype)
-        ]   # s is used as a pair of pingpong buffers to store power series elements
-        v = cp.asarray(sim_state.localised_potential_hartree)   # Copy to GPU
-        p = 9
-
-    # Main iteration loop:
-    """
-    # This progress bar was problematic in some consoles:
-    with alive_bar(iter_data.total_iteration_count) as bar:
-        for j in range(iter_data.i):
-            bar()
-    """
-    with tqdm(total=iter_data.total_iteration_count) as progress_bar:
-        for iter_data.i in range(start_index, iter_data.total_iteration_count):
-            if iter_data.is_quit:
-                snapshot_io.write_snapshot(sim_state, iter_data)
-                sys.exit(0)
-
-            iter_start_time_s = time.time()
-            sim_state.probability_density = math_utils.square_of_abs(
-                sim_state.wave_tensor
-            )
-
-            if sim_state.enable_wave_function_save:
-                write_wave_function_to_file(sim_state=sim_state, iter_data=iter_data)
-
-            if sim_state.enable_visual_output:
-                measure_and_render(iter_data, sim_state, measurement_tools)
-
-            # Main time development step:
-            if sim_state.simulation_method == "fft":
-                sim_state.wave_tensor = fft_time_evolution(
-                    wave_tensor=sim_state.wave_tensor,
-                    kinetic_operator=sim_state.kinetic_operator,
-                    potential_operator=sim_state.potential_operator,
+                extern "C" __global__
+                void next_s(
+                    complex<{0}>* s_prev, complex<{0}>* s_next, const complex<float>* v, complex<{0}>* wave_function,
+                    {0} delta_t, {0} delta_x, {0} mass, int array_size, int n
                 )
-            elif sim_state.simulation_method == "power_series":
-                power_series_time_evolution(sim_state=sim_state, p=p, next_s_kernel=next_s_kernel, s=s, v=v)
-            else:
-                print("ERROR: Undefined simulation method")
+                {{
+                    int k = blockIdx.x * blockDim.x + threadIdx.x;
+                    int j = blockIdx.y * blockDim.y + threadIdx.y;
+                    int i = blockIdx.z * blockDim.z + threadIdx.z;
+                    int idx = i * array_size * array_size + j * array_size + k;
+                    int idx_n00 = 0;
+                    if (i > 0) {{
+                        idx_n00 = (i - 1) * array_size * array_size + j * array_size + k; 
+                    }}
+                    else {{
+                        idx_n00 = (i) * array_size * array_size + j * array_size + k; 
+                    }}
+                    int idx_p00 = 0;
+                    if (i < array_size - 1) {{
+                        idx_p00 = (i + 1) * array_size * array_size + j * array_size + k; 
+                    }}
+                    else {{
+                        idx_p00 = (i) * array_size * array_size + j * array_size + k; 
+                    }}
+                    int idx_0n0 = 0;
+                    if (j > 0) {{
+                        idx_0n0 = i * array_size * array_size + (j - 1) * array_size + k; 
+                    }}
+                    else {{
+                        idx_0n0 = i * array_size * array_size + (j) * array_size + k; 
+                    }}
+                    int idx_0p0 = 0;
+                    if (j < array_size - 1) {{
+                        idx_0p0 = i * array_size * array_size + (j + 1) * array_size + k; 
+                    }}
+                    else {{
+                        idx_0p0 = i * array_size * array_size + (j) * array_size + k; 
+                    }}
+                    int idx_00n = 0;
+                    if (k > 0) {{
+                        idx_00n = i * array_size * array_size + j * array_size + k - 1; 
+                    }}
+                    else {{
+                        idx_00n = i * array_size * array_size + j * array_size + k; 
+                    }}
+                    int idx_00p = 0;
+                    if (k < array_size - 1) {{
+                        idx_00p = i * array_size * array_size + j * array_size + k + 1; 
+                    }}
+                    else {{
+                        idx_00p = i * array_size * array_size + j * array_size + k; 
+                    }}
+    
+                    complex<{0}> laplace_s = (
+                          s_prev[idx_n00]
+                        + s_prev[idx_p00]
+                        + s_prev[idx_0n0]
+                        -6.0{1} * s_prev[idx]
+                        + s_prev[idx_0p0]
+                        + s_prev[idx_00n]
+                        + s_prev[idx_00p]
+                    ) / delta_x / delta_x;
+                    
+                    complex<{0}> s = complex<{0}>(0.0{1}, 1.0{1}) * complex<{0}>(delta_t / ({0})n, 0.0{1})
+                        * (complex<{0}>(1.0{1} / 2.0{1} / mass, 0.0{1}) * laplace_s - complex<{0}>(v[idx]) * s_prev[idx]);
+                    s_next[idx] = s;
+                    wave_function[idx] += s; 
+                }}
+            '''.format("double" if sim_state.double_precision_wave_tensor else "float", "" if sim_state.double_precision_wave_tensor else "f")
+            #print("Kernel source:")
+            #print(format_kernel_source)
+            next_s_kernel = cp.RawKernel(format_kernel_source,
+            'next_s',
+            enable_cooperative_groups=False)
+            s = [
+                cp.zeros(shape=sim_state.wave_tensor.shape, dtype=sim_state.wave_tensor.dtype),
+                cp.zeros(shape=sim_state.wave_tensor.shape, dtype=sim_state.wave_tensor.dtype)
+            ]   # s is used as a pair of pingpong buffers to store power series elements
+            v = cp.asarray(sim_state.localised_potential_hartree)   # Copy to GPU
 
-            iter_time = time.time() - iter_start_time_s
-            iter_data.elapsed_system_time_s += iter_time
-            progress_bar.n = iter_data.i
-            progress_bar.refresh()
+        # Main iteration loop:
+        """
+        # This progress bar was problematic in some consoles:
+        with alive_bar(iter_data.total_iteration_count) as bar:
+            for j in range(iter_data.i):
+                bar()
+        """
+        with tqdm(total=iter_data.total_iteration_count) as progress_bar:
+            for iter_data.i in range(start_index, iter_data.total_iteration_count):
+                if iter_data.is_quit:
+                    snapshot_io.write_snapshot(sim_state, iter_data)
+                    sys.exit(0)
 
+                iter_start_time_s = time.time()
+                sim_state.probability_density = math_utils.square_of_abs(
+                    sim_state.wave_tensor
+                )
 
-    # Calculate resulting time statistics after the iteration:
-    iter_data.total_simulated_time = (
-        sim_state.delta_time_h_bar_per_hartree * iter_data.total_iteration_count
-    )
-    iter_data.average_iteration_system_time_s = iter_data.elapsed_system_time_s / float(
-        iter_data.total_iteration_count
-    )
+                if sim_state.enable_wave_function_save:
+                    write_wave_function_to_file(sim_state=sim_state, iter_data=iter_data)
+
+                if sim_state.enable_visual_output:
+                    measure_and_render(iter_data, sim_state, measurement_tools)
+
+                # Main time development step:
+                if sim_state.simulation_method == "fft":
+                    sim_state.wave_tensor = fft_time_evolution(
+                        wave_tensor=sim_state.wave_tensor,
+                        kinetic_operator=sim_state.kinetic_operator,
+                        potential_operator=sim_state.potential_operator,
+                    )
+                elif sim_state.simulation_method == "power_series":
+                    power_series_time_evolution(sim_state=sim_state, p=p, next_s_kernel=next_s_kernel, s=s, v=v)
+                else:
+                    print("ERROR: Undefined simulation method")
+
+                iter_time = time.time() - iter_start_time_s
+                iter_data.elapsed_system_time_s += iter_time
+                progress_bar.n = iter_data.i
+                progress_bar.refresh()
+
+                # For comparison:
+                measurement_tools.measurement_volume_full.integrate_probability_density(
+                    sim_state.probability_density
+                )
+                prob_dens = sim_state.get_view_into_probability_density()
+                probability = cp.sum(prob_dens)
+                if not is_diverged and probability > 2.0:
+                    is_diverged = True
+                    probability_divergence_iteration_count.append(iter_data.i)
+            if not is_diverged:
+                probability_divergence_iteration_count.append("convergent")
+        # Calculate resulting time statistics after the iteration:
+        iter_data.total_simulated_time = (
+            sim_state.delta_time_h_bar_per_hartree * iter_data.total_iteration_count
+        )
+        iter_data.average_iteration_system_time_s = iter_data.elapsed_system_time_s / float(
+            iter_data.total_iteration_count
+        )
+
+        evolution = list(measurement_tools.measurement_volume_full.get_probability_evolution())
+        evolution[1] = f"p = {p}" if sim_state.simulation_method == "power_series" else "SOF"
+        probability_evolutions.append(evolution)
+        plot.plot_probability_evolution(
+            out_dir=os.path.join(sim_state.output_dir, "probability_comparison"),
+            probability_evolutions=probability_evolutions,
+            index=p,
+            delta_t=sim_state.delta_time_h_bar_per_hartree
+        )
+        print(probability_divergence_iteration_count)
+        diverngence_idx_file.write(str(probability_divergence_iteration_count[-1]) + "\n")
+    diverngence_idx_file.close()
     return sim_state, measurement_tools, iter_data
