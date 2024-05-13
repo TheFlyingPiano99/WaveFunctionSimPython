@@ -14,7 +14,8 @@ import keyboard
 import sys
 from colorama import Fore, Style
 from tqdm import tqdm
-from cupyx.scipy import ndimage
+import pandas as pd
+
 
 def fft_time_evolution(wave_tensor, kinetic_operator, potential_operator):
     moment_space_wave_tensor = cp.fft.fftn(wave_tensor, norm="forward")
@@ -192,20 +193,18 @@ def write_wave_function_to_file(sim_state: sim_st.SimState, iter_data):
 
 
 def run_iteration(sim_state: sim_st.SimState, measurement_tools):
-    sim_state.use_cache = False # For the p iteration
     probability_evolutions = []
     probability_divergence_iteration_count = []
     is_diverged = False
     copy_of_initial_wave_function = cp.copy(sim_state.wave_tensor)
-    min_p = 0
-    max_p = 10
-    diverngence_idx_file = open(os.path.join(sim_state.output_dir, "iteration_idx_of_divergence.txt"), 'w')
+    min_p = 0 if sim_state.simulation_method == "fft" else 10
+    max_p = 0 if sim_state.simulation_method == "fft" else 10
+    divergence_idx_file = open(os.path.join(sim_state.output_dir, "iteration_idx_of_divergence.txt"), 'w')
     for p in range(min_p, max_p + 1):  # For the p iteration
         is_diverged = False # For comparison
         sim_state.simulation_method = "fft" if p == 0 else "power_series" # For p comparison
         sim_state.wave_tensor = cp.copy(copy_of_initial_wave_function)  # For p comparison
         measurement_tools.measurement_volume_full.clear()   # For p comparison
-        print(f"p = {p}")   # For the p iteration
         # Setup iteration parameters:
         iter_data = init_iter_data(sim_state)
         if (
@@ -350,16 +349,17 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
                 progress_bar.refresh()
 
                 # For comparison:
-                measurement_tools.measurement_volume_full.integrate_probability_density(
-                    sim_state.probability_density
-                )
-                prob_dens = sim_state.get_view_into_probability_density()
-                probability = cp.sum(prob_dens)
-                if not is_diverged and probability > 2.0:
-                    is_diverged = True
-                    probability_divergence_iteration_count.append(iter_data.i)
-            if not is_diverged:
-                probability_divergence_iteration_count.append("convergent")
+                if min_p != max_p:
+                    measurement_tools.measurement_volume_full.integrate_probability_density(
+                        sim_state.probability_density
+                    )
+                    probability = cp.sum(sim_state.probability_density)
+                    if not is_diverged and probability > 2.0:
+                        is_diverged = True
+                        probability_divergence_iteration_count.append(iter_data.i)
+                    if not is_diverged:
+                        probability_divergence_iteration_count.append("convergent")
+
         # Calculate resulting time statistics after the iteration:
         iter_data.total_simulated_time = (
             sim_state.delta_time_h_bar_per_hartree * iter_data.total_iteration_count
@@ -377,7 +377,16 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
             index=p,
             delta_t=sim_state.delta_time_h_bar_per_hartree
         )
-        print(probability_divergence_iteration_count)
-        diverngence_idx_file.write(str(probability_divergence_iteration_count[-1]) + "\n")
-    diverngence_idx_file.close()
+        for_frame = {}
+        time_steps = []
+        for item in probability_evolutions:
+            for_frame[item[1]] = item[0].tolist()
+
+        for i in range(0, iter_data.total_iteration_count):
+            time_steps.append(i * sim_state.delta_time_h_bar_per_hartree)
+
+        d_frame = pd.DataFrame(for_frame, index=time_steps)
+        d_frame.to_excel(os.path.join(sim_state.output_dir, "probability_evolutions.xlsx"), index=True)
+        divergence_idx_file.write(str(probability_divergence_iteration_count[-1]) + "\n")
+    divergence_idx_file.close()
     return sim_state, measurement_tools, iter_data

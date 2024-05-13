@@ -30,6 +30,7 @@ interpolation_exponent = 3.0
 center_bohr_radius_3 = [0, 0, 0]
 normal = [1, 0, 0]
 potential_hartree = 20.0
+#potential_hartree = 209.44
 thickness_bohr_radii = 3.0
 slit_width_bohr_radii = 1.0
 distance_between_slits_bohr_radii = 3.0
@@ -38,7 +39,7 @@ visible = true
 
 [iteration]
 delta_time_h_bar_per_hartree = 0.03
-total_iteration_count = 600
+total_iteration_count = 30
 animation_frame_step_interval = 2
 png_step_interval = 10
 measurement_plane_capture_interval = 10

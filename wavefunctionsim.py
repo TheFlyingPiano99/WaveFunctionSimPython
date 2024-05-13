@@ -54,7 +54,7 @@ def sim():
     )
 
     measurement_tools = 0
-    if True:
+    if sim_state.enable_visual_output:
         measurement_tools = MeasurementTools()
         measurement_tools.volumetric = volume_visualization.VolumetricVisualization(
             volume_data=sim_state.get_view_into_probability_density(),
