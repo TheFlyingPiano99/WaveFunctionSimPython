@@ -89,7 +89,6 @@ def initialize():
         "\n***************************************************************************************\n"
     )
 
-    print("")
     print(Fore.GREEN + "Initializing wave packet" + Style.RESET_ALL)
     sim_state.wp_width_bohr_radii = sim_state.config["wave_packet"][
         "wp_width_bohr_radii"
@@ -443,7 +442,7 @@ def initialize():
         print(e)
 
     print(
-        f"Time spent with initialisation: {(time.time() - initialisation_start_time_s):.2f} s."
+        f"Time spent with initialisation: {(time.time() - initialisation_start_time_s):.2f} s.\n"   # Extra new line at the end.
     )
 
     return sim_state

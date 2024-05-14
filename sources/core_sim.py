@@ -215,7 +215,7 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
         ):
             sim_state, iter_data = snapshot_io.read_snapshot(sim_state, iter_data)
             snapshot_io.remove_snapshot(sim_state)
-            print(Fore.BLUE + "Snapshot of an interrupted simulation loaded.\nResuming previous wave function." + Style.RESET_ALL)
+            print(Fore.BLUE + "Snapshot of an interrupted simulation loaded.\nResuming previous wave function.\n" + Style.RESET_ALL)
 
         print(Fore.GREEN + "Simulating " + Style.RESET_ALL + "(Press <Ctrl-c> to quit.)")
 

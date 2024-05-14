@@ -46,7 +46,7 @@ def get_potential_description_text(sim_state: sim_st.SimState, use_colors=False)
     text = io.StringIO()
     text.write(
         (Fore.GREEN if use_colors else "")
-        + "Localised potential energy:\n"
+        + "Localised potential energy details:\n"
         + (Style.RESET_ALL if use_colors else "")
     )
 
