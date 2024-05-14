@@ -170,8 +170,9 @@ def sim():
     )
 
     # Finishing steps:
-    measurement_tools.animation_writer_3D.finish()
-    measurement_tools.animation_writer_per_axis.finish()
+    if sim_state.enable_visual_output:
+        measurement_tools.animation_writer_3D.finish()
+        measurement_tools.animation_writer_per_axis.finish()
     print(Fore.GREEN + "Simulation has finished." + Style.RESET_ALL)
     print(text_writer.get_finish_text(iter_data))
     text_writer.append_iter_data(iter_data, sim_state)
