@@ -80,12 +80,13 @@ def initialize():
                 print("Exiting application.")
                 sys.exit(0)
 
-    print("") # Empty line
-
+    print(
+        "\n***************************************************************************************\n"
+    )
     # Maximal kinetic energy
     print(text_writer.get_sim_state_description_text(sim_state, use_colors=True))
     print(
-        "***************************************************************************************"
+        "\n***************************************************************************************\n"
     )
 
     print("")

@@ -31,10 +31,12 @@ def sim():
     if not have_display:
         exitval = os.system('python -c "import matplotlib.pyplot as plt; plt.figure()"')
         have_display = (exitval == 0)
+    """
     if have_display:
         print("Display connected.\n")
     else:
         print("Display not connected.\n")
+    """
 
     if sim_state.simulation_method == "fft":
         print(Fore.BLUE + "Using the Split-Operator Fourier method to simulate the time development." + Style.RESET_ALL)
@@ -57,7 +59,7 @@ def sim():
     text_writer.write_sim_state(sim_state)
 
     print(
-        "****************************************************************************"
+        "\n****************************************************************************\n"
     )
 
     measurement_tools = MeasurementTools()
