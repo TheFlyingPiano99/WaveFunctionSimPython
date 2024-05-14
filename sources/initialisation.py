@@ -80,13 +80,16 @@ def initialize():
                 print("Exiting application.")
                 sys.exit(0)
 
+    print("") # Empty line
+
     # Maximal kinetic energy
     print(text_writer.get_sim_state_description_text(sim_state, use_colors=True))
     print(
         "***************************************************************************************"
     )
 
-    print("Initializing wave packet")
+    print("")
+    print(Fore.GREEN + "Initializing wave packet" + Style.RESET_ALL)
     sim_state.wp_width_bohr_radii = sim_state.config["wave_packet"][
         "wp_width_bohr_radii"
     ]
@@ -133,7 +136,8 @@ def initialize():
 
     if sim_state.simulation_method == "fft":
         # Operators:
-        print("Initializing kinetic energy operator")
+        print("")
+        print(Fore.GREEN + "Initializing kinetic energy operator" + Style.RESET_ALL)
 
         full_init = True
         if use_cache:
@@ -151,7 +155,9 @@ def initialize():
             ))
             cp.save(file=os.path.join(sim_state.cache_dir, "kinetic_operator.npy"), arr=sim_state.kinetic_operator)
 
-        print("Initializing potential energy operator")
+        print("")
+        print(Fore.GREEN + "Initializing potential energy operator" + Style.RESET_ALL)
+        print("")
         print(text_writer.get_potential_description_text(sim_state, use_colors=True))
 
     full_init = True

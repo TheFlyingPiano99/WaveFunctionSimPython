@@ -224,10 +224,11 @@ def get_sim_state_description_text(sim_state: sim_st.SimState, use_colors=False)
             + (Style.RESET_ALL if use_colors else "")
         )
     # Video
-    fps = sim_state.config["view"]["video_frame_rate"]
-    text.write(
-        f"Video frame rate is {fps} frame/s.\n"
-    )
+    if sim_state.enable_visual_output:
+        fps = sim_state.config["view"]["video_frame_rate"]
+        text.write(
+            f"Video frame rate is {fps} frame/s.\n"
+        )
 
     return text.getvalue()
 
