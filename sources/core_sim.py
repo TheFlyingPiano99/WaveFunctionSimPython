@@ -199,7 +199,8 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
     copy_of_initial_wave_function = cp.copy(sim_state.wave_tensor)
     min_p = 0 if sim_state.simulation_method == "fft" else 10
     max_p = 0 if sim_state.simulation_method == "fft" else 10
-    divergence_idx_file = open(os.path.join(sim_state.output_dir, "iteration_idx_of_divergence.txt"), 'w')
+    if sim_state.simulation_method == "power_series":
+        divergence_idx_file = open(os.path.join(sim_state.output_dir, "iteration_idx_of_divergence.txt"), 'w')
     for p in range(min_p, max_p + 1):  # For the p iteration
         is_diverged = False # For comparison
         sim_state.simulation_method = "fft" if p == 0 else "power_series" # For p comparison
@@ -387,7 +388,9 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
 
             for i in range(0, iter_data.total_iteration_count):
                 time_steps.append(i * sim_state.delta_time_h_bar_per_hartree)
+        if sim_state.simulation_method == "power_series":
+            divergence_idx_file.write(str(probability_divergence_iteration_count[-1]) + "\n")
 
-        divergence_idx_file.write(str(probability_divergence_iteration_count[-1]) + "\n")
-    divergence_idx_file.close()
+    if sim_state.simulation_method == "power_series":
+        divergence_idx_file.close()
     return sim_state, measurement_tools, iter_data

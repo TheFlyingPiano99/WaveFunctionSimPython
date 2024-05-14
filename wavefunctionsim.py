@@ -38,13 +38,6 @@ def sim():
         print("Display not connected.\n")
     """
 
-    if sim_state.simulation_method == "fft":
-        print(Fore.BLUE + "Using the Split-Operator Fourier method to simulate the time development." + Style.RESET_ALL)
-    elif sim_state.simulation_method == "power_series":
-        print(Fore.BLUE + "Using the Power Series method to simulate the time development.")
-        print("The order of approximation is p = 10." + Style.RESET_ALL)
-
-
     if (sim_state.enable_visual_output):
         print(Fore.BLUE + "Visual output enabled." + Style.RESET_ALL)
     else:

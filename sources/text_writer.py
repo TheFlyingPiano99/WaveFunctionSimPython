@@ -248,10 +248,20 @@ def get_finish_text(iter_data):
     return text.getvalue()
 
 
+def get_simulation_method_text(sim_state: sim_st.SimState, use_colors=False):
+    if sim_state.simulation_method == "fft":
+        print((Fore.BLUE if use_colors else "") + "Using the Split-Operator Fourier method to simulate the time development." + (Style.RESET_ALL if use_colors else ""))
+    elif sim_state.simulation_method == "power_series":
+        print((Fore.BLUE if use_colors else "") + "Using the Power Series method to simulate the time development.")
+        print("The order of approximation is p = 10." + (Style.RESET_ALL if use_colors else ""))
+    pass
+
+
 def write_sim_state(sim_state: sim_st.SimState):
     with open(os.path.join(sim_state.output_dir, "parameters.txt"), mode="w") as f:
         f.write(get_sim_state_description_text(sim_state))
         f.write(get_potential_description_text(sim_state))
+        f.write(get_simulation_method_text(sim_state))
         f.write(f"Simulation method: {sim_state.simulation_method}")
 
 

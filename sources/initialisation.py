@@ -83,8 +83,9 @@ def initialize():
     print(
         "\n***************************************************************************************\n"
     )
-    # Maximal kinetic energy
+
     print(text_writer.get_sim_state_description_text(sim_state, use_colors=True))
+
     print(
         "\n***************************************************************************************\n"
     )
@@ -445,4 +446,5 @@ def initialize():
         f"Time spent with initialisation: {(time.time() - initialisation_start_time_s):.2f} s.\n"   # Extra new line at the end.
     )
 
+    print(text_writer.get_simulation_method_text(sim_state, use_colors=True))
     return sim_state
