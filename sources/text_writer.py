@@ -251,10 +251,10 @@ def get_finish_text(iter_data):
 def get_simulation_method_text(sim_state: sim_st.SimState, use_colors=False):
     text = io.StringIO()
     if sim_state.simulation_method == "fft":
-        text.write((Fore.BLUE if use_colors else "") + "Using the Split-Operator Fourier method to simulate the time development." + (Style.RESET_ALL if use_colors else ""))
+        text.write((Fore.BLUE if use_colors else "") + "Using the Split-Operator Fourier method to simulate the time development.\n" + (Style.RESET_ALL if use_colors else ""))
     elif sim_state.simulation_method == "power_series":
-        text.write((Fore.BLUE if use_colors else "") + "Using the Power Series method to simulate the time development.")
-        text.write("The order of approximation is p = 10." + (Style.RESET_ALL if use_colors else ""))
+        text.write((Fore.BLUE if use_colors else "") + "Using the Power Series method to simulate the time development.\n")
+        text.write("The order of approximation is p = 10.\n" + (Style.RESET_ALL if use_colors else ""))
     return text.getvalue()
 
 
