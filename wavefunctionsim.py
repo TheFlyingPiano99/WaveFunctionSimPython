@@ -38,7 +38,7 @@ def sim():
         print("Display not connected.\n")
     """
 
-    if (sim_state.enable_visual_output):
+    if sim_state.enable_visual_output:
         print(Fore.BLUE + "Visual output enabled." + Style.RESET_ALL)
     else:
         print(Fore.BLUE + "Visual output disabled." + Style.RESET_ALL)
