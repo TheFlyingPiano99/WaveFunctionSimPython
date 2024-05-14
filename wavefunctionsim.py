@@ -53,7 +53,7 @@ def sim():
         "****************************************************************************"
     )
 
-    measurement_tools = 0
+    measurement_tools = MeasurementTools()
     if sim_state.enable_visual_output:
         measurement_tools = MeasurementTools()
         measurement_tools.volumetric = volume_visualization.VolumetricVisualization(

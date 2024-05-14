@@ -14,7 +14,6 @@ import keyboard
 import sys
 from colorama import Fore, Style
 from tqdm import tqdm
-import pandas as pd
 
 
 def fft_time_evolution(wave_tensor, kinetic_operator, potential_operator):
@@ -182,6 +181,7 @@ def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools)
             delta_t=sim_state.delta_time_h_bar_per_hartree
         )
 
+
 def write_wave_function_to_file(sim_state: sim_st.SimState, iter_data):
     if iter_data.i % iter_data.wave_function_save_interval == 0:
         if not os.path.exists(os.path.join(sim_state.output_dir, f"wave_function")):
@@ -204,7 +204,8 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
         is_diverged = False # For comparison
         sim_state.simulation_method = "fft" if p == 0 else "power_series" # For p comparison
         sim_state.wave_tensor = cp.copy(copy_of_initial_wave_function)  # For p comparison
-        measurement_tools.measurement_volume_full.clear()   # For p comparison
+        if sim_state.enable_visual_output:
+            measurement_tools.measurement_volume_full.clear()   # For p comparison
         # Setup iteration parameters:
         iter_data = init_iter_data(sim_state)
         if (
@@ -350,9 +351,10 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
 
                 # For comparison:
                 if min_p != max_p:
-                    measurement_tools.measurement_volume_full.integrate_probability_density(
-                        sim_state.probability_density
-                    )
+                    if sim_state.enable_visual_output:
+                        measurement_tools.measurement_volume_full.integrate_probability_density(
+                            sim_state.probability_density
+                        )
                     probability = cp.sum(sim_state.probability_density)
                     if not is_diverged and probability > 2.0:
                         is_diverged = True
@@ -368,25 +370,24 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
             iter_data.total_iteration_count
         )
 
-        evolution = list(measurement_tools.measurement_volume_full.get_probability_evolution())
-        evolution[1] = f"p = {p}" if sim_state.simulation_method == "power_series" else "SOF"
-        probability_evolutions.append(evolution)
-        plot.plot_probability_evolution(
-            out_dir=os.path.join(sim_state.output_dir, "probability_comparison"),
-            probability_evolutions=probability_evolutions,
-            index=p,
-            delta_t=sim_state.delta_time_h_bar_per_hartree
-        )
-        for_frame = {}
-        time_steps = []
-        for item in probability_evolutions:
-            for_frame[item[1]] = item[0].tolist()
+        if sim_state.enable_visual_output:
+            evolution = list(measurement_tools.measurement_volume_full.get_probability_evolution())
+            evolution[1] = f"p = {p}" if sim_state.simulation_method == "power_series" else "SOF"
+            probability_evolutions.append(evolution)
+            plot.plot_probability_evolution(
+                out_dir=os.path.join(sim_state.output_dir, "probability_comparison"),
+                probability_evolutions=probability_evolutions,
+                index=p,
+                delta_t=sim_state.delta_time_h_bar_per_hartree
+            )
+            for_frame = {}
+            time_steps = []
+            for item in probability_evolutions:
+                for_frame[item[1]] = item[0].tolist()
 
-        for i in range(0, iter_data.total_iteration_count):
-            time_steps.append(i * sim_state.delta_time_h_bar_per_hartree)
+            for i in range(0, iter_data.total_iteration_count):
+                time_steps.append(i * sim_state.delta_time_h_bar_per_hartree)
 
-        d_frame = pd.DataFrame(for_frame, index=time_steps)
-        d_frame.to_excel(os.path.join(sim_state.output_dir, "probability_evolutions.xlsx"), index=True)
         divergence_idx_file.write(str(probability_divergence_iteration_count[-1]) + "\n")
     divergence_idx_file.close()
     return sim_state, measurement_tools, iter_data
