@@ -1,7 +1,7 @@
 # We simulate the time-development of the wave function in an NxNxN sized cube
 # The origin of the coordinate system is in the center of the simulated volume
 # We use right-handed system, where +Y is the upward direction
-# Values are given in hartree atomic unit system
+# Values are given in Hartree atomic unit system
 
 ["wave_packet"]
 particle_mass = 1.0

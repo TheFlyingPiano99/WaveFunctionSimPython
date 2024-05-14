@@ -182,7 +182,7 @@ def get_sim_state_description_text(sim_state: sim_st.SimState, use_colors=False)
         momentum_magnitude**2 / 2 / sim_state.particle_mass
     )
     text.write(
-        f"Initial mean kinetic energy of the particle is {initial_kinetic_energy_hartree} hartree.\n"
+        f"Initial mean kinetic energy of the particle is {initial_kinetic_energy_hartree} Hartree.\n"
     )
 
     text.write(
@@ -207,12 +207,12 @@ def get_sim_state_description_text(sim_state: sim_st.SimState, use_colors=False)
 
     # The maximum allowed delta_time
     text.write(
-        f"The maximal viable time resolution < {sim_state.upper_limit_on_delta_time_h_per_hartree} h-bar / hartree\n"
+        f"The maximal viable time resolution < {sim_state.upper_limit_on_delta_time_h_per_hartree} h-bar / Hartree\n"
     )
 
     # Time increment of simulation
     text.write(
-        f"Time resolution is delta = {sim_state.delta_time_h_bar_per_hartree} h-bar / hartree.\n"
+        f"Time resolution is delta = {sim_state.delta_time_h_bar_per_hartree} h-bar / Hartree.\n"
     )
     if (
         sim_state.delta_time_h_bar_per_hartree
@@ -236,7 +236,7 @@ def get_finish_text(iter_data):
     text = io.StringIO()
     text.write(f"Total iteration count is {iter_data.total_iteration_count}.\n")
     text.write(
-        f"Total simulated time is {iter_data.total_simulated_time:.4f} h-bar / hartree.\n"
+        f"Total simulated time is {iter_data.total_simulated_time:.4f} h-bar / Hartree.\n"
     )
     text.write(
         f"Elapsed system time during iteration was {str(timedelta(seconds=iter_data.elapsed_system_time_s))}.\n"

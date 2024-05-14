@@ -1,28 +1,28 @@
 Simulation state:
 Mass of the particle is 1.0 electron rest mass.
-Initial velocity of the particle is 0.0 Bohr radius hartree / h-bar.
+Initial velocity of the particle is 0.0 Bohr radius Hartree / h-bar.
 Initial mean momentum of particle is 0.0 h-bar / Bohr radius.
 De Broglie wavelength associated with the particle is inf Bohr radii.
-Initial mean kinetic energy of the particle is 0.0 hartree.
+Initial mean kinetic energy of the particle is 0.0 Hartree.
 Width of simulated volume is w = 120.0 Bohr radii.
 Number of samples per axis is N = 256.
 Space resolution is delta_x = 0.46875 Bohr radii.
-The maximal viable time resolution < 0.2797645484037223 h-bar / hartree
-Time resolution is delta = 0.03 h-bar / hartree.
+The maximal viable time resolution < 0.2797645484037223 h-bar / Hartree
+Time resolution is delta = 0.03 h-bar / Hartree.
 Video frame rate is 25 frame/s.
 Localised potential energy:
 1D walls:
 1.
-Obstacle wall potential is 9.8 hartree.
+Obstacle wall potential is 9.8 Hartree.
 Wall thickness is 0.3 Bohr radii.
 This is thinner than the de Broglie wavelength of the particle.
 Wall thickness is 0.30 Bohr radii.
 Wall center is at the x = 0.00 Bohr radius coordinate.
 
 1D particle hard interaction potential:
-Potential is 20.0 hartree.
+Potential is 20.0 Hartree.
 Particle radius is 1.0 Bohr radii.
 
 1D particle harmonic oscillator:
-Draining potential value at the outer edge is -100.0 hartree.
+Draining potential value at the outer edge is -100.0 Hartree.
 Draining potential exponent is 3.0.
