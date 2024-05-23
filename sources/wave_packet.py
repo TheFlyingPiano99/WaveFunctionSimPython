@@ -31,31 +31,70 @@ def wave_0_y(y):
 def wave_packet(x, y):
     return wave_0_x(x) * wave_0_y(y)
 
-def init_gaussian_wave_packet_double_precision(
-    N: int,
-    delta_x_bohr_radii: float,
-    a: float,
-    r_0_bohr_radii_3: np.array,
-    initial_momentum_h_per_bohr_radius_3: np.array,
-    shape: np.shape,
-):
-    # TODO: Do it with CUDA kernel
-    wave_tensor = np.zeros(shape=shape, dtype=np.complex128)
-    for x in range(0, N):
-        for y in range(0, N):
-            for z in range(0, N):
-                r = (
-                    np.array([x, y, z]) * delta_x_bohr_radii
-                    - np.array([1.0, 1.0, 1.0]) * N * delta_x_bohr_radii * 0.5
-                )
-                wave_tensor[x, y, z] = (
-                    (2.0 / math.pi / a**2) ** (3.0 / 4.0)
-                    * math_utils.exp_i(np.dot(initial_momentum_h_per_bohr_radius_3, r))
-                    * math.exp(
-                        -np.dot(r - r_0_bohr_radii_3, r - r_0_bohr_radii_3) / a**2
-                    )
-                )
-    return wave_tensor
+
+wave_packet_kernel_source = '''
+    #include <cupy/complex.cuh>
+    
+    extern "C" float M_PI = 3.14159265359;
+    
+    extern "C" __device__ float3 scalarVectorMul(float s, const float3& v)
+    {
+        return {s * v.x, s * v.y, s * v.z}; 
+    }
+
+    extern "C" __device__ float dot(const float3& a, const float3& b)
+    {
+        return a.x * b.x + a.y * b.y + a.z * b.z; 
+    }
+    
+    extern "C" __device__ complex<float> exp_i(float angle)
+    {
+        return complex<float>(cosf(angle), sinf(angle)); 
+    }
+    
+    extern "C" __device__ float3 diff(float3 a, float3 b)
+    {
+        return {a.x - b.x, a.y - b.y, a.z - b.z};
+    }
+
+    extern "C" __global__
+    void wave_packet_kernel(
+        complex<float>* wave_tensor,
+        int N,
+        float delta_x,
+        float a,
+        float r_x,
+        float r_y,
+        float r_z,
+        float k_x,
+        float k_y,
+        float k_z
+    )
+    {
+        int k = blockIdx.x * blockDim.x + threadIdx.x;
+        int j = blockIdx.y * blockDim.y + threadIdx.y;
+        int i = blockIdx.z * blockDim.z + threadIdx.z;
+        int idx = i * gridDim.x * blockDim.x * gridDim.y * blockDim.y
+                + j * gridDim.x * blockDim.x
+                + k;
+        
+        float3 k_0 = {k_x, k_y, k_z};
+        float3 r_0 = {r_x, r_y, r_z};
+        
+        float3 r = diff(
+            scalarVectorMul(delta_x, {(float)i, (float)j, (float)k}),
+            scalarVectorMul((float)N * delta_x * 0.5f, {1.0f, 1.0f, 1.0f})
+        );
+
+        complex<float> val =
+            powf(2.0f / M_PI / a / a, 3.0f / 4.0f)
+            * exp_i(dot(k_0, r))
+            * expf(
+                -dot(diff(r, r_0), diff(r, r_0)) / a / a
+            );
+        wave_tensor[idx] = val; 
+    }
+'''
 
 def init_gaussian_wave_packet_single_precision(
     N: int,
@@ -65,20 +104,26 @@ def init_gaussian_wave_packet_single_precision(
     initial_momentum_h_per_bohr_radius_3: np.array,
     shape: np.shape,
 ):
-    # TODO: Do it with CUDA kernel
-    wave_tensor = np.zeros(shape=shape, dtype=np.complex64)
-    for x in range(0, N):
-        for y in range(0, N):
-            for z in range(0, N):
-                r = (
-                    np.array([x, y, z]) * delta_x_bohr_radii
-                    - np.array([1.0, 1.0, 1.0]) * N * delta_x_bohr_radii * 0.5
-                )
-                wave_tensor[x, y, z] = (
-                    (2.0 / math.pi / a**2) ** (3.0 / 4.0)
-                    * math_utils.exp_i(np.dot(initial_momentum_h_per_bohr_radius_3, r))
-                    * math.exp(
-                        -np.dot(r - r_0_bohr_radii_3, r - r_0_bohr_radii_3) / a**2
-                    )
-                )
+    wave_packet_kernel = cp.RawKernel(wave_packet_kernel_source,
+                                 'wave_packet_kernel',
+                                 enable_cooperative_groups=False)
+    grid_size = (64, 64, 64)
+    block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
+    wave_tensor = cp.zeros(shape=shape, dtype=cp.csingle)
+    wave_packet_kernel(
+        grid_size,
+        block_size,
+        (
+            wave_tensor,
+            cp.int32(N),
+            cp.float32(delta_x_bohr_radii),
+            cp.float32(a),
+            cp.float32(r_0_bohr_radii_3[0]),
+            cp.float32(r_0_bohr_radii_3[1]),
+            cp.float32(r_0_bohr_radii_3[2]),
+            cp.float32(initial_momentum_h_per_bohr_radius_3[0]),
+            cp.float32(initial_momentum_h_per_bohr_radius_3[1]),
+            cp.float32(initial_momentum_h_per_bohr_radius_3[2])
+        )
+    )
     return wave_tensor

@@ -298,8 +298,6 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
                     wave_function[idx] += s; 
                 }}
             '''.format("double" if sim_state.double_precision_wave_tensor else "float", "" if sim_state.double_precision_wave_tensor else "f")
-            #print("Kernel source:")
-            #print(format_kernel_source)
             next_s_kernel = cp.RawKernel(format_kernel_source,
             'next_s',
             enable_cooperative_groups=False)
