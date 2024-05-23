@@ -5,6 +5,15 @@ import sources.math_utils as math_utils
 from sources import potential
 
 
+class PotentialWall:
+    center_bohr_radii_3: np.array = np.array([0.0, 0.0, 0.0])
+    normal_bohr_radii_3: np.array = np.array([1.0, 0.0, 0.0])
+    thickness_bohr_radii: float = 5.0
+    potential_hartree: float = 20.0
+    velocity_bohr_radius_hartree_per_h_bar: np.array = np.array([0.0, 0.0, 0.0])
+    angular_velocity_rad_hartree_per_h_bar: np.array = np.array([0.0, 0.0, 0.0])
+    potential_change_rate_hartree_2_per_h_bar: float = 0.0
+
 class SimState:
     config: Dict
     tensor_shape: cp.shape
@@ -38,6 +47,7 @@ class SimState:
     simulation_method: str = "fft"
     double_precision_wave_tensor: bool = False
     enable_wave_function_save: bool = True
+    potentialWalls = []
 
     def __init__(self, config):
         # Load paths:
@@ -177,3 +187,35 @@ class SimState:
             bottom=self.viewing_window_bottom_corner_voxel,
             top=self.viewing_window_top_corner_voxel,
         )
+
+    def update_potential(self):
+        for w in self.potentialWalls:
+            # Advect:
+            w.center_bohr_radii_3 = w.center_bohr_radii_3 + w.velocity_bohr_radius_hartree_per_h_bar * self.delta_time_h_bar_per_hartree
+            # Rotate around Z axis:
+            w.normal_bohr_radii_3 = np.dot(
+                math_utils.rotation_matrix(
+                    np.array([0, 0, 1]),
+                    w.angular_velocity_rad_hartree_per_h_bar[2] * self.delta_time_h_bar_per_hartree
+                ),
+                w.normal_bohr_radii_3
+            )
+            # Rotate around Y axis:
+            w.normal_bohr_radii_3 = np.dot(
+                math_utils.rotation_matrix(
+                    np.array([0, 1, 0]),
+                    w.angular_velocity_rad_hartree_per_h_bar[1] * self.delta_time_h_bar_per_hartree
+                ),
+                w.normal_bohr_radii_3
+            )
+            # Rotate around X axis:
+            w.normal_bohr_radii_3 = np.dot(
+                math_utils.rotation_matrix(
+                    np.array([1, 0, 0]),
+                    w.angular_velocity_rad_hartree_per_h_bar[0] * self.delta_time_h_bar_per_hartree
+                ),
+                w.normal_bohr_radii_3
+            )
+            w.potential_hartree = w.potential_change_rate_hartree_2_per_h_bar * self.delta_time_h_bar_per_hartree
+
+        self.localised_potential_hartree = potential.generate_potential_from_walls_and_drain(V=self.localised_potential_hartree)

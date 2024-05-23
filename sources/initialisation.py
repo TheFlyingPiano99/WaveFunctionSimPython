@@ -306,6 +306,15 @@ def initialize():
                 c = np.array(wall["center_bohr_radii_3"], dtype=float)
                 n = math_utils.normalize(np.array(wall["normal_vector_3"], dtype=float))
                 t = wall["thickness_bohr_radii"]
+
+                # Create high level object from the data:
+                w = sim_st.PotentialWall()
+                w.center_bohr_radii_3 = np.copy(c)
+                w.normal_bohr_radii_3 = np.copy(n)
+                w.potential_hartree = v
+                w.thickness_bohr_radii = t
+                sim_state.potentialWalls.append(w)
+
                 print("Creating wall.")
                 tensor = potential.add_wall(
                     delta_x=sim_state.delta_x_bohr_radii,

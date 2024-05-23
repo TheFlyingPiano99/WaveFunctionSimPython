@@ -364,3 +364,7 @@ def add_optical_grid(V: np.ndarray, delta_x: float, center_bohr_radius: np.array
                             V[x, y, z] += potential_hartree * math.exp(-0.5 * d**2)
     return  V
 
+
+def generate_potential_from_walls_and_drain(V: cp.ndarray):
+    #TODO: Write CUDA kernel to calculate potential efficiently
+    return V
