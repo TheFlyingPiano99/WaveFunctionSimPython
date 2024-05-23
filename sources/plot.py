@@ -5,6 +5,7 @@ import sources.math_utils as math_utils
 from matplotlib.image import NonUniformImage
 from PIL import Image
 import os
+import cupy as cp
 
 font_size = 16 # 18 would be too big
 
@@ -24,7 +25,7 @@ def plot_probability_evolution(out_dir, probability_evolutions, delta_t, index, 
     plt.xlim(0, n * delta_t)
     plt.ylim(0.0, 2.0)
     for prob_data in probability_evolutions:
-        plt.plot(x, prob_data[0], label=prob_data[1])
+        plt.plot(x, cp.asnumpy(prob_data[0]), label=prob_data[1])
     plt.legend()
     plt.tight_layout()
     plt.savefig(os.path.join(dir, f"probability_evolution_{index:04d}.png"))
@@ -52,7 +53,7 @@ def plot_per_axis_probability_density(
     plt.xlim(data[0][2], data[0][3])
     plt.ylim(0.0, 0.25)
     for prob_data in data:
-        plt.plot(x, prob_data[0], label=prob_data[1])
+        plt.plot(x, cp.asnumpy(prob_data[0]), label=prob_data[1])
     plt.legend()
     plt.subplots_adjust(left=0.14, bottom=0.12, right=0.95, top=0.9)
     plt.savefig(

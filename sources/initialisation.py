@@ -113,7 +113,7 @@ def initialize():
                 a,
                 sim_state.initial_wp_position_bohr_radii_3,
                 sim_state.initial_wp_momentum_h_per_bohr_radius,
-                sim_state.tensor_shape,
+                sim_state.simulated_tensor_shape,
             )
             if sim_state.double_precision_wave_tensor else
             wave_packet.init_gaussian_wave_packet_single_precision(
@@ -122,7 +122,7 @@ def initialize():
                 a,
                 sim_state.initial_wp_position_bohr_radii_3,
                 sim_state.initial_wp_momentum_h_per_bohr_radius,
-                sim_state.tensor_shape,
+                sim_state.simulated_tensor_shape,
             )
         )
         cp.save(file=os.path.join(sim_state.cache_dir, "gaussian_wave_packet.npy"), arr=sim_state.wave_tensor)
@@ -148,12 +148,12 @@ def initialize():
             except OSError:
                 print("No cached kinetic_operator.npy found.")
         if full_init:
-            sim_state.kinetic_operator = cp.asarray(operators.init_kinetic_operator(
+            sim_state.kinetic_operator = operators.init_kinetic_operator(
                 sim_state.N,
                 sim_state.delta_x_bohr_radii,
                 sim_state.delta_time_h_bar_per_hartree,
-                sim_state.tensor_shape
-            ))
+                sim_state.simulated_tensor_shape
+            )
             cp.save(file=os.path.join(sim_state.cache_dir, "kinetic_operator.npy"), arr=sim_state.kinetic_operator)
 
         print("")
@@ -164,18 +164,18 @@ def initialize():
     full_init = True
     if use_cache:
         try:
-            sim_state.localised_potential_hartree = np.load(file=os.path.join(sim_state.cache_dir, "localized_potential.npy"))
-            sim_state.localised_potential_to_visualize_hartree = np.load(file=os.path.join(sim_state.cache_dir, "localized_potential_to_visualize.npy"))
+            sim_state.localised_potential_hartree = cp.asarray(np.load(file=os.path.join(sim_state.cache_dir, "localized_potential.npy")))
+            sim_state.localised_potential_to_visualize_hartree = cp.asarray(np.load(file=os.path.join(sim_state.cache_dir, "localized_potential_to_visualize.npy")))
             full_init = False
         except OSError:
             print("No cached localized_potential.npy found.")
 
     if full_init:
-        sim_state.localised_potential_hartree = np.zeros(
-            shape=sim_state.tensor_shape, dtype=np.complex64
+        sim_state.localised_potential_hartree = cp.zeros(
+            shape=sim_state.simulated_tensor_shape, dtype=cp.complex64
         )
-        sim_state.localised_potential_to_visualize_hartree = np.zeros(
-            shape=sim_state.tensor_shape, dtype=np.csingle
+        sim_state.localised_potential_to_visualize_hartree = cp.zeros(
+            shape=sim_state.simulated_tensor_shape, dtype=cp.csingle
         )
 
         # Load pre-initialized potential:
@@ -184,7 +184,7 @@ def initialize():
             print("Loading pre-initialized potential")
             if os.path.exists(pre_init_pot_conf["path"]):
                 try:
-                    pre_init_pot = np.load(file=pre_init_pot_conf["path"])
+                    pre_init_pot = cp.asarray(np.load(file=pre_init_pot_conf["path"]))
                     if pre_init_pot.shape == sim_state.localised_potential_hartree.shape:
                         sim_state.localised_potential_hartree += pre_init_pot
                         try:
@@ -225,7 +225,7 @@ def initialize():
                 delta_x=sim_state.delta_x_bohr_radii,
                 particle_radius_bohr_radius=r,
                 potential_hartree=v,
-                V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+                V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
             )
             sim_state.localised_potential_hartree += tensor
             try:
@@ -244,7 +244,7 @@ def initialize():
             tensor = potential.particle_inv_square_interaction_potential(
                 delta_x=sim_state.delta_x_bohr_radii,
                 potential_hartree=v,
-                V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+                V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
             )
             sim_state.localised_potential_hartree += tensor
             try:
@@ -263,7 +263,7 @@ def initialize():
             tensor = potential.add_harmonic_oscillator_for_1D(
                 delta_x=sim_state.delta_x_bohr_radii,
                 angular_frequency=omega,
-                V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+                V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
             )
             sim_state.localised_potential_hartree += tensor
             try:
@@ -287,7 +287,7 @@ def initialize():
                     potential_hartree=v,
                     thickness_bohr_radius=t,
                     center_bohr_radius=c,
-                    V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+                    V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
                 )
                 sim_state.localised_potential_hartree += tensor
                 try:
@@ -322,7 +322,7 @@ def initialize():
                     thickness_bohr_radius=t,
                     center_bohr_radius=c,
                     normal=n,
-                    V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+                    V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
                 )
                 sim_state.localised_potential_hartree += tensor
                 try:
@@ -350,7 +350,7 @@ def initialize():
                     center_bohr_radius=c,
                     normal=n,
                     node_count=i,
-                    V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+                    V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
                 )
                 sim_state.localised_potential_hartree += tensor
                 try:
@@ -373,9 +373,9 @@ def initialize():
                     thickness_bohr_radii=double_slit["thickness_bohr_radii"],
                     height_hartree=double_slit["potential_hartree"],
                     slit_width_bohr_radii=double_slit["slit_width_bohr_radii"],
-                    shape=sim_state.tensor_shape,
+                    shape=sim_state.simulated_tensor_shape,
                     space_between_slits_bohr_radii=space_between_slits,
-                    V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+                    V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
                 )
                 sim_state.localised_potential_hartree += tensor
                 try:
@@ -391,7 +391,7 @@ def initialize():
             coulomb_potential = sim_state.config["coulomb_potential"]
             print("Creating Coulomb potential.")
             tensor = potential.add_coulomb_potential(
-                V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+                V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
                 delta_x=sim_state.delta_x_bohr_radii,
                 center_bohr_radius=np.array(coulomb_potential["center_bohr_radii_3"]),
                 gradient_dir=np.array(coulomb_potential["gradient_direction"]),
@@ -410,7 +410,7 @@ def initialize():
             gradient = sim_state.config["linear_potential_gradient"]
             print("Creating linear potential gradient.")
             tensor = potential.add_linear_potential_gradient(
-                V=np.zeros(shape=sim_state.tensor_shape, dtype=np.csingle),
+                V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
                 delta_x=sim_state.delta_x_bohr_radii,
                 center_bohr_radius=np.array(gradient["center_bohr_radii_3"]),
                 gradient_dir=np.array(gradient["gradient_direction"]),
@@ -425,9 +425,9 @@ def initialize():
 
         np.save(
             file=os.path.join(sim_state.cache_dir, "localized_potential.npy"),
-            arr=sim_state.localised_potential_hartree,
+            arr=cp.asnumpy(sim_state.localised_potential_hartree),
         )
-        np.save(file=os.path.join(sim_state.cache_dir, "localized_potential_to_visualize.npy"), arr=sim_state.localised_potential_to_visualize_hartree)
+        np.save(file=os.path.join(sim_state.cache_dir, "localized_potential_to_visualize.npy"), arr=cp.asnumpy(sim_state.localised_potential_to_visualize_hartree))
 
     full_init = True
     if sim_state.simulation_method == "fft":
@@ -439,10 +439,13 @@ def initialize():
                 print("No cached potential_operator.npy found.")
         if full_init:
             print("Creating potential operator.")
-            sim_state.potential_operator = cp.asarray(operators.init_potential_operator(
+            sim_state.potential_operator = cp.ndarray(shape=sim_state.localised_potential_hartree.shape,
+                                                      dtype=sim_state.localised_potential_hartree.dtype)
+            sim_state.potential_operator = operators.init_potential_operator(
+                P=sim_state.potential_operator,
                 V=sim_state.localised_potential_hartree,
                 delta_time=sim_state.delta_time_h_bar_per_hartree,
-            ))
+            )
             cp.save(file=os.path.join(sim_state.cache_dir, "potential_operator.npy"), arr=sim_state.potential_operator)
     try:
         with open(os.path.join(sim_state.cache_dir, "cached_parameters.toml"), mode="w") as cache_f:

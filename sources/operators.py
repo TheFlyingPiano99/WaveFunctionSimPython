@@ -3,10 +3,9 @@ import numpy as np
 import cupy as cp
 import sources.math_utils as math_utils
 
-@jit(nopython=True)
 def init_kinetic_operator(N: int, delta_x: float, delta_time: float, shape: np.shape):
     #TODO: Do it with CUDA kernel
-    P_kinetic = np.zeros(shape=shape, dtype=np.csingle)
+    P_kinetic = cp.zeros(shape=shape, dtype=cp.csingle)
     for x in range(0, N):
         for y in range(0, N):
             for z in range(0, N):
@@ -24,8 +23,7 @@ def init_kinetic_operator(N: int, delta_x: float, delta_time: float, shape: np.s
     return P_kinetic
 
 
-@jit(nopython=True)
-def init_potential_operator(V: np.ndarray, delta_time:float):
+def init_potential_operator(P: cp.ndarray, V: np.ndarray, delta_time:float):
     #TODO: Do it with CUDA kernel
     P_potential = np.zeros(shape=V.shape, dtype=np.csingle)
     for x in range(0, V.shape[0]):

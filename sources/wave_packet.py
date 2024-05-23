@@ -31,7 +31,6 @@ def wave_0_y(y):
 def wave_packet(x, y):
     return wave_0_x(x) * wave_0_y(y)
 
-@jit(nopython=True)
 def init_gaussian_wave_packet_double_precision(
     N: int,
     delta_x_bohr_radii: float,
@@ -40,6 +39,7 @@ def init_gaussian_wave_packet_double_precision(
     initial_momentum_h_per_bohr_radius_3: np.array,
     shape: np.shape,
 ):
+    # TODO: Do it with CUDA kernel
     wave_tensor = np.zeros(shape=shape, dtype=np.complex128)
     for x in range(0, N):
         for y in range(0, N):
@@ -57,7 +57,6 @@ def init_gaussian_wave_packet_double_precision(
                 )
     return wave_tensor
 
-@jit(nopython=True)
 def init_gaussian_wave_packet_single_precision(
     N: int,
     delta_x_bohr_radii: float,
@@ -66,6 +65,7 @@ def init_gaussian_wave_packet_single_precision(
     initial_momentum_h_per_bohr_radius_3: np.array,
     shape: np.shape,
 ):
+    # TODO: Do it with CUDA kernel
     wave_tensor = np.zeros(shape=shape, dtype=np.complex64)
     for x in range(0, N):
         for y in range(0, N):

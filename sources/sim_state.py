@@ -2,6 +2,7 @@ from typing import Dict
 import cupy as cp
 import numpy as np
 import sources.math_utils as math_utils
+import sources.operators
 from sources import potential
 
 
@@ -16,7 +17,7 @@ class PotentialWall:
 
 class SimState:
     config: Dict
-    tensor_shape: cp.shape
+    simulated_tensor_shape: cp.shape
     initial_wp_velocity_bohr_radii_hartree_per_h_bar = np.array([0.0, 0.0, 0.0])
     initial_wp_momentum_h_per_bohr_radius = np.array([0.0, 0.0, 0.0])
     wp_width_bohr_radii = 1.0
@@ -36,10 +37,10 @@ class SimState:
     wave_tensor: cp.ndarray
     kinetic_operator: cp.ndarray
     potential_operator: cp.ndarray
-    probability_density: np.ndarray
-    localised_potential_hartree: np.ndarray
-    localised_potential_to_visualize_hartree: np.ndarray
-    coulomb_potential: np.ndarray
+    probability_density: cp.ndarray
+    localised_potential_hartree: cp.ndarray
+    localised_potential_to_visualize_hartree: cp.ndarray
+    coulomb_potential: cp.ndarray
     use_cache = True
     output_dir: str = ""
     cache_dir: str = ""
@@ -99,8 +100,8 @@ class SimState:
             config["wave_packet"]["initial_wp_position_bohr_radii_3"]
         )
         self.N = config["volume"]["number_of_samples_per_axis"]
-        self.tensor_shape = (self.N, self.N, self.N)
-        self.coulomb_potential = np.zeros(shape=self.tensor_shape)
+        self.simulated_tensor_shape = (self.N, self.N, self.N)
+        self.coulomb_potential = cp.zeros(shape=self.simulated_tensor_shape)
         self.delta_x_bohr_radii = self.simulated_volume_width_bohr_radii / self.N
         self.upper_limit_on_delta_time_h_per_hartree = (
             4.0
@@ -176,14 +177,14 @@ class SimState:
 
     def get_view_into_potential(self):
         return math_utils.cut_window(
-            arr=np.real(self.localised_potential_to_visualize_hartree),
+            arr=cp.real(self.localised_potential_to_visualize_hartree),
             bottom=self.viewing_window_bottom_corner_voxel,
             top=self.viewing_window_top_corner_voxel,
         )
 
     def get_view_into_coulomb_potential(self):
         return math_utils.cut_window(
-            arr=np.real(self.coulomb_potential),
+            arr=cp.real(self.coulomb_potential),
             bottom=self.viewing_window_bottom_corner_voxel,
             top=self.viewing_window_top_corner_voxel,
         )
@@ -219,3 +220,8 @@ class SimState:
             w.potential_hartree = w.potential_change_rate_hartree_2_per_h_bar * self.delta_time_h_bar_per_hartree
 
         self.localised_potential_hartree = potential.generate_potential_from_walls_and_drain(V=self.localised_potential_hartree)
+        self.potential_operator = operators.init_potential_operator(
+            P=self.potential_operator,
+            V=self.localised_potential_hartree,
+            delta_time=self.delta_time_h_bar_per_hartree
+        )

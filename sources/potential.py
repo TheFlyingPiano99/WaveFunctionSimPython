@@ -68,7 +68,6 @@ def add_potential_box(
     return V
 
 
-@jit(nopython=True)
 def add_draining_potential(
     N : int,
     delta_x : float,
@@ -76,7 +75,7 @@ def add_draining_potential(
     outer_radius_bohr_radii : float,
     max_potential_hartree : float,
     exponent : float,
-    V : np.ndarray,
+    V : cp.ndarray,
 ):
     for x in range(N):
         for y in range(N):
@@ -179,7 +178,6 @@ def add_single_slit(
     return V
 
 
-@jit(nopython=True)
 def add_double_slit(
     delta_x : float,
     center_bohr_radii : np.array,
@@ -187,8 +185,8 @@ def add_double_slit(
     height_hartree : float,
     space_between_slits_bohr_radii : float,
     slit_width_bohr_radii : float,
-    shape: np.shape,
-    V: np.ndarray,
+    shape: cp.shape,
+    V: cp.ndarray,
 ):
     for x in range(shape[0]):
         for y in range(shape[1]):
@@ -225,8 +223,7 @@ def add_double_slit(
     return V
 
 
-@jit(nopython=True)
-def particle_hard_interaction_potential(V: np.ndarray, delta_x: float, particle_radius_bohr_radius: float, potential_hartree: float):
+def particle_hard_interaction_potential(V: cp.ndarray, delta_x: float, particle_radius_bohr_radius: float, potential_hartree: float):
     for x in range(V.shape[0]):
         for y in range(V.shape[1]):
             for z in range(V.shape[2]):
@@ -235,14 +232,13 @@ def particle_hard_interaction_potential(V: np.ndarray, delta_x: float, particle_
                 )
                 if (
                     abs(r[0] - r[1]) < 2.0 * particle_radius_bohr_radius
-                or abs(r[1] - r[2]) < 2.0 * particle_radius_bohr_radius
-                or abs(r[2] - r[0]) < 2.0 * particle_radius_bohr_radius
+                 or abs(r[1] - r[2]) < 2.0 * particle_radius_bohr_radius
+                 or abs(r[2] - r[0]) < 2.0 * particle_radius_bohr_radius
                 ):
                     V[x, y, z] += potential_hartree
     return  V
 
-@jit(nopython=True)
-def particle_inv_square_interaction_potential(V: np.ndarray, delta_x: float, potential_hartree: float):
+def particle_inv_square_interaction_potential(V: cp.ndarray, delta_x: float, potential_hartree: float):
     for x in range(V.shape[0]):
         for y in range(V.shape[1]):
             for z in range(V.shape[2]):
@@ -253,8 +249,7 @@ def particle_inv_square_interaction_potential(V: np.ndarray, delta_x: float, pot
                                (1.0 / max(abs(r[0] - r[1]), 0.0000001) + 1.0 / max(abs(r[0] - r[2]), 0.0000001) + 1.0 / max(abs(r[1] - r[2]), 0.0000001)))
     return V
 
-@jit(nopython=True)
-def particle_square_interaction_potential(V: np.ndarray, delta_x: float, potential_hartree: float):
+def particle_square_interaction_potential(V: cp.ndarray, delta_x: float, potential_hartree: float):
     for x in range(V.shape[0]):
         for y in range(V.shape[1]):
             for z in range(V.shape[2]):
@@ -265,8 +260,7 @@ def particle_square_interaction_potential(V: np.ndarray, delta_x: float, potenti
     return V
 
 
-@jit(nopython=True)
-def add_harmonic_oscillator_for_1D(V: np.ndarray, delta_x: float, angular_frequency: float):
+def add_harmonic_oscillator_for_1D(V: cp.ndarray, delta_x: float, angular_frequency: float):
     const = 0.5 * math_utils.electron_rest_mass * angular_frequency**2
     for x in range(V.shape[0]):
         for y in range(V.shape[1]):
@@ -278,8 +272,7 @@ def add_harmonic_oscillator_for_1D(V: np.ndarray, delta_x: float, angular_freque
     return  V
 
 
-@jit(nopython=True)
-def add_wall_for_1D(V: np.ndarray, delta_x: float, center_bohr_radius: float, thickness_bohr_radius: float, potential_hartree: float):
+def add_wall_for_1D(V: cp.ndarray, delta_x: float, center_bohr_radius: float, thickness_bohr_radius: float, potential_hartree: float):
     for x in range(V.shape[0]):
         for y in range(V.shape[1]):
             for z in range(V.shape[2]):
@@ -297,8 +290,7 @@ def add_wall_for_1D(V: np.ndarray, delta_x: float, center_bohr_radius: float, th
                     V[x, y, z] += potential_hartree
     return  V
 
-@jit(nopython=True)
-def add_wall(V: np.ndarray, delta_x: float, center_bohr_radius: np.array, normal: np.array, thickness_bohr_radius: float, potential_hartree: float):
+def add_wall(V: cp.ndarray, delta_x: float, center_bohr_radius: np.array, normal: np.array, thickness_bohr_radius: float, potential_hartree: float):
     for x in range(V.shape[0]):
         for y in range(V.shape[1]):
             for z in range(V.shape[2]):
@@ -310,8 +302,8 @@ def add_wall(V: np.ndarray, delta_x: float, center_bohr_radius: np.array, normal
                     V[x, y, z] += potential_hartree
     return  V
 
-@jit(nopython=True)
-def add_coulomb_potential(V: np.ndarray, delta_x: float, center_bohr_radius: np.array, gradient_dir: np.array, charge_density: float,
+
+def add_coulomb_potential(V: cp.ndarray, delta_x: float, center_bohr_radius: np.array, gradient_dir: np.array, charge_density: float,
                           oxide_start_bohr_radii: float, oxide_end_bohr_radii: float):
     for x in range(V.shape[0]):
         for y in range(V.shape[1]):
@@ -327,8 +319,8 @@ def add_coulomb_potential(V: np.ndarray, delta_x: float, center_bohr_radius: np.
                     V[x, y, z] += charge_density / epsilon / 2.0 / oxide_end_bohr_radii - charge_density / epsilon / 2.0 / oxide_start_bohr_radii
     return  V
 
-@jit(nopython=True)
-def add_linear_potential_gradient(V: np.ndarray, delta_x: float, center_bohr_radius: np.array, gradient_dir: np.array, gradient_val: float):
+
+def add_linear_potential_gradient(V: cp.ndarray, delta_x: float, center_bohr_radius: np.array, gradient_dir: np.array, gradient_val: float):
     for x in range(V.shape[0]):
         for y in range(V.shape[1]):
             for z in range(V.shape[2]):
@@ -338,8 +330,8 @@ def add_linear_potential_gradient(V: np.ndarray, delta_x: float, center_bohr_rad
                 V[x, y, z] -= gradient_val * abs(np.dot(gradient_dir, r - center_bohr_radius))
     return  V
 
-@jit(nopython=True)
-def add_optical_grid(V: np.ndarray, delta_x: float, center_bohr_radius: np.array, normal: np.array, distance_between_nodes_bohr_radii: float, potential_hartree: float, node_count: int):
+
+def add_optical_grid(V: cp.ndarray, delta_x: float, center_bohr_radius: np.array, normal: np.array, distance_between_nodes_bohr_radii: float, potential_hartree: float, node_count: int):
     for x in range(V.shape[0]):
         for y in range(V.shape[1]):
             for z in range(V.shape[2]):

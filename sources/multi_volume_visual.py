@@ -43,7 +43,7 @@ from vispy.visuals import Visual
 from vispy.visuals.shaders import Function
 from vispy.color import get_colormap
 from vispy.scene.visuals import create_visual_node
-
+import cupy as cp
 import numpy as np
 
 from .multi_volume_shaders import get_shaders
@@ -177,7 +177,7 @@ class MultiVolumeVisual(Visual):
 
         if clim is None:
             clim = data.min(), data.max()
-        data = data.astype(np.float32)
+            data = data.astype(np.float32)
         if clim[1] == clim[0]:
             if clim[0] != 0.0:
                 data *= 1.0 / clim[0]
