@@ -48,7 +48,7 @@ class SimState:
     simulation_method: str = "fft"
     double_precision_wave_tensor: bool = False
     enable_wave_function_save: bool = True
-    potentialWalls = []
+    potential_walls = []
 
     def __init__(self, config):
         # Load paths:
@@ -190,9 +190,10 @@ class SimState:
         )
 
     def update_potential(self):
-        for w in self.potentialWalls:
+        for w in self.potential_walls:
             # Advect:
             w.center_bohr_radii_3 = w.center_bohr_radii_3 + w.velocity_bohr_radius_hartree_per_h_bar * self.delta_time_h_bar_per_hartree
+            """
             # Rotate around Z axis:
             w.normal_bohr_radii_3 = np.dot(
                 math_utils.rotation_matrix(
@@ -218,10 +219,18 @@ class SimState:
                 w.normal_bohr_radii_3
             )
             w.potential_hartree = w.potential_change_rate_hartree_2_per_h_bar * self.delta_time_h_bar_per_hartree
+        """
 
-        self.localised_potential_hartree = potential.generate_potential_from_walls_and_drain(V=self.localised_potential_hartree)
-        self.potential_operator = operators.init_potential_operator(
-            P=self.potential_operator,
+        self.localised_potential_hartree, self.localised_potential_to_visualize_hartree = potential.generate_potential_from_walls_and_drain(
             V=self.localised_potential_hartree,
-            delta_time=self.delta_time_h_bar_per_hartree
+            V_vis=self.localised_potential_to_visualize_hartree,
+            delta_x=self.delta_x_bohr_radii,
+            drain_description=self.drain_potential_description,
+            walls=self.potential_walls
+        )
+
+        self.potential_operator = sources.operators.init_potential_operator(
+            P_potential=self.potential_operator,
+            V=self.localised_potential_hartree,
+            delta_time=self.delta_time_h_bar_per_hartree,
         )

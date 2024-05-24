@@ -10,17 +10,6 @@ import cupy as cp
 import numpy as np
 
 
-class MeasurementTools:
-    measurement_plane: measurement.MeasurementPlane
-    volumetric: volume_visualization.VolumetricVisualization
-    animation_writer_3D: animation.AnimationWriter
-    animation_writer_per_axis: animation.AnimationWriter
-    x_axis_probability_density: measurement.ProjectedMeasurement
-    y_axis_probability_density: measurement.ProjectedMeasurement
-    z_axis_probability_density: measurement.ProjectedMeasurement
-    projected_probability: measurement.ProjectedMeasurement
-
-
 def sim():
     print(text_writer.get_title_text())
     print("\n")
@@ -55,13 +44,13 @@ def sim():
         "\n****************************************************************************\n"
     )
 
-    measurement_tools = MeasurementTools()
+    measurement_tools = measurement.MeasurementTools()
     if sim_state.enable_visual_output:
-        measurement_tools = MeasurementTools()
+        measurement_tools = measurement.MeasurementTools()
         measurement_tools.volumetric = volume_visualization.VolumetricVisualization(
-            volume_data=sim_state.get_view_into_probability_density(),
-            secondary_volume_data=sim_state.get_view_into_potential(),
-            coulomb_volume_data=sim_state.get_view_into_coulomb_potential(),
+            probability=sim_state.get_view_into_probability_density(),
+            potential=sim_state.get_view_into_potential(),
+            coulomb_potential=sim_state.get_view_into_coulomb_potential(),
             cam_rotation_speed=sim_state.config["view"]["volumetric"]["camera_rotation_speed"],
             azimuth=sim_state.config["view"]["volumetric"]["camera_azimuth"],
         )

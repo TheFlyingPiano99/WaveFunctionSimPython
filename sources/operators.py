@@ -3,32 +3,163 @@ import numpy as np
 import cupy as cp
 import sources.math_utils as math_utils
 
+kinetic_operator_kernel_source = '''
+    #include <cupy/complex.cuh>
+
+    extern "C" float M_PI = 3.14159265359;
+
+    extern "C" __device__ float3 scalarVectorMul(float s, const float3& v)
+    {
+        return {s * v.x, s * v.y, s * v.z}; 
+    }
+
+    extern "C" __device__ float dot(const float3& a, const float3& b)
+    {
+        return a.x * b.x + a.y * b.y + a.z * b.z; 
+    }
+
+    extern "C" __device__ complex<float> exp_i(float angle)
+    {
+        return complex<float>(cosf(angle), sinf(angle)); 
+    }
+
+    extern "C" __device__ float3 diff(float3 a, float3 b)
+    {
+        return {a.x - b.x, a.y - b.y, a.z - b.z};
+    }
+    
+    extern "C" __device__ float3 div(float3 a, float3 b)
+    {
+        return {a.x / b.x, a.y / b.y, a.z / b.z};
+    }
+
+    extern "C" __global__
+    void kinetic_operator_kernel(
+        complex<float>* kinetic_operator,
+        int N,
+        float delta_x,
+        float delta_t
+    )
+    {
+        int k = blockIdx.x * blockDim.x + threadIdx.x;
+        int j = blockIdx.y * blockDim.y + threadIdx.y;
+        int i = blockIdx.z * blockDim.z + threadIdx.z;
+        int idx = i * gridDim.x * blockDim.x * gridDim.y * blockDim.y
+                + j * gridDim.x * blockDim.x
+                + k;
+        
+        float3 f = div({(float)k, (float)j, (float)i}, {(float)N, (float)N, (float)N});
+        
+        // Fix numpy fftn-s "negative frequency in second half issue"
+        if (f.x > 0.5f)
+            f.x = 1.0f - f.x;
+        if (f.y > 0.5f)
+            f.y = 1.0f - f.y;
+        if (f.z > 0.5f)
+            f.z = 1.0f - f.z;
+        float3 momentum = scalarVectorMul(2.0f * M_PI / delta_x, f);
+        float angle = -dot(momentum, momentum) * delta_t / 4.0f;
+        kinetic_operator[idx] = exp_i(angle);
+    }
+'''
+
+
 def init_kinetic_operator(N: int, delta_x: float, delta_time: float, shape: np.shape):
-    #TODO: Do it with CUDA kernel
+    kinetic_operator_kernel = cp.RawKernel(kinetic_operator_kernel_source,
+                                 'kinetic_operator_kernel',
+                                 enable_cooperative_groups=False)
+    grid_size = (64, 64, 64)
+    block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
     P_kinetic = cp.zeros(shape=shape, dtype=cp.csingle)
-    for x in range(0, N):
-        for y in range(0, N):
-            for z in range(0, N):
-                f = np.array([x, y, z]) / np.array([N, N, N])
-                # Fix numpy fftn-s "negative frequency in second half issue"
-                if f[0] > 0.5:
-                    f[0] = 1.0 - f[0]
-                if f[1] > 0.5:
-                    f[1] = 1.0 - f[1]
-                if f[2] > 0.5:
-                    f[2] = 1.0 - f[2]
-                k = 2.0 * np.pi * f / delta_x
-                angle = -np.dot(k, k) * delta_time / 4.0
-                P_kinetic[x, y, z] = math_utils.exp_i(angle)
+    kinetic_operator_kernel(
+        grid_size,
+        block_size,
+        (
+            P_kinetic,
+            cp.int32(N),
+            cp.float32(delta_x),
+            cp.float32(delta_time)
+        )
+    )
     return P_kinetic
 
+# P_potential: cp.ndarray, V: cp.ndarray, delta_time:float
+potential_operator_kernel_source = '''
+    #include <cupy/complex.cuh>
 
-def init_potential_operator(P: cp.ndarray, V: np.ndarray, delta_time:float):
-    #TODO: Do it with CUDA kernel
-    P_potential = np.zeros(shape=V.shape, dtype=np.csingle)
-    for x in range(0, V.shape[0]):
-        for y in range(0, V.shape[1]):
-            for z in range(0, V.shape[2]):
-                angle = -V[V.shape[0] - x - 1, V.shape[1] - y - 1, V.shape[2] - z - 1] * delta_time
-                P_potential[x, y, z] = math_utils.exp_i(angle)
+    extern "C" float M_PI = 3.14159265359;
+
+    extern "C" __device__ float3 scalarVectorMul(float s, const float3& v)
+    {
+        return {s * v.x, s * v.y, s * v.z}; 
+    }
+
+    extern "C" __device__ float dot(const float3& a, const float3& b)
+    {
+        return a.x * b.x + a.y * b.y + a.z * b.z; 
+    }
+
+    extern "C" __device__ complex<float> exp_i(float angle)
+    {
+        return complex<float>(cosf(angle), sinf(angle)); 
+    }
+
+    extern "C" __device__ complex<float> cexp_i(complex<float> cangle)
+    {
+        return complex<float>(cosf(cangle.real()), sinf(cangle.real())) * expf(-cangle.imag()); 
+    }
+
+    extern "C" __device__ float3 diff(float3 a, float3 b)
+    {
+        return {a.x - b.x, a.y - b.y, a.z - b.z};
+    }
+
+    extern "C" __device__ float3 div(float3 a, float3 b)
+    {
+        return {a.x / b.x, a.y / b.y, a.z / b.z};
+    }
+
+    extern "C" __global__
+    void potential_operator_kernel(
+        complex<float>* potential_operator,
+        complex<float>* V,
+        float delta_t
+    )
+    {
+        int k = blockIdx.x * blockDim.x + threadIdx.x;
+        int j = blockIdx.y * blockDim.y + threadIdx.y;
+        int i = blockIdx.z * blockDim.z + threadIdx.z;
+
+        int vK = gridDim.x * blockDim.x - k - 1;
+        int vJ = gridDim.y * blockDim.y - j - 1;
+        int vI = gridDim.z * blockDim.z - i - 1;
+        int vIdx = vI * gridDim.x * blockDim.x * gridDim.y * blockDim.y
+                + vJ * gridDim.x * blockDim.x
+                + vK;
+        complex<float> angle = -delta_t * V[vIdx];
+
+        int idx = i * gridDim.x * blockDim.x * gridDim.y * blockDim.y
+                + j * gridDim.x * blockDim.x
+                + k;
+        potential_operator[idx] = cexp_i(angle);
+    }
+'''
+
+
+def init_potential_operator(P_potential: cp.ndarray, V: cp.ndarray, delta_time:float):
+    potential_operator_kernel = cp.RawKernel(potential_operator_kernel_source,
+                                 'potential_operator_kernel',
+                                 enable_cooperative_groups=False)
+    shape = P_potential.shape
+    grid_size = (64, 64, 64)
+    block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
+    potential_operator_kernel(
+        grid_size,
+        block_size,
+        (
+            P_potential,
+            V,
+            cp.float32(delta_time)
+        )
+    )
     return P_potential

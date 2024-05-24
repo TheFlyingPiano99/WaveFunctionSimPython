@@ -25,11 +25,12 @@ class VolumetricVisualization:
     elevation = 45.0
     azimuth = 0.0
     light_elevation_axis: np.array
+    multi_volume_visual: multi_volume_visual.MultiVolume
 
     def __init__(
-        self, volume_data: np.ndarray, secondary_volume_data: np.ndarray, coulomb_volume_data: np.ndarray, cam_rotation_speed=0.0, azimuth=0.0
+        self, probability: np.ndarray, potential: np.ndarray, coulomb_potential: np.ndarray, cam_rotation_speed=0.0, azimuth=0.0
     ):
-        volume_data = volume_data * self.density_scale
+        probability = probability * self.density_scale
         # Prepare canvas
         self.canvas = scene.SceneCanvas(
             keys="interactive", bgcolor="white", size=(1024, 768), show=False
@@ -61,56 +62,61 @@ class VolumetricVisualization:
             }
             """
 
-        self.primary_color_map = ProbabilityDensityColorMap()
-        self.secondary_color_map = PotentialColorMap()
+        self.probability_color_map = ProbabilityDensityColorMap()
+        self.potential_color_map = PotentialColorMap()
         self.coulomb_color_map = CoulombColorMap()
-        self.clim1 = (
+
+        np_probability = cp.asnumpy(probability)
+        np_potential = cp.asnumpy(potential)
+        np_coulomb = cp.asnumpy(coulomb_potential)
+
+        self.probability_color_lim = (
             0.0,
-            cp.asnumpy(volume_data).astype(np.float32).max() * 0.01,
+            np_probability.astype(np.float32).max() * 0.01,
         )
-        self.clim2 = (
-            cp.asnumpy(secondary_volume_data).astype(np.float32).min(),
-            cp.asnumpy(secondary_volume_data).astype(np.float32).max(),
+        self.potential_color_lim = (
+            np_potential.astype(np.float32).min(),
+            np_potential.astype(np.float32).max(),
         )
-        self.clim3 = (
-            cp.asnumpy(coulomb_volume_data).astype(np.float32).min(),
-            cp.asnumpy(coulomb_volume_data).astype(np.float32).max(),
+        self.coulomb_color_lim = (
+            np_coulomb.astype(np.float32).min(),
+            np_coulomb.astype(np.float32).max(),
         )
 
         volumes = [
             (
                 np.pad(
-                    array=cp.asnumpy(volume_data).astype(np.float32),
+                    array=np_probability.astype(np.float32),
                     pad_width=1,
                     mode="constant",
                     constant_values=0.0,
                 ),
-                self.clim1,
-                self.primary_color_map,
+                self.probability_color_lim,
+                self.probability_color_map,
             ),
             (
                 np.pad(
-                    array=cp.asnumpy(secondary_volume_data).astype(np.float32),
+                    array=np_potential.astype(np.float32),
                     pad_width=1,
                     mode="constant",
                     constant_values=0.0,
                 ),
-                self.clim2,
-                self.secondary_color_map,
+                self.potential_color_lim,
+                self.potential_color_map,
             ),
             (
                 np.pad(
-                    array=cp.asnumpy(coulomb_volume_data).astype(np.float32),
+                    array=np_coulomb.astype(np.float32),
                     pad_width=1,
                     mode="constant",
                     constant_values=0.0,
                 ),
-                self.clim3,
+                self.coulomb_color_lim,
                 self.coulomb_color_map,
             ),
         ]
         # Create the volume visuals
-        self.volume = multi_volume_visual.MultiVolume(
+        self.multi_volume_visual = multi_volume_visual.MultiVolume(
             volumes=volumes,
             parent=self.view.scene,
             method="translucent",
@@ -162,16 +168,26 @@ class VolumetricVisualization:
 
         """
 
-    def update(self, volume_data, iter_count, delta_time_h_bar_per_hartree):
-        self.volume.update_volume_data(
+    def update(self, probability, potential, iter_count, delta_time_h_bar_per_hartree):
+        self.multi_volume_visual.update_volume_data(
             volume_data=np.pad(
-                array=cp.asnumpy(volume_data * self.density_scale).astype(np.float32),
+                array=cp.asnumpy(probability * self.density_scale).astype(np.float32),
                 pad_width=1,
                 mode="constant",
                 constant_values=0.0,
             ),
             index=0,
         )
+        self.multi_volume_visual.update_volume_data(
+            volume_data=np.pad(
+                array=cp.asnumpy(potential).astype(np.float32),
+                pad_width=1,
+                mode="constant",
+                constant_values=0.0,
+            ),
+            index=1,
+        )
+
         self.view.camera.azimuth = (
             self.azimuth
             + self.cam_rotation_speed * iter_count * delta_time_h_bar_per_hartree
@@ -181,13 +197,13 @@ class VolumetricVisualization:
             + self.cam_elevation_speed * iter_count * delta_time_h_bar_per_hartree
         )
         if self.light_rotation_speed > 0.0:
-            self.volume.light_direction = (
-                math_utils.rotate(self.volume.light_direction, math_utils.prefered_up(), delta_time_h_bar_per_hartree * self.light_rotation_speed)
+            self.multi_volume_visual.light_direction = (
+                math_utils.rotate(self.multi_volume_visual.light_direction, math_utils.prefered_up(), delta_time_h_bar_per_hartree * self.light_rotation_speed)
             )
 
         if self.light_elevation_speed != 0.0:
-            self.volume.light_direction = (
-                math_utils.rotate(self.volume.light_direction, np.array([1,0,0], dtype=np.float_), delta_time_h_bar_per_hartree * self.light_elevation_speed)
+            self.multi_volume_visual.light_direction = (
+                math_utils.rotate(self.multi_volume_visual.light_direction, np.array([1, 0, 0], dtype=np.float_), delta_time_h_bar_per_hartree * self.light_elevation_speed)
             )
 
         self.canvas.update()
@@ -209,4 +225,4 @@ class VolumetricVisualization:
         return self.canvas.render(alpha=False)
 
     def set_light_direction(self, light_dir: np.array):
-        self.volume.light_direction = light_dir
+        self.multi_volume_visual.light_direction = light_dir

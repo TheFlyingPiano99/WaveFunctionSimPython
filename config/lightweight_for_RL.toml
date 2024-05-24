@@ -5,30 +5,30 @@
 
 ["wave_packet"]
 particle_mass = 1.0
-initial_wp_position_bohr_radii_3 = [-20.0, 0.0, 0.0]
-initial_wp_velocity_bohr_radii_hartree_per_h_bar = [3.0, 0.0, 0.0]
+initial_wp_position_bohr_radii_3 = [-15.0, 0.0, 0.0]
+initial_wp_velocity_bohr_radii_hartree_per_h_bar = [0.0, 0.0, 0.0]
 wp_width_bohr_radii = 2.0
 
 ["volume"]
-simulated_volume_width_bohr_radii = 90.0 #Including draining potential regions
-number_of_samples_per_axis = 128         #Including draining potential regions
+simulated_volume_width_bohr_radii = 120.0 #Including draining potential regions
+number_of_samples_per_axis = 256         #Including draining potential regions
 viewing_window_boundary_bottom_corner_bohr_radii_3 = [30.0, 30.0, 30.0]   # Same as the inner boundary of the draining potential
 viewing_window_boundary_top_corner_bohr_radii_3 = [-30.0, -30.0, -30.0]   # Same as the inner boundary of the draining potential
 
 ["drain"]
-outer_potential_hartree = -0.0
-interpolation_exponent = 2.0
+outer_potential_hartree = -100.0
+interpolation_exponent = 3.0
 
 
 [[walls]]
-potential_hartree = 60
+potential_hartree = 50
 center_bohr_radii_3 = [-2.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
 thickness_bohr_radii = 1.0
 visible=true
 
 [[walls]]
-potential_hartree = 60
+potential_hartree = 50
 center_bohr_radii_3 = [2.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
 thickness_bohr_radii = 1.0

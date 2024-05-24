@@ -17,7 +17,7 @@ def is_toml(file_name):
 
 def initialize():
     initialisation_start_time_s = time.time()
-    use_cache = True
+    use_cache = False       # Toggle here if needed for testing
     config_dir = "config/"
     if os.path.exists(config_dir):
         conf_files = list(filter(is_toml, os.listdir(config_dir)))
@@ -198,13 +198,12 @@ def initialize():
         print("Creating draining potential.")
         dp = sim_state.drain_potential_description
         sim_state.localised_potential_hartree = potential.add_draining_potential(
-            N=sim_state.N,
+            V=sim_state.localised_potential_hartree,
             delta_x=sim_state.delta_x_bohr_radii,
             inner_radius_bohr_radii=dp.inner_radius_bohr_radii,
             outer_radius_bohr_radii=dp.outer_radius_bohr_radii,
             max_potential_hartree=dp.max_potential_hartree,
             exponent=dp.exponent,
-            V=sim_state.localised_potential_hartree,
         )
 
         try:
@@ -304,15 +303,15 @@ def initialize():
                 w.normal_bohr_radii_3 = np.copy(n)
                 w.potential_hartree = v
                 w.thickness_bohr_radii = t
-                sim_state.potentialWalls.append(w)
+                sim_state.potential_walls.append(w)
 
                 print("Creating wall.")
                 tensor = potential.add_wall(
                     delta_x=sim_state.delta_x_bohr_radii,
                     potential_hartree=v,
                     thickness_bohr_radius=t,
-                    center_bohr_radius=c,
-                    normal=n,
+                    center_bohr_radii_3=c,
+                    normal_bohr_radii_3=n,
                     V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
                 )
                 sim_state.localised_potential_hartree += tensor
@@ -430,10 +429,10 @@ def initialize():
                 print("No cached potential_operator.npy found.")
         if full_init:
             print("Creating potential operator.")
-            sim_state.potential_operator = cp.ndarray(shape=sim_state.localised_potential_hartree.shape,
+            sim_state.potential_operator = cp.zeros(shape=sim_state.localised_potential_hartree.shape,
                                                       dtype=sim_state.localised_potential_hartree.dtype)
             sim_state.potential_operator = operators.init_potential_operator(
-                P=sim_state.potential_operator,
+                P_potential=sim_state.potential_operator,
                 V=sim_state.localised_potential_hartree,
                 delta_time=sim_state.delta_time_h_bar_per_hartree,
             )
@@ -448,6 +447,11 @@ def initialize():
     print(
         f"Time spent with initialisation: {(time.time() - initialisation_start_time_s):.2f} s.\n"   # Extra new line at the end.
     )
+
+
+    # For testing only:
+    sim_state.potential_walls[0].velocity_bohr_radius_hartree_per_h_bar = np.array([-3.0, 0.0, 0.0])
+
 
     print(text_writer.get_simulation_method_text(sim_state, use_colors=True))
     return sim_state

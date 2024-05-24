@@ -2,7 +2,8 @@ import numpy as np
 from numba.experimental import jitclass
 from numba import types
 import numba
-
+import sources.volume_visualization as volume_visualization
+import sources.animation as animation
 
 class MeasurementPlane:
     def __init__(
@@ -158,3 +159,14 @@ class ProjectedMeasurement:
             self.left_edge_bohr_radii,
             self.right_edge_bohr_radii,
         )
+
+
+class MeasurementTools:
+    measurement_plane: MeasurementPlane
+    volumetric: volume_visualization.VolumetricVisualization
+    animation_writer_3D: animation.AnimationWriter
+    animation_writer_per_axis: animation.AnimationWriter
+    x_axis_probability_density: ProjectedMeasurement
+    y_axis_probability_density: ProjectedMeasurement
+    z_axis_probability_density: ProjectedMeasurement
+    projected_probability: ProjectedMeasurement

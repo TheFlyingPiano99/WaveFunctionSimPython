@@ -3,6 +3,8 @@ import cupy as cp
 import sources.math_utils as math_utils
 from numba import jit
 import math
+import sources.potential_kernels as kernels
+
 
 class DrainPotentialDescription:
     boundary_bottom_corner_bohr_radii: np.array
@@ -69,30 +71,32 @@ def add_potential_box(
 
 
 def add_draining_potential(
-    N : int,
+    V : cp.ndarray,
     delta_x : float,
     inner_radius_bohr_radii : float,
     outer_radius_bohr_radii : float,
     max_potential_hartree : float,
     exponent : float,
-    V : cp.ndarray,
 ):
-    for x in range(N):
-        for y in range(N):
-            for z in range(N):
-                pos = (
-                    np.array([x, y, z]) * delta_x
-                    - np.array([1.0, 1.0, 1.0]) * N * delta_x * 0.5
-                )
-                t = min(
-                    max(
-                        0.0,
-                        (np.sqrt(np.dot(pos, pos)) - inner_radius_bohr_radii)
-                        / (outer_radius_bohr_radii - inner_radius_bohr_radii),
-                    ),
-                    1.0,
-                )
-                V[x, y, z] += 1j * t**exponent * max_potential_hartree
+    draining_potential_kernel = cp.RawKernel(kernels.draining_potential_kernel_source,
+                                 'draining_potential_kernel',
+                                 enable_cooperative_groups=False)
+    shape = V.shape
+    grid_size = (64, 64, 64)
+    block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
+    draining_potential_kernel(
+        grid_size,
+        block_size,
+        (
+            V,
+            cp.float32(delta_x),
+            cp.float32(inner_radius_bohr_radii),
+            cp.float32(outer_radius_bohr_radii),
+            cp.float32(max_potential_hartree),
+            cp.float32(exponent),
+        )
+    )
+
     return V
 
 
@@ -117,23 +121,6 @@ def init_potential_sphere(N : int, delta_x : float, wall_thickness : float, pote
 
 def init_zero_potential(N : int):
     V = cp.zeros(shape=(N, N, N), dtype=cp.csingle)
-    return V
-
-
-def add_wall(V : cp.ndarray, delta_x : float, center_bohr_radii : float, thickness_bohr_radii : float, height_hartree : float):
-    for x in range(0, V.shape[0]):
-        for y in range(0, V.shape[1]):
-            for z in range(0, V.shape[2]):
-                r = cp.array([x, y, z]) * delta_x
-                if (
-                    r[2] > center_bohr_radii - thickness_bohr_radii / 2.0
-                    and r[2] < center_bohr_radii + thickness_bohr_radii / 2.0
-                ):
-                    v = height_hartree * (
-                        1.0 - abs(center_bohr_radii - r[2]) / thickness_bohr_radii * 2.0
-                    )
-                    V[x, y, z] += v
-
     return V
 
 
@@ -290,17 +277,41 @@ def add_wall_for_1D(V: cp.ndarray, delta_x: float, center_bohr_radius: float, th
                     V[x, y, z] += potential_hartree
     return  V
 
-def add_wall(V: cp.ndarray, delta_x: float, center_bohr_radius: np.array, normal: np.array, thickness_bohr_radius: float, potential_hartree: float):
-    for x in range(V.shape[0]):
-        for y in range(V.shape[1]):
-            for z in range(V.shape[2]):
-                r = math_utils.transform_corner_origin_to_center_origin_system(
-                    np.array([x, y, z]) * delta_x, delta_x * V.shape[0]
-                )
-                d = np.dot(normal, r - center_bohr_radius)
-                if d <= thickness_bohr_radius * 0.5 and d >= -thickness_bohr_radius * 0.5:
-                    V[x, y, z] += potential_hartree
-    return  V
+def add_wall(
+        V: cp.ndarray,
+        delta_x: float,
+        center_bohr_radii_3: np.array,
+        normal_bohr_radii_3: np.array,
+        thickness_bohr_radius: float,
+        potential_hartree: float,
+     ):
+    potential_wall_kernel = cp.RawKernel(kernels.potential_wall_kernel_source,
+                                         "potential_wall_kernel",
+                                         enable_cooperative_groups=False)
+
+    shape = V.shape
+    grid_size = (64, 64, 64)
+    block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
+    potential_wall_kernel(
+        grid_size,
+        block_size,
+        (
+            V,
+            cp.float32(delta_x),
+
+            cp.float32(center_bohr_radii_3[0]),
+            cp.float32(center_bohr_radii_3[1]),
+            cp.float32(center_bohr_radii_3[2]),
+
+            cp.float32(normal_bohr_radii_3[0]),
+            cp.float32(normal_bohr_radii_3[1]),
+            cp.float32(normal_bohr_radii_3[2]),
+
+            cp.float32(thickness_bohr_radius),
+            cp.float32(potential_hartree)
+        )
+    )
+    return V
 
 
 def add_coulomb_potential(V: cp.ndarray, delta_x: float, center_bohr_radius: np.array, gradient_dir: np.array, charge_density: float,
@@ -357,6 +368,32 @@ def add_optical_grid(V: cp.ndarray, delta_x: float, center_bohr_radius: np.array
     return  V
 
 
-def generate_potential_from_walls_and_drain(V: cp.ndarray):
-    #TODO: Write CUDA kernel to calculate potential efficiently
-    return V
+def generate_potential_from_walls_and_drain(V: cp.ndarray, V_vis: cp.ndarray, delta_x, drain_description: DrainPotentialDescription, walls: []):
+    V.fill(0.0)
+    for w in walls:
+        add_wall(
+            V=V,
+            delta_x=delta_x,
+            center_bohr_radii_3=w.center_bohr_radii_3,
+            normal_bohr_radii_3=w.normal_bohr_radii_3,
+            thickness_bohr_radius=w.thickness_bohr_radii,
+            potential_hartree=w.potential_hartree
+        )
+    V_vis = V.copy()
+    add_draining_potential(V=V,
+                           delta_x=delta_x,
+                           inner_radius_bohr_radii=drain_description.inner_radius_bohr_radii,
+                           outer_radius_bohr_radii=drain_description.outer_radius_bohr_radii,
+                           max_potential_hartree=drain_description.max_potential_hartree,
+                           exponent=drain_description.exponent
+                           )
+
+    center_bohr_radii_3: np.array = np.array([0.0, 0.0, 0.0])
+    normal_bohr_radii_3: np.array = np.array([1.0, 0.0, 0.0])
+    thickness_bohr_radii: float = 5.0
+    potential_hartree: float = 20.0
+    velocity_bohr_radius_hartree_per_h_bar: np.array = np.array([0.0, 0.0, 0.0])
+    angular_velocity_rad_hartree_per_h_bar: np.array = np.array([0.0, 0.0, 0.0])
+    potential_change_rate_hartree_2_per_h_bar: float = 0.0
+
+    return V, V_vis

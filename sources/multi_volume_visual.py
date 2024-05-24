@@ -43,7 +43,6 @@ from vispy.visuals import Visual
 from vispy.visuals.shaders import Function
 from vispy.color import get_colormap
 from vispy.scene.visuals import create_visual_node
-import cupy as cp
 import numpy as np
 
 from .multi_volume_shaders import get_shaders
@@ -167,12 +166,11 @@ class MultiVolumeVisual(Visual):
                     len(self.volumes), len(self.textures)
                 )
             )
-        for index in range(len(self.volumes)):
-            self._update_volume(volumes, index)
+        for index, volume in enumerate(self.volumes):
+            self._update_volume(volume, index)
 
-    def _update_volume(self, volumes, index):
-        data, clim, cmap = volumes[index]
-
+    def _update_volume(self, volume, index):
+        data, clim, cmap = volume
         cmap = get_colormap(cmap)
 
         if clim is None:
@@ -203,7 +201,7 @@ class MultiVolumeVisual(Visual):
     # Helper method that only requires the volume_data to update, and it's index in the multi_volume_visual
     def update_volume_data(self, volume_data, index):
         self._update_volume(
-            [(volume_data, self.volumes[index][1], self.volumes[index][2])], index
+            (volume_data, self.volumes[index][1], self.volumes[index][2]), index
         )
 
     @property

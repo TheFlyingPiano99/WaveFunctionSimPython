@@ -91,7 +91,7 @@ def init_iter_data(sim_state: sim_st.SimState):
     iter_data.wave_function_save_interval = sim_state.config["iteration"]["wave_function_save_interval"]
     return iter_data
 
-def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools):
+def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools: measurement.MeasurementTools):
     # Update all measurement tools:
     measurement_tools.measurement_volume_full.integrate_probability_density(
         sim_state.probability_density
@@ -146,7 +146,8 @@ def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools)
             or iter_data.i % iter_data.png_step_interval == 0
     ):
         measurement_tools.volumetric.update(
-            sim_state.get_view_into_probability_density(),
+            probability=sim_state.get_view_into_probability_density(),
+            potential=sim_state.get_view_into_potential(),
             iter_count=iter_data.i,
             delta_time_h_bar_per_hartree=sim_state.delta_time_h_bar_per_hartree,
         )
@@ -192,7 +193,34 @@ def write_wave_function_to_file(sim_state: sim_st.SimState, iter_data):
             print(Fore.RED + "\nERROR: Failed writing file: "+ os.path.join(sim_state.output_dir, f"wave_function/wave_function_{iter_data.i:04d}.npy") + Style.RESET_ALL)
 
 
-def run_iteration(sim_state: sim_st.SimState, measurement_tools):
+def sim_time_step(sim_state: sim_st.SimState, measurement_tools: measurement.MeasurementTools, iter_data: IterData):
+    sim_state.probability_density = math_utils.square_of_abs(
+        sim_state.wave_tensor
+    )
+
+    if sim_state.enable_wave_function_save:
+        write_wave_function_to_file(sim_state=sim_state, iter_data=iter_data)
+
+    if sim_state.enable_visual_output:
+        measure_and_render(iter_data, sim_state, measurement_tools)
+
+    # Main time development step:
+    if sim_state.simulation_method == "fft":
+        sim_state.wave_tensor = fft_time_evolution(
+            wave_tensor=sim_state.wave_tensor,
+            kinetic_operator=sim_state.kinetic_operator,
+            potential_operator=sim_state.potential_operator,
+        )
+    elif sim_state.simulation_method == "power_series":
+        power_series_time_evolution(sim_state=sim_state, p=p, next_s_kernel=next_s_kernel, s=s, v=v)
+    else:
+        print("ERROR: Undefined simulation method")
+
+    # Develop potential:
+    sim_state.update_potential()
+
+
+def run_iteration(sim_state: sim_st.SimState, measurement_tools: measurement.MeasurementTools):
     probability_evolutions = []
     probability_divergence_iteration_count = []
     is_diverged = False
@@ -321,27 +349,8 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools):
                     sys.exit(0)
 
                 iter_start_time_s = time.time()
-                sim_state.probability_density = math_utils.square_of_abs(
-                    sim_state.wave_tensor
-                )
 
-                if sim_state.enable_wave_function_save:
-                    write_wave_function_to_file(sim_state=sim_state, iter_data=iter_data)
-
-                if sim_state.enable_visual_output:
-                    measure_and_render(iter_data, sim_state, measurement_tools)
-
-                # Main time development step:
-                if sim_state.simulation_method == "fft":
-                    sim_state.wave_tensor = fft_time_evolution(
-                        wave_tensor=sim_state.wave_tensor,
-                        kinetic_operator=sim_state.kinetic_operator,
-                        potential_operator=sim_state.potential_operator,
-                    )
-                elif sim_state.simulation_method == "power_series":
-                    power_series_time_evolution(sim_state=sim_state, p=p, next_s_kernel=next_s_kernel, s=s, v=v)
-                else:
-                    print("ERROR: Undefined simulation method")
+                sim_time_step(sim_state, measurement_tools, iter_data)
 
                 iter_time = time.time() - iter_start_time_s
                 iter_data.elapsed_system_time_s += iter_time
