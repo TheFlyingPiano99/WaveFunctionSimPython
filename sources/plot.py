@@ -45,7 +45,7 @@ def plot_per_axis_probability_density(
 
     plt.grid(True)
     plt.xlabel("Location [Bohr radius]")
-    plt.ylabel(f"Probability density / Potential [{1.0 / potential_scale:.1f} Hartree]", fontsize=font_size * 0.9)
+    plt.ylabel(f"Probability density / Potential [{1.0 / data[3][4]:.1f} Hartree]", fontsize=font_size * 0.9)
     plt.title(f"Elapsed time = {index * delta_t:.2f} ħ/Hartree = {math_utils.h_bar_per_hartree_to_fs(index * delta_t):.2f} fs")
     n = data[0][0].size
     # For n assuming that all datasets have the same size

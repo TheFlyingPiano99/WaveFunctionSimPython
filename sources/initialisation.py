@@ -450,7 +450,7 @@ def initialize():
 
 
     # For testing only:
-    sim_state.potential_walls[0].velocity_bohr_radius_hartree_per_h_bar = np.array([-3.0, 0.0, 0.0])
+    sim_state.potential_walls[0].velocity_bohr_radius_hartree_per_h_bar = np.array([-2.0, 0.0, 0.0])
 
 
     print(text_writer.get_simulation_method_text(sim_state, use_colors=True))

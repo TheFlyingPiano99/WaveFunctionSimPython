@@ -142,7 +142,7 @@ potential_wall_kernel_source = """
         float d = dot(normal, diff(center, r));
         if (d <= thickness_bohr_radius * 0.5f && d >= -thickness_bohr_radius * 0.5f)
         {
-            V[idx] += potential_hartree;
+            V[idx] += potential_hartree * (1.0f - fmaxf(2.0f * fabsf(d / thickness_bohr_radius * 2.0f) - 1.0, 0.0f));
         }
     }
 """

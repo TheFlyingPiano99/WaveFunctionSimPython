@@ -182,9 +182,16 @@ class SimState:
             top=self.viewing_window_top_corner_voxel,
         )
 
+    def get_view_into_complex_potential(self):
+        return math_utils.cut_window(
+            arr=self.localised_potential_to_visualize_hartree,
+            bottom=self.viewing_window_bottom_corner_voxel,
+            top=self.viewing_window_top_corner_voxel,
+        )
+
     def get_view_into_coulomb_potential(self):
         return math_utils.cut_window(
-            arr=cp.real(self.coulomb_potential),
+            arr=self.coulomb_potential,
             bottom=self.viewing_window_bottom_corner_voxel,
             top=self.viewing_window_top_corner_voxel,
         )
@@ -193,6 +200,9 @@ class SimState:
         for w in self.potential_walls:
             # Advect:
             w.center_bohr_radii_3 = w.center_bohr_radii_3 + w.velocity_bohr_radius_hartree_per_h_bar * self.delta_time_h_bar_per_hartree
+            if w.center_bohr_radii_3[0] < 0.0:  # Stop at zero (For testing only)
+                w.center_bohr_radii_3[0] = 0.0
+
             """
             # Rotate around Z axis:
             w.normal_bohr_radii_3 = np.dot(

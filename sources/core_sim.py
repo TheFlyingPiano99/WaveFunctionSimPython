@@ -123,6 +123,9 @@ def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools:
         measurement_tools.z_axis_probability_density.integrate_probability_density(
             sim_state.probability_density
         )
+        measurement_tools.projected_potential.integrate_probability_density(
+            np.real(sim_state.localised_potential_to_visualize_hartree)
+        )
 
     # Plot state:
     if iter_data.i % iter_data.per_axis_probability_denisty_plot_interval == 0:
@@ -133,7 +136,7 @@ def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools:
                 measurement_tools.x_axis_probability_density.get_probability_density_with_label(),
                 measurement_tools.y_axis_probability_density.get_probability_density_with_label(),
                 measurement_tools.z_axis_probability_density.get_probability_density_with_label(),
-                measurement_tools.projected_probability.get_probability_density_with_label(),
+                measurement_tools.projected_potential.get_probability_density_with_label(),
             ],
             delta_x=sim_state.delta_x_bohr_radii,
             delta_t=sim_state.delta_time_h_bar_per_hartree,
@@ -146,8 +149,8 @@ def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools:
             or iter_data.i % iter_data.png_step_interval == 0
     ):
         measurement_tools.volumetric.update(
-            probability=sim_state.get_view_into_probability_density(),
-            potential=sim_state.get_view_into_potential(),
+            probability=sim_state.get_view_into_raw_wave_function(),
+            potential=sim_state.get_view_into_complex_potential(),
             iter_count=iter_data.i,
             delta_time_h_bar_per_hartree=sim_state.delta_time_h_bar_per_hartree,
         )

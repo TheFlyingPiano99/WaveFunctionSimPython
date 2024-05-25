@@ -158,6 +158,7 @@ class ProjectedMeasurement:
             self.label,
             self.left_edge_bohr_radii,
             self.right_edge_bohr_radii,
+            self.scale_factor
         )
 
 
@@ -169,4 +170,4 @@ class MeasurementTools:
     x_axis_probability_density: ProjectedMeasurement
     y_axis_probability_density: ProjectedMeasurement
     z_axis_probability_density: ProjectedMeasurement
-    projected_probability: ProjectedMeasurement
+    projected_potential: ProjectedMeasurement

@@ -5,7 +5,7 @@
 
 ["wave_packet"]
 particle_mass = 1.0
-initial_wp_position_bohr_radii_3 = [-15.0, 0.0, 0.0]
+initial_wp_position_bohr_radii_3 = [-0.0, 0.0, 0.0]
 initial_wp_velocity_bohr_radii_hartree_per_h_bar = [0.0, 0.0, 0.0]
 wp_width_bohr_radii = 2.0
 
@@ -21,18 +21,18 @@ interpolation_exponent = 3.0
 
 
 [[walls]]
-potential_hartree = 50
-center_bohr_radii_3 = [-2.0, 0.0, 0.0]
+potential_hartree = 200
+center_bohr_radii_3 = [30.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
-thickness_bohr_radii = 1.0
+thickness_bohr_radii = 30.0
 visible=true
 
-[[walls]]
-potential_hartree = 50
-center_bohr_radii_3 = [2.0, 0.0, 0.0]
-normal_vector_3 = [1.0, 0.0, 0.0]
-thickness_bohr_radii = 1.0
-visible=true
+#[[walls]]
+#potential_hartree = 50
+#center_bohr_radii_3 = [20.0, 0.0, 0.0]
+#normal_vector_3 = [1.0, 0.0, 0.0]
+#thickness_bohr_radii = 1.0
+#visible=true
 
 #[[walls]]
 #potential_hartree = 20
@@ -85,20 +85,20 @@ visible=true
 
 [iteration]
 delta_time_h_bar_per_hartree = 0.005
-total_iteration_count = 3000
-animation_frame_step_interval = 20
-png_step_interval = 100
-measurement_plane_capture_interval = 100
-probability_plot_interval = 100
-per_axis_probability_denisty_interval = 100
-wave_function_save_interval = 100
+total_iteration_count = 5000
+animation_frame_step_interval = 500
+png_step_interval = 500
+measurement_plane_capture_interval = 500
+probability_plot_interval = 500
+per_axis_probability_denisty_interval = 500
+wave_function_save_interval = 500
 
 [view]
 video_frame_rate = 25
 enable_visual_output = true
 
 [view.volumetric]
-camera_rotation_speed = 2.0
+camera_rotation_speed = -0.5
 camera_azimuth = -10.0
 camera_elevation = 10.0
 light_direction = [-1.0, 1.0, 1.0]
@@ -107,9 +107,9 @@ light_elevation_speed = 0.0
 
 [view.per_axis_plot]
 title = "Interaction between 1D particles in harmonic oscillator"
-x_axis_label = "A particle"
-y_axis_label = "B particle"
-z_axis_label = "C particle"
+x_axis_label = "X axis"
+y_axis_label = "Y axis"
+z_axis_label = "Z axis"
 potential_label = "Potential"
 potential_plot_offset = -0.34
 potential_plot_scale = 0.02

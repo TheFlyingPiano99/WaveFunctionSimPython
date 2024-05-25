@@ -48,8 +48,8 @@ def sim():
     if sim_state.enable_visual_output:
         measurement_tools = measurement.MeasurementTools()
         measurement_tools.volumetric = volume_visualization.VolumetricVisualization(
-            probability=sim_state.get_view_into_probability_density(),
-            potential=sim_state.get_view_into_potential(),
+            probability=sim_state.get_view_into_raw_wave_function(),
+            potential=sim_state.get_view_into_complex_potential(),
             coulomb_potential=sim_state.get_view_into_coulomb_potential(),
             cam_rotation_speed=sim_state.config["view"]["volumetric"]["camera_rotation_speed"],
             azimuth=sim_state.config["view"]["volumetric"]["camera_azimuth"],
@@ -137,7 +137,7 @@ def sim():
             sum_axis=(0, 1),
             label=sim_state.config["view"]["per_axis_plot"]["z_axis_label"],
         )
-        measurement_tools.projected_probability = measurement.ProjectedMeasurement(
+        measurement_tools.projected_potential = measurement.ProjectedMeasurement(
             min_voxel=sim_state.viewing_window_bottom_corner_voxel[0],
             max_voxel=sim_state.viewing_window_top_corner_voxel[0],
             near_voxel=sim_state.N // 2,
@@ -147,13 +147,12 @@ def sim():
             sum_axis=(1, 2),
             label=sim_state.config["view"]["per_axis_plot"]["potential_label"],
         )
-        measurement_tools.projected_probability.integrate_probability_density(
-            np.real(sim_state.localised_potential_to_visualize_hartree)
-        )
-        measurement_tools.projected_probability.scale_factor = sim_state.config["view"]["per_axis_plot"]["potential_plot_scale"]
-        measurement_tools.projected_probability.offset = sim_state.config["view"]["per_axis_plot"]["potential_plot_offset"]
+        #measurement_tools.projected_potential.scale_factor = sim_state.config["view"]["per_axis_plot"]["potential_plot_scale"]
+        measurement_tools.projected_potential.scale_factor = (0.20 / sim_state.get_view_into_potential().max())
+        #measurement_tools.projected_potential.offset = sim_state.config["view"]["per_axis_plot"]["potential_plot_offset"]
+        measurement_tools.projected_potential.offset = 0.0
 
-    # Run simulation
+        # Run simulation
     sim_state, measurement_tools, iter_data = core_sim.run_iteration(
         sim_state, measurement_tools
     )

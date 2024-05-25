@@ -73,19 +73,19 @@ float rand(vec2 co)
 }}
 
 
-float trilinearInterpolation(vec3 currentPos, sampler3D voxels, vec3 delta) {{
+vec2 trilinearInterpolation(vec3 currentPos, sampler3D voxels, vec3 delta) {{
 	vec3 currentVoxel = vec3(ivec3(currentPos));
 	vec3 inVoxelPos = currentPos - currentVoxel;
-	float sample000 = texture(voxels, (currentVoxel + vec3(0,0,0)) * delta).r;
-	float sample100 = texture(voxels, (currentVoxel + vec3(1,0,0)) * delta).r;
-	float sample010 = texture(voxels, (currentVoxel + vec3(0,1,0)) * delta).r;
-	float sample001 = texture(voxels, (currentVoxel + vec3(0,0,1)) * delta).r;
-	float sample110 = texture(voxels, (currentVoxel + vec3(1,1,0)) * delta).r;
-	float sample101 = texture(voxels, (currentVoxel + vec3(1,0,1)) * delta).r;
-	float sample011 = texture(voxels, (currentVoxel + vec3(0,1,1)) * delta).r;
-	float sample111 = texture(voxels, (currentVoxel + vec3(1,1,1)) * delta).r;
+	vec2 sample000 = texture(voxels, (currentVoxel + vec3(0,0,0)) * delta).rg;
+	vec2 sample100 = texture(voxels, (currentVoxel + vec3(1,0,0)) * delta).rg;
+	vec2 sample010 = texture(voxels, (currentVoxel + vec3(0,1,0)) * delta).rg;
+	vec2 sample001 = texture(voxels, (currentVoxel + vec3(0,0,1)) * delta).rg;
+	vec2 sample110 = texture(voxels, (currentVoxel + vec3(1,1,0)) * delta).rg;
+	vec2 sample101 = texture(voxels, (currentVoxel + vec3(1,0,1)) * delta).rg;
+	vec2 sample011 = texture(voxels, (currentVoxel + vec3(0,1,1)) * delta).rg;
+	vec2 sample111 = texture(voxels, (currentVoxel + vec3(1,1,1)) * delta).rg;
 
-	float filtered = (
+	vec2 filtered = (
 				(sample000 * (1.0 - inVoxelPos.z) + sample001 * inVoxelPos.z) * (1.0 - inVoxelPos.y)
 				+ (sample010 * (1.0 - inVoxelPos.z) + sample011 * inVoxelPos.z) * inVoxelPos.y
 			) * (1.0 - inVoxelPos.x)
@@ -97,8 +97,47 @@ float trilinearInterpolation(vec3 currentPos, sampler3D voxels, vec3 delta) {{
 	return filtered;
 }}
 
+vec4 complexCentralDifferenceGradSample(sampler3D samplerUnit, vec3 position, vec3 size, int coord) {{
+    
+    vec3 delta = 1.0 / size;
+    vec3 positionN = position - delta;
+    vec3 positionP = position + delta;
+    
+    float sample = $sample(samplerUnit, position)[coord] * 2.0 - 1.0;
+     
+    vec2 NX = $sample(samplerUnit,vec3(positionN.x, position.y, position.z)).ra;
+    vec2 NY = $sample(samplerUnit,vec3(position.x, positionN.y, position.z)).ra;
+    vec2 NZ = $sample(samplerUnit,vec3(position.x, position.y, positionN.z)).ra;
+    
+    NX = NX * 2.0 - 1.0; 
+    NY = NY * 2.0 - 1.0; 
+    NZ = NZ * 2.0 - 1.0; 
 
-vec4 resampleGradientAndDensity(sampler3D samplerUnit, vec3 position, vec3 size) {{
+    vec2 PX = $sample(samplerUnit,vec3(positionP.x, position.y, position.z)).ra;
+    vec2 PY = $sample(samplerUnit,vec3(position.x, positionP.y, position.z)).ra;
+    vec2 PZ = $sample(samplerUnit,vec3(position.x, position.y, positionP.z)).ra;
+    
+    PX = PX * 2.0 - 1.0; 
+    PY = PY * 2.0 - 1.0; 
+    PZ = PZ * 2.0 - 1.0; 
+
+    vec3 sN = vec3(
+        dot(NX, NX),
+        dot(NY, NY),
+        dot(NZ, NX)
+    );
+    vec3 sP = vec3(
+        dot(PX, PX),
+        dot(PY, PY),
+        dot(PZ, PX)
+    );
+    vec3 grad = (sP - sN) / 2.0 / delta;
+    return vec4(
+        grad,
+        sample);
+}}
+
+vec4 resampleGradientAndDensity(sampler3D samplerUnit, vec3 position, vec3 size, int coord) {{
     vec3 scaled_position = position * size - 0.5;
     vec3 beta = scaled_position - round(scaled_position);
     vec3 g0 = 0.5 - beta;
@@ -106,16 +145,16 @@ vec4 resampleGradientAndDensity(sampler3D samplerUnit, vec3 position, vec3 size)
     vec3 position0 = position - delta0 / size;
     vec3 position1 = position0 + 0.5 / size;
     vec4 s0 = vec4(
-        $sample(samplerUnit,vec3(position0.x, position0.y, position0.z)).r,
-        $sample(samplerUnit,vec3(position0.x, position1.y, position0.z)).r,
-        $sample(samplerUnit,vec3(position0.x, position0.y, position1.z)).r,
-        $sample(samplerUnit,vec3(position0.x, position1.y, position1.z)).r
+        $sample(samplerUnit,vec3(position0.x, position0.y, position0.z))[coord],
+        $sample(samplerUnit,vec3(position0.x, position1.y, position0.z))[coord],
+        $sample(samplerUnit,vec3(position0.x, position0.y, position1.z))[coord],
+        $sample(samplerUnit,vec3(position0.x, position1.y, position1.z))[coord]
     );
     vec4 s1 = vec4(
-        $sample(samplerUnit,vec3(position1.x, position0.y, position0.z)).r,
-        $sample(samplerUnit,vec3(position1.x, position1.y, position0.z)).r,
-        $sample(samplerUnit,vec3(position1.x, position0.y, position1.z)).r,
-        $sample(samplerUnit,vec3(position1.x, position1.y, position1.z)).r
+        $sample(samplerUnit,vec3(position1.x, position0.y, position0.z))[coord],
+        $sample(samplerUnit,vec3(position1.x, position1.y, position0.z))[coord],
+        $sample(samplerUnit,vec3(position1.x, position0.y, position1.z))[coord],
+        $sample(samplerUnit,vec3(position1.x, position1.y, position1.z))[coord]
     );
     vec4 s_xy0z0_xy1z0_xy0z1_xy1z1 = mix(s1, s0, g0.x);
     vec4 s_dxy0z0_dxy1z0_dxy0z1_dxy1z1 = s1 - s0;
@@ -135,7 +174,7 @@ vec4 resampleGradientAndDensity(sampler3D samplerUnit, vec3 position, vec3 size)
     s_xyz0_xyz1_dxyz0_dxyz1.x;
 
     return vec4(
-        normalize(vec3(s_xyz_dxyz_xdyz.y, s_xyz_dxyz_xdyz.z, s_xydz)),
+        vec3(s_xyz_dxyz_xdyz.y, s_xyz_dxyz_xdyz.z, s_xydz),
         s_xyz_dxyz_xdyz.x);
 }}
 
@@ -240,9 +279,10 @@ def get_shaders(n_volume_max):
         color_calculation += (
             "if (u_n_tex > {0:d}) {{\n\
                             ivec3 size = textureSize(u_volumetex{0:d}, 0);\n\
-                            vec4 gradDensity = resampleGradientAndDensity(u_volumetex{0:d}, loc, size);\n\
-                            vec4 current_color = $cmap{0:d}(gradDensity.w);\n\
-                            vec3 normal = -gradDensity.xyz;\n\
+                            vec4 reGradDensity = complexCentralDifferenceGradSample(u_volumetex{0:d}, loc, size, 0);\n\
+                            vec4 imGradDensity = complexCentralDifferenceGradSample(u_volumetex{0:d}, loc, size, 3);\n\
+                            vec4 current_color = $cmap{0:d}(reGradDensity.w, imGradDensity.w);\n\
+                            vec3 normal = 10000.0 * -reGradDensity.xyz;\n\
                             if (length(normal) > 0.0) {{\n\
                                 float l = length(normal);\n\
                                 normal = normalize(normal) * min(1.0, pow(l, 1.0));\n\

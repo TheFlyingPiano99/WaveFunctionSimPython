@@ -41,12 +41,20 @@
 from vispy.gloo import Texture3D, TextureEmulated3D, VertexBuffer, IndexBuffer
 from vispy.visuals import Visual
 from vispy.visuals.shaders import Function
-from vispy.color import get_colormap
+from vispy.color import get_colormap, BaseColormap
 from vispy.scene.visuals import create_visual_node
 import numpy as np
 
 from .multi_volume_shaders import get_shaders
 from .callback_list import CallbackList
+
+
+class Default2ParamColorMap(BaseColormap):
+    glsl_map = """
+    vec4 defaultColorMap(float x, float y) {
+        return vec4(0, 0, 0, 0);    // Empty render
+    }
+    """
 
 
 class MultiVolumeVisual(Visual):
@@ -73,12 +81,12 @@ class MultiVolumeVisual(Visual):
     def __init__(
         self,
         volumes,
-        clim=None,
+        clim=(-1.0, 1.0),
         threshold=None,
         relative_step_size=0.8,
         method="mip",
         emulate_texture=False,
-        n_volume_max=10,
+        n_volume_max=5,
     ):
         # Choose texture class
         tex_cls = TextureEmulated3D if emulate_texture else Texture3D
@@ -119,16 +127,14 @@ class MultiVolumeVisual(Visual):
         for i in range(n_volume_max):
             self.textures.append(
                 tex_cls(
-                    data=(16, 16, 16),
+                    data=np.zeros(shape=(16, 16, 16, 2)),
                     interpolation="linear",
-                    format="luminance",
-                    internalformat="luminance",
                     wrapping="clamp_to_edge",
                 )
             )
             self.shared_program["u_volumetex{0}".format(i)] = self.textures[i]
             self.shared_program.frag["cmap{0:d}".format(i)] = Function(
-                get_colormap("grays").glsl_map
+                Default2ParamColorMap().glsl_map
             )
 
         self.shared_program["a_position"] = self._vertices
@@ -187,7 +193,7 @@ class MultiVolumeVisual(Visual):
         self.shared_program.frag["cmap{0:d}".format(index)] = Function(cmap.glsl_map)
 
         if self._vol_shape is None:
-            self.shared_program["u_shape"] = data.shape[::-1]
+            self.shared_program["u_shape"] = (data.shape[2], data.shape[1], data.shape[0])  # TODO WARNING: Untested index order!!!
             self._vol_shape = data.shape
         elif data.shape != self._vol_shape:
             raise ValueError(

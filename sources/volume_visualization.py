@@ -11,7 +11,8 @@ import sources.math_utils as math_utils
 import sources.multi_volume_visual as multi_volume_visual
 import os
 import cupy as cp
-
+import warnings
+warnings.filterwarnings('ignore')
 
 class VolumetricVisualization:
     canvas: scene.SceneCanvas
@@ -30,7 +31,6 @@ class VolumetricVisualization:
     def __init__(
         self, probability: np.ndarray, potential: np.ndarray, coulomb_potential: np.ndarray, cam_rotation_speed=0.0, azimuth=0.0
     ):
-        probability = probability * self.density_scale
         # Prepare canvas
         self.canvas = scene.SceneCanvas(
             keys="interactive", bgcolor="white", size=(1024, 768), show=False
@@ -40,25 +40,53 @@ class VolumetricVisualization:
         # create colormaps that work well for translucent density visualisation
         class ProbabilityDensityColorMap(BaseColormap):
             glsl_map = """
-            vec4 translucent_fire(float t) {
-                float tScaled = min(t, 1.0);
-                return vec4(pow(tScaled, 0.1), pow(tScaled, 0.9), pow(tScaled, 2.0), pow(tScaled, 1.0));
+            vec4 translucent_fire(float re, float im) {
+                float p = re * re + im * im;
+                                
+                float phase = atan(im, re) / 3.14159 * 0.5 + 0.5;
+                float bias = 0.005;
+                float scale = 1.0;
+                float tScaled = min((p - bias) * scale, 1.0);
+                if (tScaled <= 0.0) {
+                    return vec4(0,0,0,0);
+                }
+                vec3 c0 = vec3(0, 0, 1);
+                vec3 c1 = vec3(0, 1, 0);
+                vec3 c2 = vec3(1, 0, 0);
+                vec3 color = vec3(0.0);
+                if (phase < 0.333){
+                    color = c0 * (1.0 - phase / 0.333) + c1 * phase / 0.333;
+                }
+                else if (phase < 0.666) {
+                    color = c1 * (1.0 - (phase - 0.333) / 0.333) + c2 * (phase - 0.333) / 0.333;
+                }
+                else {
+                    color = c2 * (1.0 - (phase - 0.666) / 0.333) + c0 * (phase - 0.666) / 0.333;
+                }
+                
+                float definition = 2.0;
+                return vec4(color, pow(tScaled, definition));
             }
             """
 
         class PotentialColorMap(BaseColormap):
             glsl_map = """
-            vec4 translucent_green(float t) {
-                float tScaled = min(t, 1.0);
+            vec4 translucent_green(float re, float im) {
+                float bias = 0.01;
+                float tScaled = min(re - bias, 1.0);
+                if (tScaled <= 0.0) {
+                    return vec4(0,0,0,0);
+                }
                 return vec4(tScaled, pow(tScaled, 0.5), tScaled*tScaled, max(0, tScaled*1.001 - 0.001) * 0.5);
             }
             """
 
         class CoulombColorMap(BaseColormap):
             glsl_map = """
-            vec4 translucent_blue(float t) {
-                float tScaled = min(t, 1.0);
-                return vec4(tScaled, tScaled*tScaled, pow(tScaled, 0.5), max(0, tScaled*1.001 - 0.001) * 0.01);
+            vec4 translucent_blue(float re, float im) {
+                float tScaled = min(re, 1.0);
+                return vec4(0, 0, 0, 0);
+                //return vec4(tScaled, tScaled*tScaled, pow(tScaled, 0.5), max(0, tScaled*1.001 - 0.001) * 0.01);
             }
             """
 
@@ -66,52 +94,65 @@ class VolumetricVisualization:
         self.potential_color_map = PotentialColorMap()
         self.coulomb_color_map = CoulombColorMap()
 
-        np_probability = cp.asnumpy(probability)
-        np_potential = cp.asnumpy(potential)
-        np_coulomb = cp.asnumpy(coulomb_potential)
+        np_probability = cp.asnumpy(probability).astype(np.csingle).view(dtype=np.float32).reshape(probability.shape + (2,))
+        np_potential = cp.asnumpy(potential).astype(np.csingle).view(dtype=np.float32).reshape(potential.shape + (2,))
+        np_coulomb = cp.asnumpy(coulomb_potential).astype(np.csingle).view(dtype=np.float32).reshape(coulomb_potential.shape + (2,))
 
-        self.probability_color_lim = (
-            0.0,
-            np_probability.astype(np.float32).max() * 0.01,
-        )
-        self.potential_color_lim = (
-            np_potential.astype(np.float32).min(),
-            np_potential.astype(np.float32).max(),
-        )
-        self.coulomb_color_lim = (
-            np_coulomb.astype(np.float32).min(),
-            np_coulomb.astype(np.float32).max(),
+        print(f"CP shape: {probability.shape}")
+        print(f"CP dtype: {probability.dtype}")
+        print(f"CP data entry: {probability[70, 64, 70]}")
+
+        print(f"NP shape: {np_probability.shape}")
+        print(f"NP dtype: {np_probability.dtype}")
+        print(f"NP data entry: {np_probability[70, 64, 70, :]}")
+
+        scale = 0.001
+        self.normalized_complex_limit = (
+            -1.0 * scale,
+            1.0 * scale,
         )
 
-        volumes = [
-            (
-                np.pad(
-                    array=np_probability.astype(np.float32),
-                    pad_width=1,
+        min_max = max(abs(np_potential.max()), abs(np_potential.min()))
+        self.potential_limit = (
+            -1.0 * min_max,
+            1.0 * min_max,
+        )
+
+        npad = ((1,1), (1,1), (1,1), (0,0))
+        padded_prob = np.pad(
+                    array=np_probability,
+                    pad_width=npad,
                     mode="constant",
                     constant_values=0.0,
-                ),
-                self.probability_color_lim,
+                )
+        print(f"Padded prob: {padded_prob}")
+        print(f"Padded prob shape: {padded_prob.shape}")
+        print(f"Padded prob dtype: {padded_prob.dtype}")
+        print(f"Padded prob val: {padded_prob[70, 60, 60, :]}")
+        volumes = [
+            (
+                padded_prob,
+                self.normalized_complex_limit,
                 self.probability_color_map,
             ),
             (
                 np.pad(
-                    array=np_potential.astype(np.float32),
-                    pad_width=1,
+                    array=np_potential,
+                    pad_width=npad,
                     mode="constant",
                     constant_values=0.0,
                 ),
-                self.potential_color_lim,
+                self.potential_limit,
                 self.potential_color_map,
             ),
             (
                 np.pad(
-                    array=np_coulomb.astype(np.float32),
-                    pad_width=1,
+                    array=np_coulomb,
+                    pad_width=npad,
                     mode="constant",
                     constant_values=0.0,
                 ),
-                self.coulomb_color_lim,
+                self.potential_limit,
                 self.coulomb_color_map,
             ),
         ]
@@ -122,6 +163,7 @@ class VolumetricVisualization:
             method="translucent",
             relative_step_size=0.1,
         )
+        print("Ended init")
 
         # self.volume.parent=self.view.scene
         # self.volume.method='translucent'
@@ -169,10 +211,11 @@ class VolumetricVisualization:
         """
 
     def update(self, probability, potential, iter_count, delta_time_h_bar_per_hartree):
+        npad = ((1,1), (1,1), (1,1), (0,0))
         self.multi_volume_visual.update_volume_data(
             volume_data=np.pad(
-                array=cp.asnumpy(probability * self.density_scale).astype(np.float32),
-                pad_width=1,
+                array=cp.asnumpy(probability).astype(np.csingle).view(dtype=np.float32).reshape(probability.shape + (2,)),
+                pad_width=npad,
                 mode="constant",
                 constant_values=0.0,
             ),
@@ -180,8 +223,8 @@ class VolumetricVisualization:
         )
         self.multi_volume_visual.update_volume_data(
             volume_data=np.pad(
-                array=cp.asnumpy(potential).astype(np.float32),
-                pad_width=1,
+                array=cp.asnumpy(potential).astype(np.csingle).view(dtype=np.float32).reshape(potential.shape + (2,)),
+                pad_width=npad,
                 mode="constant",
                 constant_values=0.0,
             ),
