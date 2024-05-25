@@ -242,8 +242,8 @@ void main() {{
     // datasets. Ugly, but it works ...
     vec3 loc = start_loc;
     int iter = 0;
-    float colorDensity = 100.0;
-    float attenDensity = 100.0;
+    float colorDensity = 500.0;
+    float attenDensity = 1000.0;
     while (iter < nsteps) {{
         for (iter=iter; iter<nsteps; iter++)
         {{
