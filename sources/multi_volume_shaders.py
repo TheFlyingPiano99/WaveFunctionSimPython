@@ -178,6 +178,26 @@ vec4 resampleGradientAndDensity(sampler3D samplerUnit, vec3 position, vec3 size,
         s_xyz_dxyz_xdyz.x);
 }}
 
+
+// Based on http://www.oscars.org/science-technology/sci-tech-projects/aces
+vec3 acesTonemap(vec3 color){{
+    mat3 m1 = mat3(
+        0.59719, 0.07600, 0.02840,
+        0.35458, 0.90834, 0.13383,
+        0.04823, 0.01566, 0.83777
+    );
+    mat3 m2 = mat3(
+        1.60475, -0.10208, -0.00327,
+        -0.53108,  1.10813, -0.07276,
+        -0.07367, -0.00605,  1.07602
+    );
+    vec3 v = m1 * color;    
+    vec3 a = v * (v + 0.0245786) - 0.000090537;
+    vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081;
+    return pow(clamp(m2 * (a / b), 0.0, 1.0), vec3(1.0 / 2.2));
+}}
+
+
 // for some reason, this has to be the last function in order for the
 // filters to be inserted in the correct place...
 
@@ -208,46 +228,82 @@ void main() {{
 
     // Get starting location and step vector in texture coordinates
     vec3 step = ((v_position - front) / u_shape) / nsteps;
+    float stepSize = length(step);
     vec3 start_loc = front / u_shape;
 
     // For testing: show the number of steps. This helps to establish
     // whether the rays are correctly oriented
     //return;
 
-    vec4 integrated_color = vec4(0., 0., 0., 0.);
+    vec3 accumulated_color = vec3(0., 0., 0.);
+    vec3 accumulated_attenuation = vec3(0., 0., 0.);
 
     // This outer loop seems necessary on some systems for large
     // datasets. Ugly, but it works ...
     vec3 loc = start_loc;
     int iter = 0;
+    float colorDensity = 100.0;
+    float attenDensity = 100.0;
     while (iter < nsteps) {{
         for (iter=iter; iter<nsteps; iter++)
         {{
-            // Get sample color
+        
+            // Shadow:
+            vec3 shadow = vec3(0, 0, 0);
+            float shadowStep = stepSize * 3.0;
+            vec3 shadowLoc = loc + shadowStep * normalize(u_light_direction);
+            float shadowDiscont = 1.0;
+            float shadowAttenDensity = attenDensity * 50.0;
+            for (int shadowIter = 0; shadowIter < 50; shadowIter++) {{
+                 
+                vec3 s = vec3(0,0,0);
+                
+{shadow_calculation}
+
+                shadow = shadow + s * (1.0 - shadow);
+                shadowLoc = shadowLoc + shadowStep * normalize(u_light_direction);
+                shadowDiscont *= 0.96;
+                shadowStep *= 1.0001;
+            }}
+
             vec4 color = vec4(0, 0, 0, 0);
 
 {color_calculation}
             
-            // Translucent method:
-            float a1 = integrated_color.a;
-            float a2 = color.a * (1 - a1);
-            float alpha = max(a1 + a2, 0.000001);
-            integrated_color *= a1 / alpha;
-            integrated_color += color * a2 / alpha;
-            integrated_color.a = alpha;
-            if (alpha > 0.99 ) {{
+            vec4 fogRadianceAplha = vec4(0.0001 * (1.0 - shadow) * vec3(1,1,1), 0.0001);
+
+            color += fogRadianceAplha;
+            
+            // Scaled current color and attenuation:
+            vec3 c = vec3(
+                        max(colorDensity * stepSize * color.r, 0.0),
+                        max(colorDensity * stepSize * color.g, 0.0),
+                        max(colorDensity * stepSize * color.b, 0.0)
+                    );
+            float tintedMix = 0.75;
+            vec3 a = vec3(
+                        max(min(attenDensity * stepSize * color.a * ((1 - tintedMix) + tintedMix * max(1.0 - color.r, 0.0)), 1.0), 0.0),
+                        max(min(attenDensity * stepSize * color.a * ((1 - tintedMix) + tintedMix * max(1.0 - color.g, 0.0)), 1.0), 0.0),
+                        max(min(attenDensity * stepSize * color.a * ((1 - tintedMix) + tintedMix * max(1.0 - color.b, 0.0)), 1.0), 0.0)
+                    );
+
+            // Accumulate color and attenuation:
+            accumulated_color = accumulated_color + c * (1.0 - accumulated_attenuation);
+            accumulated_attenuation = accumulated_attenuation + a * (1.0 - accumulated_attenuation);  
+            
+            // Early ray termination:
+            if (accumulated_attenuation.x > 0.99 && accumulated_attenuation.y > 0.99 && accumulated_attenuation.z > 0.99) {{
+                accumulated_attenuation = vec3(1, 1, 1);
                 iter = nsteps;
             }}
             
-            // Old method:
-            //integrated_color = 1.0 - (1.0 - integrated_color) * (1.0 - color);
-
             // Advance location deeper into the volume
             loc += step;
         }}
     }}
 
-    gl_FragColor = integrated_color;
+    vec3 background_color = vec3(1, 1, 1);
+    gl_FragColor = vec4(acesTonemap(accumulated_color + background_color * (1.0 - accumulated_attenuation)), 1.0);
 
     /* Set depth value - from visvis TODO
     int iter_depth = int(maxi);
@@ -270,46 +326,71 @@ def get_shaders(n_volume_max):
     """
 
     declarations = ""
+    shadow_calculation = ""
     color_calculation = ""
 
     # Here I changed the way alpha value is calculated from different volume sources - Zoltán Simon
     # Now the source with the highest alpha is preserved in color and not the average of all the sources
     for i in range(n_volume_max):
         declarations += "uniform $sampler_type u_volumetex{0:d};\n".format(i)
+        shadow_calculation += (
+            """
+                if (u_n_tex > {0:d}) {{
+                    ivec3 size = textureSize(u_volumetex{0:d}, 0);
+                    vec4 reGradDensity = complexCentralDifferenceGradSample(u_volumetex{0:d}, shadowLoc, size, 0);    // The grad is the same for both
+                    vec4 imGradDensity = complexCentralDifferenceGradSample(u_volumetex{0:d}, shadowLoc, size, 3);    // The grad is the same for both
+                    vec4 shadowAlbedoAlpha = $cmap{0:d}(reGradDensity.w, imGradDensity.w);
+                    vec2 complexVal = vec2(reGradDensity.w, imGradDensity.w);
+
+                    s = vec3(
+                        max(min(s.r + shadowAlbedoAlpha.a * (0.5 + 0.5 * (1.0 - shadowAlbedoAlpha.r)) * shadowStep * shadowAttenDensity * shadowDiscont, 1.0), 0.0),
+                        max(min(s.g + shadowAlbedoAlpha.a * (0.5 + 0.5 * (1.0 - shadowAlbedoAlpha.g)) * shadowStep * shadowAttenDensity * shadowDiscont, 1.0), 0.0),
+                        max(min(s.b + shadowAlbedoAlpha.a * (0.5 + 0.5 * (1.0 - shadowAlbedoAlpha.b)) * shadowStep * shadowAttenDensity * shadowDiscont, 1.0), 0.0)
+                    );
+                }}
+            """
+        ).format(i)
         color_calculation += (
-            "if (u_n_tex > {0:d}) {{\n\
-                            ivec3 size = textureSize(u_volumetex{0:d}, 0);\n\
-                            vec4 reGradDensity = complexCentralDifferenceGradSample(u_volumetex{0:d}, loc, size, 0);\n\
-                            vec4 imGradDensity = complexCentralDifferenceGradSample(u_volumetex{0:d}, loc, size, 3);\n\
-                            vec4 current_color = $cmap{0:d}(reGradDensity.w, imGradDensity.w);\n\
-                            vec3 normal = 10000.0 * -reGradDensity.xyz;\n\
-                            if (length(normal) > 0.0) {{\n\
-                                float l = length(normal);\n\
-                                normal = normalize(normal) * min(1.0, pow(l, 1.0));\n\
-                            }}\n\
-                            else{{\n\
-                                normal = vec3(0,0,0); // Disable reflection for too homogenous density\n\
-                            }}\n\
-                            // Light reflection:\n\
-                            //vec3 light_dir = vec3(-1, 1, 1);\n\
-                            vec3 halfway = normalize(-view_ray + u_light_direction);\n\
-                            float shininess = 30.0;\n\
-                            float diffuse = 1.0;\n\
-                            float specular = 1.0;\n\
-                            float ambient = 0.2;\n\
-                            vec3 radiance = (diffuse * max(0.0, dot(normal, u_light_direction)) + ambient) * current_color.rgb\n\
-                            + specular * max(0.0, pow(dot(normal, halfway), shininess));\n\
-                            if (current_color.a > color.a)\n\
-                                color = vec4(radiance, current_color.a);\n\
-                            }}\n"
+            """if (u_n_tex > {0:d}) {{
+                    ivec3 size = textureSize(u_volumetex{0:d}, 0);
+                    vec4 reGradDensity = complexCentralDifferenceGradSample(u_volumetex{0:d}, loc, size, 0);    // The grad is the same for both
+                    vec4 imGradDensity = complexCentralDifferenceGradSample(u_volumetex{0:d}, loc, size, 3);    // The grad is the same for both
+                    vec4 albedoAlpha = $cmap{0:d}(reGradDensity.w, imGradDensity.w);
+                    vec3 radiance = vec3(0,0,0);
+                    float gradLength = length(reGradDensity.xyz);
+                    
+                    if (gradLength > 0.000001) {{
+                        vec3 normal = -reGradDensity.xyz;
+                        normal = normal / gradLength;
+                        vec3 halfway = normalize(-view_ray + normalize(u_light_direction));
+                        float shininess = 50.0;
+                        float diffuse = 0.75;
+                        float specular = 0.25;
+                        float ambient = 0.03;
+                        float gradMix = 1.0;    // The amount of gradient scaling in diffuse and specular
+                        float gradT = min(max(gradMix * gradLength + (1.0 - gradMix) * 1.0, 0.0), 1.0); 
+                        radiance = (
+                                        diffuse * (1.0 - shadow) * ((1.0 - gradT) + gradT * max(0.0, dot(normal, normalize(u_light_direction))))
+                                        + ambient
+                                    ) * albedoAlpha.rgb
+                                    + specular * (1.0 - shadow) * ((1.0 - gradT) + gradT * pow(max(0.0, dot(normal, halfway)), shininess));
+                    }}
+                    else{{
+                        
+                    }}
+                    if (albedoAlpha.a > color.a)
+                        color = vec4(radiance, albedoAlpha.a);
+                    }}
+            """
         ).format(i, abs(i - 1))
 
     # color_calculation += "color *= 1. / u_n_tex;".format(1. / n_volume_max)
 
     color_calculation = textwrap.indent(color_calculation, " " * 12)
+    shadow_calculation = textwrap.indent(shadow_calculation, " " * 12)
 
     return _VERTEX_SHADER, FRAG_SHADER.format(
-        declarations=declarations, color_calculation=color_calculation
+        declarations=declarations, color_calculation=color_calculation, shadow_calculation=shadow_calculation
     )
 
 

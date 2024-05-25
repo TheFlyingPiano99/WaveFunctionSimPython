@@ -50,21 +50,26 @@ class VolumetricVisualization:
                 if (tScaled <= 0.0) {
                     return vec4(0,0,0,0);
                 }
-                vec3 c0 = vec3(0, 0, 1);
-                vec3 c1 = vec3(0, 1, 0);
-                vec3 c2 = vec3(1, 0, 0);
+                // Mix colors:
+                vec3 c0 = vec3(10, 10, 255) / 255.0;
+                vec3 c1 = vec3(10, 255, 10) / 255.0;
+                vec3 c2 = vec3(255, 10, 10) / 255.0;
+                vec3 c3 = vec3(255, 255, 5) / 255.0;
                 vec3 color = vec3(0.0);
-                if (phase < 0.333){
-                    color = c0 * (1.0 - phase / 0.333) + c1 * phase / 0.333;
+                if (phase < 0.25){
+                    color = c0 * (1.0 - phase / 0.25) + c1 * phase / 0.25;
                 }
-                else if (phase < 0.666) {
-                    color = c1 * (1.0 - (phase - 0.333) / 0.333) + c2 * (phase - 0.333) / 0.333;
+                else if (phase < 0.5) {
+                    color = c1 * (1.0 - (phase - 0.25) / 0.25) + c2 * (phase - 0.25) / 0.25;
+                }
+                else if (phase < 0.75) {
+                    color = c2 * (1.0 - (phase - 0.5) / 0.25) + c3 * (phase - 0.5) / 0.25;
                 }
                 else {
-                    color = c2 * (1.0 - (phase - 0.666) / 0.333) + c0 * (phase - 0.666) / 0.333;
+                    color = c3 * (1.0 - (phase - 0.75) / 0.25) + c0 * (phase - 0.75) / 0.25;
                 }
                 
-                float definition = 2.0;
+                float definition = 1.0;
                 return vec4(color, pow(tScaled, definition));
             }
             """
