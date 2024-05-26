@@ -103,14 +103,6 @@ class VolumetricVisualization:
         np_potential = cp.asnumpy(potential).astype(np.csingle).view(dtype=np.float32).reshape(potential.shape + (2,))
         np_coulomb = cp.asnumpy(coulomb_potential).astype(np.csingle).view(dtype=np.float32).reshape(coulomb_potential.shape + (2,))
 
-        print(f"CP shape: {probability.shape}")
-        print(f"CP dtype: {probability.dtype}")
-        print(f"CP data entry: {probability[70, 64, 70]}")
-
-        print(f"NP shape: {np_probability.shape}")
-        print(f"NP dtype: {np_probability.dtype}")
-        print(f"NP data entry: {np_probability[70, 64, 70, :]}")
-
         scale = 0.001
         self.normalized_complex_limit = (
             -1.0 * scale,
@@ -130,10 +122,6 @@ class VolumetricVisualization:
                     mode="constant",
                     constant_values=0.0,
                 )
-        print(f"Padded prob: {padded_prob}")
-        print(f"Padded prob shape: {padded_prob.shape}")
-        print(f"Padded prob dtype: {padded_prob.dtype}")
-        print(f"Padded prob val: {padded_prob[70, 60, 60, :]}")
         volumes = [
             (
                 padded_prob,
@@ -168,7 +156,6 @@ class VolumetricVisualization:
             method="translucent",
             relative_step_size=0.1,
         )
-        print("Ended init")
 
         # self.volume.parent=self.view.scene
         # self.volume.method='translucent'

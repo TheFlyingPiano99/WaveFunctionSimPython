@@ -358,14 +358,13 @@ def initialize():
                 print("Creating double-slit.")
                 space_between_slits = double_slit["distance_between_slits_bohr_radii"]
                 tensor = potential.add_double_slit(
-                    delta_x=sim_state.delta_x_bohr_radii,
-                    center_bohr_radii=np.array(double_slit["center_bohr_radius_3"]),
-                    thickness_bohr_radii=double_slit["thickness_bohr_radii"],
-                    height_hartree=double_slit["potential_hartree"],
-                    slit_width_bohr_radii=double_slit["slit_width_bohr_radii"],
-                    shape=sim_state.simulated_tensor_shape,
-                    space_between_slits_bohr_radii=space_between_slits,
                     V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
+                    delta_x=sim_state.delta_x_bohr_radii,
+                    center_bohr_radii_3=np.array(double_slit["center_bohr_radius_3"]),
+                    thickness_bohr_radii=double_slit["thickness_bohr_radii"],
+                    potential_hartree=double_slit["potential_hartree"],
+                    slit_width_bohr_radii=double_slit["slit_width_bohr_radii"],
+                    space_between_slits_bohr_radii=space_between_slits,
                 )
                 sim_state.localised_potential_hartree += tensor
                 try:
@@ -450,7 +449,7 @@ def initialize():
 
 
     # For testing only:
-    sim_state.potential_walls[0].velocity_bohr_radius_hartree_per_h_bar = np.array([-2.0, 0.0, 0.0])
+    #sim_state.potential_walls[0].velocity_bohr_radius_hartree_per_h_bar = np.array([-2.0, 0.0, 0.0])
 
 
     print(text_writer.get_simulation_method_text(sim_state, use_colors=True))

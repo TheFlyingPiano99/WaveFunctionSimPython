@@ -49,6 +49,7 @@ class SimState:
     double_precision_wave_tensor: bool = False
     enable_wave_function_save: bool = True
     potential_walls = []
+    is_dynamic_potential_mode: bool = False
 
     def __init__(self, config):
         # Load paths:
@@ -197,6 +198,8 @@ class SimState:
         )
 
     def update_potential(self):
+        if not self.is_dynamic_potential_mode:
+            return
         for w in self.potential_walls:
             # Advect:
             w.center_bohr_radii_3 = w.center_bohr_radii_3 + w.velocity_bohr_radius_hartree_per_h_bar * self.delta_time_h_bar_per_hartree

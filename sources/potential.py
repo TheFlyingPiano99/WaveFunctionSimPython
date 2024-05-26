@@ -166,47 +166,38 @@ def add_single_slit(
 
 
 def add_double_slit(
-    delta_x : float,
-    center_bohr_radii : np.array,
-    thickness_bohr_radii : float,
-    height_hartree : float,
-    space_between_slits_bohr_radii : float,
-    slit_width_bohr_radii : float,
-    shape: cp.shape,
     V: cp.ndarray,
+    delta_x : float,
+    center_bohr_radii_3 : np.array,
+    thickness_bohr_radii : float,
+    potential_hartree : float,
+    space_between_slits_bohr_radii : float,
+    slit_width_bohr_radii : float
 ):
-    for x in range(shape[0]):
-        for y in range(shape[1]):
-            for z in range(shape[2]):
-                r = math_utils.transform_corner_origin_to_center_origin_system(
-                    np.array([x, y, z]) * delta_x, delta_x * shape[0]
-                )
-                if (
-                    r[0] > center_bohr_radii[0] - thickness_bohr_radii / 2.0
-                    and r[0] < center_bohr_radii[0] + thickness_bohr_radii / 2.0
-                    and not (
-                        (
-                            r[2]
-                            > center_bohr_radii[2]
-                            - space_between_slits_bohr_radii * 0.5
-                            - slit_width_bohr_radii
-                            and r[2]
-                            < center_bohr_radii[2]
-                            - space_between_slits_bohr_radii * 0.5
-                        )
-                        or (
-                            r[2]
-                            < center_bohr_radii[2]
-                            + space_between_slits_bohr_radii * 0.5
-                            + slit_width_bohr_radii
-                            and r[2]
-                            > center_bohr_radii[2]
-                            + space_between_slits_bohr_radii * 0.5
-                        )
-                    )
-                ):
-                    V[x, y, z] += height_hartree
+    double_slit_kernel = cp.RawKernel(kernels.double_slit_kernel_source,
+                                         "double_slit_kernel",
+                                         enable_cooperative_groups=False)
 
+    shape = V.shape
+    grid_size = (64, 64, 64)
+    block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
+    double_slit_kernel(
+        grid_size,
+        block_size,
+        (
+            V,
+            cp.float32(delta_x),
+
+            cp.float32(center_bohr_radii_3[0]),
+            cp.float32(center_bohr_radii_3[1]),
+            cp.float32(center_bohr_radii_3[2]),
+
+            cp.float32(thickness_bohr_radii),
+            cp.float32(potential_hartree),
+            cp.float32(space_between_slits_bohr_radii),
+            cp.float32(slit_width_bohr_radii),
+        )
+    )
     return V
 
 

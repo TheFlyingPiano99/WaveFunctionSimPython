@@ -11,7 +11,7 @@ wp_width_bohr_radii = 2.0
 
 [volume]
 simulated_volume_width_bohr_radii = 120.0 #Including draining potential regions
-number_of_samples_per_axis = 512         #Including draining potential regions
+number_of_samples_per_axis = 256         #Including draining potential regions
 viewing_window_boundary_bottom_corner_bohr_radii_3 = [30.0, 30.0, 30.0]   # Same as the inner boundary of the draining potential
 viewing_window_boundary_top_corner_bohr_radii_3 = [-30.0, -30.0, -30.0]   # Same as the inner boundary of the draining potential
 #viewing_window_boundary_bottom_corner_bohr_radii_3 = [40.0, 40.0, 40.0]   # Same as the inner boundary of the draining potential
@@ -39,7 +39,7 @@ visible = true
 
 [iteration]
 delta_time_h_bar_per_hartree = 0.03
-total_iteration_count = 30
+total_iteration_count = 2000
 animation_frame_step_interval = 2
 png_step_interval = 10
 measurement_plane_capture_interval = 10
@@ -51,7 +51,7 @@ enable_wave_function_save = false
 
 [view]
 video_frame_rate = 25
-enable_visual_output = false
+enable_visual_output = true
 
 [view.volumetric]
 camera_rotation_speed = 2.0
