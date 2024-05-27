@@ -220,10 +220,12 @@ void main() {{
 
     // Now we have the starting position on the front surface
     vec3 front = v_position + view_ray * distance;
+    
+    vec3 background_color = vec3(1, 1, 1);
 
     // Decide how many steps to take
     int nsteps = int(-distance / u_relative_step_size + 0.5);
-    if( nsteps < 1 )
+    if (nsteps < 1 )
         discard;
 
     // Get starting location and step vector in texture coordinates
@@ -242,8 +244,8 @@ void main() {{
     // datasets. Ugly, but it works ...
     vec3 loc = start_loc;
     int iter = 0;
-    float colorDensity = 500.0;
-    float attenDensity = 1000.0;
+    float colorDensity = 6000.0;
+    float attenDensity = 500.0;
     while (iter < nsteps) {{
         for (iter=iter; iter<nsteps; iter++)
         {{
@@ -270,7 +272,7 @@ void main() {{
 
 {color_calculation}
             
-            vec4 fogRadianceAplha = vec4(0.0001 * (1.0 - shadow) * vec3(1,1,1), 0.0001);
+            vec4 fogRadianceAplha = vec4(0.0 * (1.0 - shadow) * vec3(1,1,1), 0.0);  // Now disabled!
 
             color += fogRadianceAplha;
             
@@ -302,7 +304,6 @@ void main() {{
         }}
     }}
 
-    vec3 background_color = vec3(1, 1, 1);
     gl_FragColor = vec4(acesTonemap(accumulated_color + background_color * (1.0 - accumulated_attenuation)), 1.0);
 
     /* Set depth value - from visvis TODO
@@ -363,17 +364,20 @@ def get_shaders(n_volume_max):
                         vec3 normal = -reGradDensity.xyz;
                         normal = normal / gradLength;
                         vec3 halfway = normalize(-view_ray + normalize(u_light_direction));
-                        float shininess = 50.0;
-                        float diffuse = 0.75;
-                        float specular = 0.25;
+                        vec3 lightPower = vec3(1.0, 0.976, 0.847);
+                        float shininess = 60.0;
+                        float diffuse = 30.0;
+                        float specular = 20.0;
                         float ambient = 0.03;
                         float gradMix = 1.0;    // The amount of gradient scaling in diffuse and specular
                         float gradT = min(max(gradMix * gradLength + (1.0 - gradMix) * 1.0, 0.0), 1.0); 
-                        radiance = (
-                                        diffuse * (1.0 - shadow) * ((1.0 - gradT) + gradT * max(0.0, dot(normal, normalize(u_light_direction))))
+                        radiance = albedoAlpha.a * (
+                                    (
+                                        lightPower * diffuse * (1.0 - shadow) * ((1.0 - gradT) + gradT * max(0.0, dot(normal, normalize(u_light_direction))))
                                         + ambient
                                     ) * albedoAlpha.rgb
-                                    + specular * (1.0 - shadow) * ((1.0 - gradT) + gradT * pow(max(0.0, dot(normal, halfway)), shininess));
+                                    + lightPower * specular * (1.0 - shadow) * gradT * pow(max(0.0, dot(normal, halfway)), shininess)
+                                );
                     }}
                     else{{
                         
@@ -393,6 +397,36 @@ def get_shaders(n_volume_max):
         declarations=declarations, color_calculation=color_calculation, shadow_calculation=shadow_calculation
     )
 
+BACKGROUND_FRAG_SHADER = """
+#version 130
+
+// Based on http://www.oscars.org/science-technology/sci-tech-projects/aces
+vec3 acesTonemap(vec3 color){{
+    mat3 m1 = mat3(
+        0.59719, 0.07600, 0.02840,
+        0.35458, 0.90834, 0.13383,
+        0.04823, 0.01566, 0.83777
+    );
+    mat3 m2 = mat3(
+        1.60475, -0.10208, -0.00327,
+        -0.53108,  1.10813, -0.07276,
+        -0.07367, -0.00605,  1.07602
+    );
+    vec3 v = m1 * color;    
+    vec3 a = v * (v + 0.0245786) - 0.000090537;
+    vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081;
+    return pow(clamp(m2 * (a / b), 0.0, 1.0), vec3(1.0 / 2.2));
+}}
+
+
+void main() {{
+    vec3 background_color = vec3(1, 1, 1);
+    gl_FragColor = vec4(acesTonemap(background_color), 1.0);
+}}    
+"""
+
+def get_background_shader():
+    return _VERTEX_SHADER, BACKGROUND_FRAG_SHADER
 
 if __name__ == "__main__":
     print(get_shaders(6)[1])

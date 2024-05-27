@@ -280,7 +280,33 @@ class MultiVolumeVisual(Visual):
         # culled.
         indices = np.array([2, 6, 0, 4, 5, 6, 7, 2, 3, 0, 1, 5, 3, 7], dtype=np.uint32)
 
+        # Fullscreen quad for background rendering:
+        quad_vertices = np.array(
+            [
+                [-1.0, -1.0, 0.0],
+                [-1.0,  1.0, 0.0],
+                [ 1.0, -1.0, 0.0],
+                [ 1.0,  1.0, 0.0]
+            ],
+            dtype=np.float32
+        )
+
+        quad_uv = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [0.0,  1.0, 0.0],
+                [ 1.0, 0.0, 0.0],
+                [ 1.0,  1.0, 0.0]
+            ],
+            dtype=np.float32
+        )
+
+        quad_indices = np.array([0, 2, 1, 2, 3, 1], dtype=np.uint32)
+
         # Apply
+        self._vertices.set_data(pos)
+        self._index_buffer.set_data(indices)
+
         self._vertices.set_data(pos)
         self._index_buffer.set_data(indices)
 

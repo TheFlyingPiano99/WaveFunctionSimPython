@@ -18,7 +18,6 @@ class VolumetricVisualization:
     canvas: scene.SceneCanvas
     viewing_window_bottom_corner_voxel: np.array
     viewing_window_top_corner_voxel: np.array
-    density_scale = 100000.0
     cam_rotation_speed = 0.0
     cam_elevation_speed = 0.1
     light_rotation_speed = 0.1
@@ -44,7 +43,7 @@ class VolumetricVisualization:
                 float p = re * re + im * im;
                                 
                 float phase = atan(im, re) / 3.14159 * 0.5 + 0.5;
-                float bias = 0.005;
+                float bias = 0.01;
                 float scale = 1.0;
                 float tScaled = min((p - bias) * scale, 1.0);
                 if (tScaled <= 0.0) {
@@ -77,7 +76,7 @@ class VolumetricVisualization:
         class PotentialColorMap(BaseColormap):
             glsl_map = """
             vec4 translucent_green(float re, float im) {
-                float bias = 0.01;
+                float bias = 0.001;
                 float tScaled = min(re - bias, 1.0);
                 if (tScaled <= 0.0) {
                     return vec4(0,0,0,0);
@@ -103,7 +102,7 @@ class VolumetricVisualization:
         np_potential = cp.asnumpy(potential).astype(np.csingle).view(dtype=np.float32).reshape(potential.shape + (2,))
         np_coulomb = cp.asnumpy(coulomb_potential).astype(np.csingle).view(dtype=np.float32).reshape(coulomb_potential.shape + (2,))
 
-        scale = 0.001
+        scale = 0.005
         self.normalized_complex_limit = (
             -1.0 * scale,
             1.0 * scale,
