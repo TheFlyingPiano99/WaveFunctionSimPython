@@ -28,6 +28,11 @@ draining_potential_kernel_source = """
     {
         return {a.x - b.x, a.y - b.y, a.z - b.z};
     }
+    
+    extern "C" __device__ float3 mul(float3 a, float3 b)
+    {
+        return {a.x * b.x, a.y * b.y, a.z * b.z};
+    }
 
     extern "C" __device__ float3 div(float3 a, float3 b)
     {
@@ -38,7 +43,11 @@ draining_potential_kernel_source = """
     extern "C" __global__
     void draining_potential_kernel(
         complex<float>* V,
+
         float delta_x,
+        float delta_y,
+        float delta_z,
+
         float inner_radius_bohr_radii,
         float outer_radius_bohr_radii,
         float max_potential_hartree,
@@ -53,9 +62,11 @@ draining_potential_kernel_source = """
                 + j * gridDim.x * blockDim.x
                 + k;
                 
+        float3 delta_r = {delta_x, delta_y, delta_z};
+        float3 N = {(float)(gridDim.x * blockDim.x), (float)(gridDim.y * blockDim.y), (float)(gridDim.z * blockDim.z)};
         float3 pos = diff(
-            scalarVectorMul(delta_x, {k, j, i}),
-            scalarVectorMul(gridDim.x * blockDim.x * delta_x * 0.5f, {1.0, 1.0, 1.0})
+            mul(delta_r, {k, j, i}),
+            scalarVectorMul(0.5f, mul(N, delta_r))
         ); 
         float t = fminf(
             fmaxf(
@@ -104,6 +115,11 @@ potential_wall_kernel_source = """
         return {a.x / b.x, a.y / b.y, a.z / b.z};
     }
     
+    extern "C" __device__ float3 mul(float3 a, float3 b)
+    {
+        return {a.x * b.x, a.y * b.y, a.z * b.z};
+    }
+
     __device__ float3 transform_corner_origin_to_center_origin_system(float3 pos)
     {
         return diff(
@@ -116,13 +132,19 @@ potential_wall_kernel_source = """
     extern "C" __global__
     void potential_wall_kernel(
         complex<float>* V,
+
         float delta_x,
+        float delta_y,
+        float delta_z,
+
         float center_x,
         float center_y,
         float center_z,
+
         float normal_x,
         float normal_y,
         float normal_z,
+
         float thickness_bohr_radius,
         float potential_hartree
     )
@@ -137,8 +159,9 @@ potential_wall_kernel_source = """
                 
         float3 center = {center_x, center_y, center_z};
         float3 normal = {normal_x, normal_y, normal_z};
-        
-        float3 r = scalarVectorMul(delta_x, transform_corner_origin_to_center_origin_system({(float)i, (float)j, (float)k}));
+        float3 delta_r = {delta_x, delta_y, delta_z};
+
+        float3 r = mul(delta_r, transform_corner_origin_to_center_origin_system({(float)i, (float)j, (float)k}));
         float d = dot(normal, diff(center, r));
         if (d <= thickness_bohr_radius * 0.5f && d >= -thickness_bohr_radius * 0.5f)
         {
@@ -193,10 +216,15 @@ double_slit_kernel_source = """
     extern "C" __global__
     void double_slit_kernel(
         complex<float>* V,
+        
         float delta_x,
+        float delta_y,
+        float delta_z,
+        
         float center_x,
         float center_y,
         float center_z,
+        
         float thickness_bohr_radii,
         float potential_hartree,
         float space_between_slits_bohr_radii,
@@ -212,8 +240,8 @@ double_slit_kernel_source = """
                 + k;
 
         float3 center = {center_x, center_y, center_z};
-
-        float3 r = scalarVectorMul(delta_x, transform_corner_origin_to_center_origin_system({(float)i, (float)j, (float)k}));
+        float3 delta_r = {delta_x, delta_y, delta_z};
+        float3 r = delta_r * transform_corner_origin_to_center_origin_system({(float)i, (float)j, (float)k});
         
         if (
             r.x > center.x - thickness_bohr_radii / 2.0f

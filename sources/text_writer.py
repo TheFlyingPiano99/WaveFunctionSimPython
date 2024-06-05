@@ -186,22 +186,22 @@ def get_sim_state_description_text(sim_state: sim_st.SimState, use_colors=False)
     )
 
     text.write(
-        f"Width of simulated volume is w = {sim_state.simulated_volume_width_bohr_radii} Bohr radii.\n"
+        f"Dimensions of simulated volume is ({sim_state.simulated_volume_dimensions_bohr_radii_3[0]}, {sim_state.simulated_volume_dimensions_bohr_radii_3[1]}, {sim_state.simulated_volume_dimensions_bohr_radii_3[2]}) Bohr radii.\n"
     )
 
-    text.write(f"Number of samples per axis is N = {sim_state.N}.\n")
+    text.write(f"Number of samples per axis is ({sim_state.number_of_voxels_3[0]}, {sim_state.number_of_voxels_3[1]}, {sim_state.number_of_voxels_3[2]}).\n")
 
     # Space resolution
     text.write(
-        f"Space resolution is delta_x = {sim_state.delta_x_bohr_radii} Bohr radii.\n"
+        f"Space resolution is delta_r = ({sim_state.delta_x_bohr_radii_3[0]}, {sim_state.delta_x_bohr_radii_3[1]}, {sim_state.delta_x_bohr_radii_3[2]}) Bohr radii.\n"
     )
     if (
-        sim_state.delta_x_bohr_radii
+        np.max(sim_state.delta_x_bohr_radii_3)
         >= sim_state.de_broglie_wave_length_bohr_radii / 2.0
     ):
         text.write(
             (Fore.RED if use_colors else "")
-            + f"WARNING: delta_x = {sim_state.delta_x_bohr_radii} exceeds half of de Broglie wavelength!\n"
+            + f"WARNING: max delta_x = {np.max(sim_state.delta_x_bohr_radii_3)} exceeds half of de Broglie wavelength!\n"
             + (Style.RESET_ALL if use_colors else "")
         )
 

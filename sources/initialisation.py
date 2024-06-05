@@ -107,13 +107,12 @@ def initialize():
 
     if full_init:
         sim_state.wave_tensor = cp.asarray(
-            wave_packet.init_gaussian_wave_packet_single_precision(
-                sim_state.N,
-                sim_state.delta_x_bohr_radii,
+            wave_packet.init_gaussian_wave_packet(
+                sim_state.delta_x_bohr_radii_3,
                 a,
                 sim_state.initial_wp_position_bohr_radii_3,
                 sim_state.initial_wp_momentum_h_per_bohr_radius,
-                sim_state.simulated_tensor_shape,
+                sim_state.number_of_voxels_3,
             )
         )
         cp.save(file=os.path.join(sim_state.cache_dir, "gaussian_wave_packet.npy"), arr=sim_state.wave_tensor)
@@ -140,10 +139,9 @@ def initialize():
                 print("No cached kinetic_operator.npy found.")
         if full_init:
             sim_state.kinetic_operator = operators.init_kinetic_operator(
-                sim_state.N,
-                sim_state.delta_x_bohr_radii,
-                sim_state.delta_time_h_bar_per_hartree,
-                sim_state.simulated_tensor_shape
+                delta_x_3=sim_state.delta_x_bohr_radii_3,
+                delta_time=sim_state.delta_time_h_bar_per_hartree,
+                shape=sim_state.number_of_voxels_3
             )
             cp.save(file=os.path.join(sim_state.cache_dir, "kinetic_operator.npy"), arr=sim_state.kinetic_operator)
 
@@ -163,10 +161,10 @@ def initialize():
 
     if full_init:
         sim_state.localised_potential_hartree = cp.zeros(
-            shape=sim_state.simulated_tensor_shape, dtype=cp.complex64
+            shape=sim_state.number_of_voxels_3, dtype=cp.complex64
         )
         sim_state.localised_potential_to_visualize_hartree = cp.zeros(
-            shape=sim_state.simulated_tensor_shape, dtype=cp.csingle
+            shape=sim_state.number_of_voxels_3, dtype=cp.csingle
         )
 
         # Load pre-initialized potential:
@@ -194,17 +192,18 @@ def initialize():
         except KeyError:
             print("No pre-initialized potential in configuration.")
 
-
+        """
         print("Creating draining potential.")
         dp = sim_state.drain_potential_description
         sim_state.localised_potential_hartree = potential.add_draining_potential(
             V=sim_state.localised_potential_hartree,
-            delta_x=sim_state.delta_x_bohr_radii,
+            delta_x_3=sim_state.delta_x_bohr_radii_3,
             inner_radius_bohr_radii=dp.inner_radius_bohr_radii,
             outer_radius_bohr_radii=dp.outer_radius_bohr_radii,
             max_potential_hartree=dp.max_potential_hartree,
             exponent=dp.exponent,
         )
+        """
 
         try:
             interaction = sim_state.config["particle_hard_interaction"]
@@ -212,10 +211,10 @@ def initialize():
             v = interaction["potential_hartree"]
             print("Creating particle hard interaction potential.")
             tensor = potential.particle_hard_interaction_potential(
-                delta_x=sim_state.delta_x_bohr_radii,
+                delta_x_3=sim_state.delta_x_bohr_radii_3,
                 particle_radius_bohr_radius=r,
                 potential_hartree=v,
-                V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
+                V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
             )
             sim_state.localised_potential_hartree += tensor
             try:
@@ -232,9 +231,9 @@ def initialize():
             v = interaction["center_potential_hartree"]
             print("Creating particle inverse square interaction potential.")
             tensor = potential.particle_inv_square_interaction_potential(
-                delta_x=sim_state.delta_x_bohr_radii,
+                delta_x_3=sim_state.delta_x_bohr_radii_3,
                 potential_hartree=v,
-                V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
+                V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
             )
             sim_state.localised_potential_hartree += tensor
             try:
@@ -251,9 +250,9 @@ def initialize():
             omega = oscillator["angular_frequency_radian_hartree_per_h_bar"]
             print("Creating harmonic oscillator.")
             tensor = potential.add_harmonic_oscillator_for_1D(
-                delta_x=sim_state.delta_x_bohr_radii,
+                delta_x_3=sim_state.delta_x_bohr_radii_3,
                 angular_frequency=omega,
-                V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
+                V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
             )
             sim_state.localised_potential_hartree += tensor
             try:
@@ -273,11 +272,11 @@ def initialize():
                 t = wall_1d["thickness_bohr_radii"]
                 print("Creating wall.")
                 tensor = potential.add_wall_for_1D(
-                    delta_x=sim_state.delta_x_bohr_radii,
+                    delta_x_3=sim_state.delta_x_bohr_radii_3,
                     potential_hartree=v,
                     thickness_bohr_radius=t,
                     center_bohr_radius=c,
-                    V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
+                    V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
                 )
                 sim_state.localised_potential_hartree += tensor
                 try:
@@ -307,12 +306,12 @@ def initialize():
 
                 print("Creating wall.")
                 tensor = potential.add_wall(
-                    delta_x=sim_state.delta_x_bohr_radii,
+                    delta_x_3=sim_state.delta_x_bohr_radii_3,
                     potential_hartree=v,
                     thickness_bohr_radius=t,
                     center_bohr_radii_3=c,
                     normal_bohr_radii_3=n,
-                    V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
+                    V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
                 )
                 sim_state.localised_potential_hartree += tensor
                 try:
@@ -334,13 +333,13 @@ def initialize():
                 i = grid["node_in_one_direction"]
                 print("Creating optical grid.")
                 tensor = potential.add_optical_grid(
-                    delta_x=sim_state.delta_x_bohr_radii,
+                    delta_x_3=sim_state.delta_x_bohr_radii_3,
                     potential_hartree=v,
                     distance_between_nodes_bohr_radii=d,
                     center_bohr_radius=c,
                     normal=n,
                     node_count=i,
-                    V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
+                    V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
                 )
                 sim_state.localised_potential_hartree += tensor
                 try:
@@ -358,8 +357,8 @@ def initialize():
                 print("Creating double-slit.")
                 space_between_slits = double_slit["distance_between_slits_bohr_radii"]
                 tensor = potential.add_double_slit(
-                    V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
-                    delta_x=sim_state.delta_x_bohr_radii,
+                    V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
+                    delta_x_3=sim_state.delta_x_bohr_radii_3,
                     center_bohr_radii_3=np.array(double_slit["center_bohr_radius_3"]),
                     thickness_bohr_radii=double_slit["thickness_bohr_radii"],
                     potential_hartree=double_slit["potential_hartree"],
@@ -380,8 +379,8 @@ def initialize():
             coulomb_potential = sim_state.config["coulomb_potential"]
             print("Creating Coulomb potential.")
             tensor = potential.add_coulomb_potential(
-                V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
-                delta_x=sim_state.delta_x_bohr_radii,
+                V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
+                delta_x_3=sim_state.delta_x_bohr_radii_3,
                 center_bohr_radius=np.array(coulomb_potential["center_bohr_radii_3"]),
                 gradient_dir=np.array(coulomb_potential["gradient_direction"]),
                 charge_density=coulomb_potential["charge_density_elementary_charge_per_bohr_radius"],
@@ -399,8 +398,8 @@ def initialize():
             gradient = sim_state.config["linear_potential_gradient"]
             print("Creating linear potential gradient.")
             tensor = potential.add_linear_potential_gradient(
-                V=cp.zeros(shape=sim_state.simulated_tensor_shape, dtype=cp.csingle),
-                delta_x=sim_state.delta_x_bohr_radii,
+                V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
+                delta_x_3=sim_state.delta_x_bohr_radii_3,
                 center_bohr_radius=np.array(gradient["center_bohr_radii_3"]),
                 gradient_dir=np.array(gradient["gradient_direction"]),
                 gradient_val=gradient["gradient_magnitude_hartree_per_bohr_radius"],
@@ -449,7 +448,7 @@ def initialize():
 
 
     # For testing only:
-    #sim_state.potential_walls[0].velocity_bohr_radius_hartree_per_h_bar = np.array([-2.0, 0.0, 0.0])
+    sim_state.potential_walls[0].velocity_bohr_radius_hartree_per_h_bar = np.array([-2.0, 0.0, 0.0])
 
 
     print(text_writer.get_simulation_method_text(sim_state, use_colors=True))

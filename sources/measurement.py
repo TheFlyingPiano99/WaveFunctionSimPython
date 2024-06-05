@@ -8,28 +8,28 @@ import sources.animation as animation
 class MeasurementPlane:
     def __init__(
         self,
-        delta_x: float,
-        location_bohr_radii : float,
-        simulated_box_width : float,
-        viewing_window_bottom_voxel : np.array,
-        viewing_window_top_voxel : np.array,
+        delta_x_3: np.array,
+        location_bohr_radii: float,
+        simulated_box_dimensions_3: float,
+        viewing_window_bottom_voxel_3: np.array,
+        viewing_window_top_voxel_3: np.array,
     ):
         self.plane_dwell_time_density = np.zeros(
             shape=(
-                viewing_window_top_voxel[2] - viewing_window_bottom_voxel[2],
-                viewing_window_top_voxel[1] - viewing_window_bottom_voxel[1],
+                viewing_window_top_voxel_3[2] - viewing_window_bottom_voxel_3[2],
+                viewing_window_top_voxel_3[1] - viewing_window_bottom_voxel_3[1],
             )
         )
         self.plane_probability_density = np.zeros(
             shape=(
-                viewing_window_top_voxel[2] - viewing_window_bottom_voxel[2],
-                viewing_window_top_voxel[1] - viewing_window_bottom_voxel[1],
+                viewing_window_top_voxel_3[2] - viewing_window_bottom_voxel_3[2],
+                viewing_window_top_voxel_3[1] - viewing_window_bottom_voxel_3[1],
             )
         )
         self.cumulated_time = 0.0
-        self.x = int((location_bohr_radii + simulated_box_width * 0.5) / delta_x)
-        self.viewing_window_bottom_voxel = viewing_window_bottom_voxel
-        self.viewing_window_top_voxel = viewing_window_top_voxel
+        self.x = int((location_bohr_radii + simulated_box_dimensions_3[0] * 0.5) / delta_x_3[0])
+        self.viewing_window_bottom_voxel = viewing_window_bottom_voxel_3
+        self.viewing_window_top_voxel = viewing_window_top_voxel_3
 
     def integrate(self, probability_density, delta_time):
         self.plane_probability_density = probability_density[

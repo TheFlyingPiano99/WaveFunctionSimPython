@@ -56,16 +56,26 @@ wave_packet_kernel_source = '''
     {
         return {a.x - b.x, a.y - b.y, a.z - b.z};
     }
+    
+    extern "C" __device__ float3 mul(float3 a, float3 b)
+    {
+        return {a.x * b.x, a.y * b.y, a.z * b.z};
+    }
 
     extern "C" __global__
     void wave_packet_kernel(
         complex<float>* wave_tensor,
-        int N,
+        
         float delta_x,
+        float delta_y,
+        float delta_z,
+        
         float a,
+        
         float r_x,
         float r_y,
         float r_z,
+        
         float k_x,
         float k_y,
         float k_z
@@ -80,10 +90,15 @@ wave_packet_kernel_source = '''
         
         float3 k_0 = {k_x, k_y, k_z};
         float3 r_0 = {r_x, r_y, r_z};
-        
+        float3 delta_r = {delta_x, delta_y, delta_z};
+        float3 N = {
+            (float)(gridDim.x * blockDim.x),
+            (float)(gridDim.y * blockDim.y),
+            (float)(gridDim.z * blockDim.z)
+        };
         float3 r = diff(
-            scalarVectorMul(delta_x, {(float)i, (float)j, (float)k}),
-            scalarVectorMul((float)N * delta_x * 0.5f, {1.0f, 1.0f, 1.0f})
+            mul(delta_r, {(float)i, (float)j, (float)k}),
+            scalarVectorMul(0.5f, mul(N, delta_r))
         );
 
         complex<float> val =
@@ -96,9 +111,8 @@ wave_packet_kernel_source = '''
     }
 '''
 
-def init_gaussian_wave_packet_single_precision(
-    N: int,
-    delta_x_bohr_radii: float,
+def init_gaussian_wave_packet(
+    delta_x_bohr_radii_3: np.array,
     a: float,
     r_0_bohr_radii_3: np.array,
     initial_momentum_h_per_bohr_radius_3: np.array,
@@ -115,12 +129,17 @@ def init_gaussian_wave_packet_single_precision(
         block_size,
         (
             wave_tensor,
-            cp.int32(N),
-            cp.float32(delta_x_bohr_radii),
+
+            cp.float32(delta_x_bohr_radii_3[0]),
+            cp.float32(delta_x_bohr_radii_3[1]),
+            cp.float32(delta_x_bohr_radii_3[2]),
+
             cp.float32(a),
+
             cp.float32(r_0_bohr_radii_3[0]),
             cp.float32(r_0_bohr_radii_3[1]),
             cp.float32(r_0_bohr_radii_3[2]),
+
             cp.float32(initial_momentum_h_per_bohr_radius_3[0]),
             cp.float32(initial_momentum_h_per_bohr_radius_3[1]),
             cp.float32(initial_momentum_h_per_bohr_radius_3[2])

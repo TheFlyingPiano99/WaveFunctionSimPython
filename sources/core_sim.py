@@ -68,8 +68,8 @@ def power_series_time_evolution(sim_state: sim_st.SimState, p: int, next_s_kerne
                 sim_state.wave_tensor,
                 cp.double(sim_state.delta_time_h_bar_per_hartree) if sim_state.double_precision_wave_tensor
                 else cp.float32(sim_state.delta_time_h_bar_per_hartree),
-                cp.double(sim_state.delta_x_bohr_radii) if sim_state.double_precision_wave_tensor
-                else cp.float32(sim_state.delta_x_bohr_radii),
+                cp.double(sim_state.delta_x_bohr_radii_3) if sim_state.double_precision_wave_tensor
+                else cp.float32(sim_state.delta_x_bohr_radii_3),
                 cp.double(sim_state.particle_mass) if sim_state.double_precision_wave_tensor
                 else cp.float32(sim_state.particle_mass),
                 cp.int32(shape[0]),
@@ -138,7 +138,7 @@ def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools:
                 measurement_tools.z_axis_probability_density.get_probability_density_with_label(),
                 measurement_tools.projected_potential.get_probability_density_with_label(),
             ],
-            delta_x=sim_state.delta_x_bohr_radii,
+            delta_x=sim_state.delta_x_bohr_radii_3,
             delta_t=sim_state.delta_time_h_bar_per_hartree,
             potential_scale=sim_state.config["view"]["per_axis_plot"]["potential_plot_scale"],
             index=iter_data.i,
@@ -181,7 +181,7 @@ def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools:
             plane_probability_density=measurement_tools.measurement_plane.get_probability_density(),
             plane_dwell_time_density=measurement_tools.measurement_plane.get_dwell_time(),
             index=iter_data.i,
-            delta_x=sim_state.delta_x_bohr_radii,
+            delta_x_3=sim_state.delta_x_bohr_radii_3,
             delta_t=sim_state.delta_time_h_bar_per_hartree
         )
 

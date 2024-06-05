@@ -72,7 +72,7 @@ def plot_per_axis_probability_density(
     return np.array(img)
 
 
-def plot_canvas(out_dir, plane_probability_density, plane_dwell_time_density, index, delta_x, delta_t):
+def plot_canvas(out_dir, plane_probability_density, plane_dwell_time_density, index, delta_x_3, delta_t):
     # Probability density:
     dir = os.path.join(out_dir, "canvas_probability/")
     if not os.path.exists(dir):
@@ -93,9 +93,9 @@ def plot_canvas(out_dir, plane_probability_density, plane_dwell_time_density, in
     plt.xlim(0, plane_probability_density.shape[0])
     plt.ylim(0, plane_probability_density.shape[1])
     plt.xticks(ticks=np.linspace(0, plane_probability_density.shape[0], 5),
-               labels=np.linspace(-plane_probability_density.shape[0] * delta_x * 0.5, plane_probability_density.shape[0] * delta_x * 0.5, 5))
+               labels=np.linspace(-plane_probability_density.shape[0] * delta_x_3[0] * 0.5, plane_probability_density.shape[0] * delta_x_3[0] * 0.5, 5))
     plt.yticks(ticks=np.linspace(0, plane_probability_density.shape[1], 5),
-               labels=np.linspace(-plane_probability_density.shape[1] * delta_x * 0.5, plane_probability_density.shape[1] * delta_x * 0.5, 5))
+               labels=np.linspace(-plane_probability_density.shape[1] * delta_x_3[1] * 0.5, plane_probability_density.shape[1] * delta_x_3[1] * 0.5, 5))
     plt.title(f"Elapsed time = {index * delta_t:.2f} ħ/Hartree = {math_utils.h_bar_per_hartree_to_fs(index * delta_t):.2f} fs\n ")
     plt.tight_layout()
     plt.savefig(fname=os.path.join(dir, f"measurement_plane_probability_{index:04d}.png"))
@@ -118,9 +118,9 @@ def plot_canvas(out_dir, plane_probability_density, plane_dwell_time_density, in
     plt.xlim(0, plane_dwell_time_density.shape[0])
     plt.ylim(0, plane_dwell_time_density.shape[1])
     plt.xticks(ticks=np.linspace(0, plane_dwell_time_density.shape[0], 5),
-               labels=np.linspace(-plane_dwell_time_density.shape[0] * delta_x * 0.5, plane_dwell_time_density.shape[0] * delta_x * 0.5, 5))
+               labels=np.linspace(-plane_dwell_time_density.shape[0] * delta_x_3[0] * 0.5, plane_dwell_time_density.shape[0] * delta_x_3[0] * 0.5, 5))
     plt.yticks(ticks=np.linspace(0, plane_probability_density.shape[1], 5),
-               labels=np.linspace(-plane_dwell_time_density.shape[1] * delta_x * 0.5, plane_dwell_time_density.shape[1] * delta_x * 0.5, 5))
+               labels=np.linspace(-plane_dwell_time_density.shape[1] * delta_x_3[1] * 0.5, plane_dwell_time_density.shape[1] * delta_x_3[1] * 0.5, 5))
     plt.title(f"Elapsed time = {index * delta_t:.2f} ħ/Hartree = {math_utils.h_bar_per_hartree_to_fs(index * delta_t):.2f} fs\n ")
     plt.tight_layout()
     plt.savefig(fname=os.path.join(dir, f"measurement_plane_dwell_time_{index:04d}.png"))

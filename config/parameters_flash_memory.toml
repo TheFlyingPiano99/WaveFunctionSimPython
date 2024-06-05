@@ -10,7 +10,7 @@ initial_wp_velocity_bohr_radii_hartree_per_h_bar = [0.0, -3.0, 0.0]
 wp_width_bohr_radii = 2.0
 
 ["volume"]
-simulated_volume_width_bohr_radii = 120.0 #Including draining potential regions
+simulated_volume_dimensions_bohr_radii_3 = 120.0 #Including draining potential regions
 number_of_samples_per_axis = 256         #Including draining potential regions
 viewing_window_boundary_bottom_corner_bohr_radii_3 = [30.0, 30.0, 30.0]   # Same as the inner boundary of the draining potential
 viewing_window_boundary_top_corner_bohr_radii_3 = [-30.0, -30.0, -30.0]   # Same as the inner boundary of the draining potential

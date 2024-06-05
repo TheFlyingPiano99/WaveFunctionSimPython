@@ -17,21 +17,20 @@ class PotentialWall:
 
 class SimState:
     config: Dict
-    simulated_tensor_shape: cp.shape
     initial_wp_velocity_bohr_radii_hartree_per_h_bar = np.array([0.0, 0.0, 0.0])
     initial_wp_momentum_h_per_bohr_radius = np.array([0.0, 0.0, 0.0])
     wp_width_bohr_radii = 1.0
     particle_mass = 1.0
     initial_wp_position_bohr_radii_3 = np.array([0.0, 0.0, 0.0])
     drain_potential_description: potential.DrainPotentialDescription
-    N = 128
-    viewing_window_bottom_corner_voxel: np.array
-    viewing_window_top_corner_voxel: np.array
-    viewing_window_bottom_corner_bohr_radii: np.array
-    viewing_window_top_corner_bohr_radii: np.array
+    number_of_voxels_3 = np.array([128, 128, 128])
+    viewing_window_bottom_corner_voxel_3: np.array
+    viewing_window_top_corner_voxel_3: np.array
+    viewing_window_bottom_corner_bohr_radii_3: np.array
+    viewing_window_top_corner_bohr_radii_3: np.array
     de_broglie_wave_length_bohr_radii: float
-    simulated_volume_width_bohr_radii: float
-    delta_x_bohr_radii: float
+    simulated_volume_dimensions_bohr_radii_3: np.array([120.0, 120.0, 120.0])
+    delta_x_bohr_radii_3: np.array([0.0, 0.0, 0.0])
     upper_limit_on_delta_time_h_per_hartree: float
     delta_time_h_bar_per_hartree: float
     wave_tensor: cp.ndarray
@@ -94,20 +93,19 @@ class SimState:
         self.de_broglie_wave_length_bohr_radii = (
             math_utils.get_de_broglie_wave_length_bohr_radii(momentum_magnitude)
         )
-        self.simulated_volume_width_bohr_radii = config["volume"][
-            "simulated_volume_width_bohr_radii"
-        ]
+        self.simulated_volume_dimensions_bohr_radii_3 = np.array(config["volume"][
+            "simulated_volume_dimensions_bohr_radii_3"
+        ])
         self.initial_wp_position_bohr_radii_3 = np.array(
             config["wave_packet"]["initial_wp_position_bohr_radii_3"]
         )
-        self.N = config["volume"]["number_of_samples_per_axis"]
-        self.simulated_tensor_shape = (self.N, self.N, self.N)
-        self.coulomb_potential = cp.zeros(shape=self.simulated_tensor_shape)
-        self.delta_x_bohr_radii = self.simulated_volume_width_bohr_radii / self.N
+        self.number_of_voxels_3 = config["volume"]["number_of_voxels_3"]
+        self.coulomb_potential = cp.zeros(shape=self.number_of_voxels_3)
+        self.delta_x_bohr_radii_3 = self.simulated_volume_dimensions_bohr_radii_3 / self.number_of_voxels_3
         self.upper_limit_on_delta_time_h_per_hartree = (
             4.0
             / np.pi
-            * (3.0 * self.delta_x_bohr_radii * self.delta_x_bohr_radii)
+            * (3.0 * np.max(self.delta_x_bohr_radii_3) * np.max(self.delta_x_bohr_radii_3))
             / 3.0
         )  # Based on reasoning from the Web-Schrödinger paper
         self.delta_time_h_bar_per_hartree = config["iteration"][
@@ -116,40 +114,40 @@ class SimState:
 
         # Init draining potential
         self.drain_potential_description = potential.DrainPotentialDescription(config)
-        self.viewing_window_bottom_corner_bohr_radii = (
-            self.drain_potential_description.boundary_bottom_corner_bohr_radii
+        self.viewing_window_bottom_corner_bohr_radii_3 = (
+            self.drain_potential_description.boundary_bottom_corner_bohr_radii_3
         )
-        self.viewing_window_top_corner_bohr_radii = (
-            self.drain_potential_description.boundary_top_corner_bohr_radii
+        self.viewing_window_top_corner_bohr_radii_3 = (
+            self.drain_potential_description.boundary_top_corner_bohr_radii_3
         )
-        self.viewing_window_bottom_corner_voxel = np.array(
+        self.viewing_window_bottom_corner_voxel_3 = np.array(
             (
-                    self.drain_potential_description.boundary_bottom_corner_bohr_radii
-                    + np.array([self.simulated_volume_width_bohr_radii, self.simulated_volume_width_bohr_radii, self.simulated_volume_width_bohr_radii])
+                    self.drain_potential_description.boundary_bottom_corner_bohr_radii_3
+                    + self.simulated_volume_dimensions_bohr_radii_3
                     * 0.5
             )
-            / self.delta_x_bohr_radii,
+            / self.delta_x_bohr_radii_3,
             dtype=np.int32,
         )
-        self.viewing_window_top_corner_voxel = np.array(
+        self.viewing_window_top_corner_voxel_3 = np.array(
             math_utils.transform_center_origin_to_corner_origin_system(
-                self.drain_potential_description.boundary_top_corner_bohr_radii,
-                self.simulated_volume_width_bohr_radii,
+                self.drain_potential_description.boundary_top_corner_bohr_radii_3,
+                self.simulated_volume_dimensions_bohr_radii_3,
             )
-            / self.delta_x_bohr_radii,
+            / self.delta_x_bohr_radii_3,
             dtype=np.int32,
         )
         # Swap coordinates if needed
         for i in range(0, 3):
             if (
-                self.viewing_window_bottom_corner_voxel[i]
-                > self.viewing_window_top_corner_voxel[i]
+                self.viewing_window_bottom_corner_voxel_3[i]
+                > self.viewing_window_top_corner_voxel_3[i]
             ):
-                temp = self.viewing_window_bottom_corner_voxel[i]
-                self.viewing_window_bottom_corner_voxel[
+                temp = self.viewing_window_bottom_corner_voxel_3[i]
+                self.viewing_window_bottom_corner_voxel_3[
                     i
-                ] = self.viewing_window_top_corner_voxel[i]
-                self.viewing_window_top_corner_voxel[i] = temp
+                ] = self.viewing_window_top_corner_voxel_3[i]
+                self.viewing_window_top_corner_voxel_3[i] = temp
 
         try:
             self.enable_visual_output = config["view"]["enable_visual_output"]
@@ -164,37 +162,37 @@ class SimState:
     def get_view_into_raw_wave_function(self):
         return math_utils.cut_window(
             arr=self.wave_tensor,
-            bottom=self.viewing_window_bottom_corner_voxel,
-            top=self.viewing_window_top_corner_voxel,
+            bottom=self.viewing_window_bottom_corner_voxel_3,
+            top=self.viewing_window_top_corner_voxel_3,
         )
 
 
     def get_view_into_probability_density(self):
         return math_utils.cut_window(
             arr=self.probability_density,
-            bottom=self.viewing_window_bottom_corner_voxel,
-            top=self.viewing_window_top_corner_voxel,
+            bottom=self.viewing_window_bottom_corner_voxel_3,
+            top=self.viewing_window_top_corner_voxel_3,
         )
 
     def get_view_into_potential(self):
         return math_utils.cut_window(
             arr=cp.real(self.localised_potential_to_visualize_hartree),
-            bottom=self.viewing_window_bottom_corner_voxel,
-            top=self.viewing_window_top_corner_voxel,
+            bottom=self.viewing_window_bottom_corner_voxel_3,
+            top=self.viewing_window_top_corner_voxel_3,
         )
 
     def get_view_into_complex_potential(self):
         return math_utils.cut_window(
             arr=self.localised_potential_to_visualize_hartree,
-            bottom=self.viewing_window_bottom_corner_voxel,
-            top=self.viewing_window_top_corner_voxel,
+            bottom=self.viewing_window_bottom_corner_voxel_3,
+            top=self.viewing_window_top_corner_voxel_3,
         )
 
     def get_view_into_coulomb_potential(self):
         return math_utils.cut_window(
             arr=self.coulomb_potential,
-            bottom=self.viewing_window_bottom_corner_voxel,
-            top=self.viewing_window_top_corner_voxel,
+            bottom=self.viewing_window_bottom_corner_voxel_3,
+            top=self.viewing_window_top_corner_voxel_3,
         )
 
     def update_potential(self):
@@ -237,7 +235,7 @@ class SimState:
         self.localised_potential_hartree, self.localised_potential_to_visualize_hartree = potential.generate_potential_from_walls_and_drain(
             V=self.localised_potential_hartree,
             V_vis=self.localised_potential_to_visualize_hartree,
-            delta_x=self.delta_x_bohr_radii,
+            delta_x_3=self.delta_x_bohr_radii_3,
             drain_description=self.drain_potential_description,
             walls=self.potential_walls
         )

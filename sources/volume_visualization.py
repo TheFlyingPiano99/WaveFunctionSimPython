@@ -16,8 +16,8 @@ warnings.filterwarnings('ignore')
 
 class VolumetricVisualization:
     canvas: scene.SceneCanvas
-    viewing_window_bottom_corner_voxel: np.array
-    viewing_window_top_corner_voxel: np.array
+    viewing_window_bottom_corner_voxel_3: np.array
+    viewing_window_top_corner_voxel_3: np.array
     cam_rotation_speed = 0.0
     cam_elevation_speed = 0.1
     light_rotation_speed = 0.1

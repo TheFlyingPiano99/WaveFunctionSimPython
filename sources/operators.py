@@ -36,8 +36,11 @@ kinetic_operator_kernel_source = '''
     extern "C" __global__
     void kinetic_operator_kernel(
         complex<float>* kinetic_operator,
-        int N,
+        
         float delta_x,
+        float delta_y,
+        float delta_z,
+        
         float delta_t
     )
     {
@@ -48,7 +51,11 @@ kinetic_operator_kernel_source = '''
                 + j * gridDim.x * blockDim.x
                 + k;
         
-        float3 f = div({(float)k, (float)j, (float)i}, {(float)N, (float)N, (float)N});
+        float3 f = div(
+            {(float)k, (float)j, (float)i},
+            {(float)(gridDim.x * blockDim.x), (float)(gridDim.y * blockDim.y), (float)(gridDim.z * blockDim.z)}
+        );
+        float3 delta_r = {delta_x, delta_y, delta_z};
         
         // Fix numpy fftn-s "negative frequency in second half issue"
         if (f.x > 0.5f)
@@ -57,14 +64,15 @@ kinetic_operator_kernel_source = '''
             f.y = 1.0f - f.y;
         if (f.z > 0.5f)
             f.z = 1.0f - f.z;
-        float3 momentum = scalarVectorMul(2.0f * M_PI / delta_x, f);
+        float3 momentum = scalarVectorMul(2.0f * M_PI, diff(f, delta_r));
         float angle = -dot(momentum, momentum) * delta_t / 4.0f;
-        kinetic_operator[idx] = exp_i(angle);
+        //kinetic_operator[idx] = exp_i(angle);
+        kinetic_operator[idx] = 1.0f;
     }
 '''
 
 
-def init_kinetic_operator(N: int, delta_x: float, delta_time: float, shape: np.shape):
+def init_kinetic_operator(delta_x_3: np.array, delta_time: float, shape: np.shape):
     kinetic_operator_kernel = cp.RawKernel(kinetic_operator_kernel_source,
                                  'kinetic_operator_kernel',
                                  enable_cooperative_groups=False)
@@ -76,8 +84,11 @@ def init_kinetic_operator(N: int, delta_x: float, delta_time: float, shape: np.s
         block_size,
         (
             P_kinetic,
-            cp.int32(N),
-            cp.float32(delta_x),
+
+            cp.float32(delta_x_3[0]),
+            cp.float32(delta_x_3[1]),
+            cp.float32(delta_x_3[2]),
+
             cp.float32(delta_time)
         )
     )
@@ -141,7 +152,8 @@ potential_operator_kernel_source = '''
         int idx = i * gridDim.x * blockDim.x * gridDim.y * blockDim.y
                 + j * gridDim.x * blockDim.x
                 + k;
-        potential_operator[idx] = cexp_i(angle);
+        //potential_operator[idx] = cexp_i(angle);
+        potential_operator[idx] = 1.0f;
     }
 '''
 

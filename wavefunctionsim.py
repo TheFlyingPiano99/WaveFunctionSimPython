@@ -66,25 +66,25 @@ def sim():
             os.path.join(sim_state.output_dir, "probability_density_time_development_per_axis.mp4")
         )
         measurement_tools.measurement_plane = measurement.MeasurementPlane(
-            delta_x=sim_state.delta_x_bohr_radii,
+            delta_x_3=sim_state.delta_x_bohr_radii_3,
             location_bohr_radii=30.0,
-            simulated_box_width=sim_state.simulated_volume_width_bohr_radii,
-            viewing_window_bottom_voxel=sim_state.viewing_window_bottom_corner_voxel,
-            viewing_window_top_voxel=sim_state.viewing_window_top_corner_voxel,
+            simulated_box_dimensions_3=sim_state.simulated_volume_dimensions_bohr_radii_3,
+            viewing_window_bottom_voxel_3=sim_state.viewing_window_bottom_corner_voxel_3,
+            viewing_window_top_voxel_3=sim_state.viewing_window_top_corner_voxel_3,
         )
         measurement_tools.measurement_volume_full = measurement.AAMeasurementVolume(
-            bottom_corner=sim_state.viewing_window_bottom_corner_voxel,
-            top_corner=sim_state.viewing_window_top_corner_voxel,
+            bottom_corner=sim_state.viewing_window_bottom_corner_voxel_3,
+            top_corner=sim_state.viewing_window_top_corner_voxel_3,
             label="Full volume",
         )
         '''
         measurement_tools.measurement_volume_first_half = measurement.AAMeasurementVolume(
-            bottom_corner=sim_state.viewing_window_bottom_corner_voxel,
+            bottom_corner=sim_state.viewing_window_bottom_corner_voxel_3,
             top_corner=np.array(
-                sim_state.viewing_window_top_corner_voxel
+                sim_state.viewing_window_top_corner_voxel_3
                 - (
-                    sim_state.viewing_window_top_corner_voxel
-                    - sim_state.viewing_window_bottom_corner_voxel
+                    sim_state.viewing_window_top_corner_voxel_3
+                    - sim_state.viewing_window_bottom_corner_voxel_3
                 )
                 * np.array([0, 0.5, 0]),
                 dtype=int,
@@ -93,57 +93,57 @@ def sim():
         )
         measurement_tools.measurement_volume_second_half = measurement.AAMeasurementVolume(
             bottom_corner=np.array(
-                sim_state.viewing_window_bottom_corner_voxel
+                sim_state.viewing_window_bottom_corner_voxel_3
                 + (
-                    sim_state.viewing_window_top_corner_voxel
-                    - sim_state.viewing_window_bottom_corner_voxel
+                    sim_state.viewing_window_top_corner_voxel_3
+                    - sim_state.viewing_window_bottom_corner_voxel_3
                 )
                 * np.array([0, 0.5, 0]),
                 dtype=int,
             ),
-            top_corner=sim_state.viewing_window_top_corner_voxel,
+            top_corner=sim_state.viewing_window_top_corner_voxel_3,
             label="Floating gate",
         )
         '''
 
         # Setup "per axis" probability density:
         measurement_tools.x_axis_probability_density = measurement.ProjectedMeasurement(
-            min_voxel=sim_state.viewing_window_bottom_corner_voxel[0],
-            max_voxel=sim_state.viewing_window_top_corner_voxel[0],
-            near_voxel=sim_state.viewing_window_bottom_corner_voxel[1],
-            far_voxel=sim_state.viewing_window_top_corner_voxel[1],
-            left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[0],
-            right_edge=sim_state.viewing_window_top_corner_bohr_radii[0],
+            min_voxel=sim_state.viewing_window_bottom_corner_voxel_3[0],
+            max_voxel=sim_state.viewing_window_top_corner_voxel_3[0],
+            near_voxel=sim_state.viewing_window_bottom_corner_voxel_3[1],
+            far_voxel=sim_state.viewing_window_top_corner_voxel_3[1],
+            left_edge=sim_state.viewing_window_bottom_corner_bohr_radii_3[0],
+            right_edge=sim_state.viewing_window_top_corner_bohr_radii_3[0],
             sum_axis=(1, 2),
             label=sim_state.config["view"]["per_axis_plot"]["x_axis_label"],
         )
         measurement_tools.y_axis_probability_density = measurement.ProjectedMeasurement(
-            min_voxel=sim_state.viewing_window_bottom_corner_voxel[1],
-            max_voxel=sim_state.viewing_window_top_corner_voxel[1],
-            near_voxel=sim_state.viewing_window_bottom_corner_voxel[2],
-            far_voxel=sim_state.viewing_window_top_corner_voxel[2],
-            left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[1],
-            right_edge=sim_state.viewing_window_top_corner_bohr_radii[1],
+            min_voxel=sim_state.viewing_window_bottom_corner_voxel_3[1],
+            max_voxel=sim_state.viewing_window_top_corner_voxel_3[1],
+            near_voxel=sim_state.viewing_window_bottom_corner_voxel_3[2],
+            far_voxel=sim_state.viewing_window_top_corner_voxel_3[2],
+            left_edge=sim_state.viewing_window_bottom_corner_bohr_radii_3[1],
+            right_edge=sim_state.viewing_window_top_corner_bohr_radii_3[1],
             sum_axis=(0, 2),
             label=sim_state.config["view"]["per_axis_plot"]["y_axis_label"],
         )
         measurement_tools.z_axis_probability_density = measurement.ProjectedMeasurement(
-            min_voxel=sim_state.viewing_window_bottom_corner_voxel[2],
-            max_voxel=sim_state.viewing_window_top_corner_voxel[2],
-            near_voxel=sim_state.viewing_window_bottom_corner_voxel[0],
-            far_voxel=sim_state.viewing_window_top_corner_voxel[0],
-            left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[2],
-            right_edge=sim_state.viewing_window_top_corner_bohr_radii[2],
+            min_voxel=sim_state.viewing_window_bottom_corner_voxel_3[2],
+            max_voxel=sim_state.viewing_window_top_corner_voxel_3[2],
+            near_voxel=sim_state.viewing_window_bottom_corner_voxel_3[0],
+            far_voxel=sim_state.viewing_window_top_corner_voxel_3[0],
+            left_edge=sim_state.viewing_window_bottom_corner_bohr_radii_3[2],
+            right_edge=sim_state.viewing_window_top_corner_bohr_radii_3[2],
             sum_axis=(0, 1),
             label=sim_state.config["view"]["per_axis_plot"]["z_axis_label"],
         )
         measurement_tools.projected_potential = measurement.ProjectedMeasurement(
-            min_voxel=sim_state.viewing_window_bottom_corner_voxel[0],
-            max_voxel=sim_state.viewing_window_top_corner_voxel[0],
-            near_voxel=sim_state.N // 2,
-            far_voxel=sim_state.N // 2 + 1,
-            left_edge=sim_state.viewing_window_bottom_corner_bohr_radii[0],
-            right_edge=sim_state.viewing_window_top_corner_bohr_radii[0],
+            min_voxel=sim_state.viewing_window_bottom_corner_voxel_3[0],
+            max_voxel=sim_state.viewing_window_top_corner_voxel_3[0],
+            near_voxel=sim_state.number_of_voxels_3[0] // 2,
+            far_voxel=sim_state.number_of_voxels_3[0] // 2 + 1,
+            left_edge=sim_state.viewing_window_bottom_corner_bohr_radii_3[0],
+            right_edge=sim_state.viewing_window_top_corner_bohr_radii_3[0],
             sum_axis=(1, 2),
             label=sim_state.config["view"]["per_axis_plot"]["potential_label"],
         )

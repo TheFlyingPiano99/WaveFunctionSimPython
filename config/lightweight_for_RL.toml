@@ -10,10 +10,10 @@ initial_wp_velocity_bohr_radii_hartree_per_h_bar = [0.0, 0.0, 0.0]
 wp_width_bohr_radii = 2.0
 
 ["volume"]
-simulated_volume_width_bohr_radii = 120.0 #Including draining potential regions
-number_of_samples_per_axis = 256         #Including draining potential regions
-viewing_window_boundary_bottom_corner_bohr_radii_3 = [30.0, 30.0, 30.0]   # Same as the inner boundary of the draining potential
-viewing_window_boundary_top_corner_bohr_radii_3 = [-30.0, -30.0, -30.0]   # Same as the inner boundary of the draining potential
+simulated_volume_dimensions_bohr_radii_3 = [120.0, 120.0, 120.0] #Including draining potential regions
+number_of_voxels_3 = [256, 256, 256]         #Including draining potential regions
+viewing_window_boundary_bottom_corner_bohr_radii_3 = [-30.0, -30.0, -30.0]   # Same as the inner boundary of the draining potential
+viewing_window_boundary_top_corner_bohr_radii_3 = [30.0, 30.0, 30.0]   # Same as the inner boundary of the draining potential
 
 ["drain"]
 outer_potential_hartree = -100.0
@@ -87,10 +87,10 @@ visible=true
 delta_time_h_bar_per_hartree = 0.005
 total_iteration_count = 6000
 animation_frame_step_interval = 10
-png_step_interval = 500
+png_step_interval = 5
 measurement_plane_capture_interval = 500
 probability_plot_interval = 500
-per_axis_probability_denisty_interval = 100
+per_axis_probability_denisty_interval = 5
 wave_function_save_interval = 500
 
 [view]
