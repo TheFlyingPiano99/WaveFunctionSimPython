@@ -53,21 +53,21 @@ kinetic_operator_kernel_source = '''
         
         float3 f = div(
             {(float)k, (float)j, (float)i},
-            {(float)(gridDim.x * blockDim.x), (float)(gridDim.y * blockDim.y), (float)(gridDim.z * blockDim.z)}
+            {(float)(gridDim.x * blockDim.x - 1), (float)(gridDim.y * blockDim.y - 1), (float)(gridDim.z * blockDim.z - 1)}
         );
         float3 delta_r = {delta_x, delta_y, delta_z};
         
-        // Fix numpy fftn-s "negative frequency in second half issue"
+        // Account for numpy fftn's "negative frequency in second half" pattern
         if (f.x > 0.5f)
             f.x = 1.0f - f.x;
         if (f.y > 0.5f)
             f.y = 1.0f - f.y;
         if (f.z > 0.5f)
             f.z = 1.0f - f.z;
+
         float3 momentum = scalarVectorMul(2.0f * M_PI, diff(f, delta_r));
         float angle = -dot(momentum, momentum) * delta_t / 4.0f;
-        //kinetic_operator[idx] = exp_i(angle);
-        kinetic_operator[idx] = 1.0f;
+        kinetic_operator[idx] = exp_i(angle);
     }
 '''
 
