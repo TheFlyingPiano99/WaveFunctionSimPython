@@ -65,7 +65,7 @@ kinetic_operator_kernel_source = '''
         if (f.z > 0.5f)
             f.z = 1.0f - f.z;
 
-        float3 momentum = scalarVectorMul(2.0f * M_PI, diff(f, delta_r));
+        float3 momentum = scalarVectorMul(2.0f * M_PI, div(f, delta_r));
         float angle = -dot(momentum, momentum) * delta_t / 4.0f;
         kinetic_operator[idx] = exp_i(angle);
     }
