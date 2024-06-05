@@ -268,3 +268,15 @@ def write_sim_state(sim_state: sim_st.SimState):
 def append_iter_data(iter_data: core_sim.IterData, sim_state: sim_st.SimState):
     with open(os.path.join(sim_state.output_dir, "parameters.txt"), mode="a") as f:
         f.write("\n" + get_finish_text(iter_data))
+
+def get_help_text():
+    text = io.StringIO()
+    text.write("This is a simulation software for wave packet simulation created by Zoltan Simon.\n\n\n")
+    text.write("Available flags and parameters:\n\n")
+    text.write("-h \t\t\t... See help\n")
+    text.write("--help \t\t\t... See help\n")
+    text.write("-nc \t\t\t... Run in No Cache mode\n")
+    text.write("--version \t\t... See current version\n")
+    return text.getvalue()
+def get_version_text():
+    return "beta version\n"

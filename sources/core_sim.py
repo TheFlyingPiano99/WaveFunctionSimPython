@@ -82,13 +82,13 @@ def power_series_time_evolution(sim_state: sim_st.SimState, p: int, next_s_kerne
 
 def init_iter_data(sim_state: sim_st.SimState):
     iter_data = IterData()
-    iter_data.animation_frame_step_interval = sim_state.config["iteration"]["animation_frame_step_interval"]
-    iter_data.png_step_interval = sim_state.config["iteration"]["png_step_interval"]
-    iter_data.measurement_plane_capture_interval = sim_state.config["iteration"]["measurement_plane_capture_interval"]
-    iter_data.probability_plot_interval = sim_state.config["iteration"]["probability_plot_interval"]
     iter_data.total_iteration_count = sim_state.config["iteration"]["total_iteration_count"]
-    iter_data.per_axis_probability_denisty_plot_interval = sim_state.config["iteration"]["per_axis_probability_denisty_interval"]
-    iter_data.wave_function_save_interval = sim_state.config["iteration"]["wave_function_save_interval"]
+    iter_data.animation_frame_step_interval = sim_state.config["view"]["animation_frame_step_interval"]
+    iter_data.png_step_interval = sim_state.config["view"]["png_step_interval"]
+    iter_data.measurement_plane_capture_interval = sim_state.config["view"]["measurement_plane_capture_interval"]
+    iter_data.probability_plot_interval = sim_state.config["view"]["probability_plot_interval"]
+    iter_data.per_axis_probability_denisty_plot_interval = sim_state.config["view"]["per_axis_probability_denisty_interval"]
+    iter_data.wave_function_save_interval = sim_state.config["view"]["wave_function_save_interval"]
     return iter_data
 
 def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools: measurement.MeasurementTools):
@@ -138,7 +138,7 @@ def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools:
                 measurement_tools.z_axis_probability_density.get_probability_density_with_label(),
                 measurement_tools.projected_potential.get_probability_density_with_label(),
             ],
-            delta_x=sim_state.delta_x_bohr_radii_3,
+            delta_x_3=sim_state.delta_x_bohr_radii_3,
             delta_t=sim_state.delta_time_h_bar_per_hartree,
             potential_scale=sim_state.config["view"]["per_axis_plot"]["potential_plot_scale"],
             index=iter_data.i,

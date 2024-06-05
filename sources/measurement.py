@@ -27,13 +27,17 @@ class MeasurementPlane:
             )
         )
         self.cumulated_time = 0.0
-        self.x = int((location_bohr_radii + simulated_box_dimensions_3[0] * 0.5) / delta_x_3[0])
+        self.voxel_x = int((location_bohr_radii + simulated_box_dimensions_3[0] * 0.5) / delta_x_3[0])
+        if self.voxel_x > viewing_window_top_voxel_3[0] - 1:
+            self.voxel_x = viewing_window_top_voxel_3[0] - 1
+        elif self.voxel_x < viewing_window_bottom_voxel_3[0]:
+            self.voxel_x = viewing_window_bottom_voxel_3[0]
         self.viewing_window_bottom_voxel = viewing_window_bottom_voxel_3
         self.viewing_window_top_voxel = viewing_window_top_voxel_3
 
     def integrate(self, probability_density, delta_time):
         self.plane_probability_density = probability_density[
-            self.x,
+            self.voxel_x,
             self.viewing_window_bottom_voxel[1] : self.viewing_window_top_voxel[1],
             self.viewing_window_bottom_voxel[2] : self.viewing_window_top_voxel[2],
         ]

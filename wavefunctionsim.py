@@ -13,7 +13,43 @@ import numpy as np
 def sim():
     print(text_writer.get_title_text())
     print("\n")
-    sim_state = init.initialize()
+
+    arguments = sys.argv
+    arguments.pop(0)
+    use_cache = True
+    is_help = False
+    is_version = False
+    if "-nc" in arguments:
+        arguments.remove("-nc")
+        use_cache = False
+    if "--help" in arguments or "-h" in arguments:
+        try:
+            arguments.remove("--help")
+        except ValueError:
+            pass
+        try:
+            arguments.remove("-h")
+        except ValueError:
+            pass
+        is_help = True
+    if "--version" in arguments:
+        arguments.remove("--version")
+        is_version = True
+
+    if len(arguments) > 0:  # Exit if received unknown parameter
+        print(f"Unknown argument: {arguments}")
+        print("To see the list of available arguments use \"-h\" or \"--help\" !")
+        return
+
+    if is_help:
+        print(text_writer.get_help_text())
+        return
+
+    if is_version:
+        print(text_writer.get_version_text())
+        return
+
+    sim_state = init.initialize(use_cache)
 
     # Check display availability
     have_display = "DISPLAY" in os.environ
@@ -67,7 +103,7 @@ def sim():
         )
         measurement_tools.measurement_plane = measurement.MeasurementPlane(
             delta_x_3=sim_state.delta_x_bohr_radii_3,
-            location_bohr_radii=30.0,
+            location_bohr_radii=10.0,
             simulated_box_dimensions_3=sim_state.simulated_volume_dimensions_bohr_radii_3,
             viewing_window_bottom_voxel_3=sim_state.viewing_window_bottom_corner_voxel_3,
             viewing_window_top_voxel_3=sim_state.viewing_window_top_corner_voxel_3,

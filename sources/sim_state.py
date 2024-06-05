@@ -108,7 +108,7 @@ class SimState:
             * (3.0 * np.max(self.delta_x_bohr_radii_3) * np.max(self.delta_x_bohr_radii_3))
             / 3.0
         )  # Based on reasoning from the Web-Schrödinger paper
-        self.delta_time_h_bar_per_hartree = config["iteration"][
+        self.delta_time_h_bar_per_hartree = config["simulation"][
             "delta_time_h_bar_per_hartree"
         ]
 
@@ -154,10 +154,13 @@ class SimState:
         except KeyError:
             self.enable_visual_output = True
         try:
-            self.enable_wave_function_save = config["iteration"]["enable_wave_function_save"]
+            self.enable_wave_function_save = config["view"]["enable_wave_function_save"]
         except KeyError:
             self.enable_wave_function_save = True
-
+        try:
+            self.is_dynamic_potential_mode = config["simulation"]["is_dynamic_potential_mode"]
+        except KeyError:
+            self.is_dynamic_potential_mode = False
 
     def get_view_into_raw_wave_function(self):
         return math_utils.cut_window(

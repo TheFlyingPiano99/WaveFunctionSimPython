@@ -152,8 +152,7 @@ potential_operator_kernel_source = '''
         int idx = i * gridDim.x * blockDim.x * gridDim.y * blockDim.y
                 + j * gridDim.x * blockDim.x
                 + k;
-        //potential_operator[idx] = cexp_i(angle);
-        potential_operator[idx] = 1.0f;
+        potential_operator[idx] = cexp_i(angle);
     }
 '''
 

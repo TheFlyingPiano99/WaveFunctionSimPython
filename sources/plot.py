@@ -34,7 +34,7 @@ def plot_probability_evolution(out_dir, probability_evolutions, delta_t, index, 
 
 
 def plot_per_axis_probability_density(
-    out_dir, title: str, data: tuple, delta_x: float, delta_t: float, index: int, potential_scale: float, show_fig=False
+    out_dir, title: str, data: tuple, delta_x_3: np.array, delta_t: float, index: int, potential_scale: float, show_fig=False
 ):
     matplotlib.rcParams.update({'font.size': font_size})
     plt.clf()  # Clear figure
@@ -47,13 +47,15 @@ def plot_per_axis_probability_density(
     plt.xlabel("Location [Bohr radius]")
     plt.ylabel(f"Probability density / Potential [{1.0 / data[3][4]:.1f} Hartree]", fontsize=font_size * 0.9)
     plt.title(f"Elapsed time = {index * delta_t:.2f} ħ/Hartree = {math_utils.h_bar_per_hartree_to_fs(index * delta_t):.2f} fs")
-    n = data[0][0].size
-    # For n assuming that all datasets have the same size
-    x = np.linspace(start=-n * delta_x * 0.5, stop=n * delta_x * 0.5, dtype=None, num=n)
+    x_axis_values = []
+    x_axis_values.append(np.linspace(start=-data[0][0].size * delta_x_3[0] * 0.5, stop=data[0][0].size * delta_x_3[0] * 0.5, dtype=None, num=data[0][0].size))
+    x_axis_values.append(np.linspace(start=-data[1][0].size * delta_x_3[1] * 0.5, stop=data[1][0].size * delta_x_3[1] * 0.5, dtype=None, num=data[1][0].size))
+    x_axis_values.append(np.linspace(start=-data[2][0].size * delta_x_3[2] * 0.5, stop=data[2][0].size * delta_x_3[2] * 0.5, dtype=None, num=data[2][0].size))
+    x_axis_values.append(np.linspace(start=-data[3][0].size * delta_x_3[0] * 0.5, stop=data[3][0].size * delta_x_3[0] * 0.5, dtype=None, num=data[3][0].size))
     plt.xlim(data[0][2], data[0][3])
     plt.ylim(0.0, 0.25)
-    for prob_data in data:
-        plt.plot(x, cp.asnumpy(prob_data[0]), label=prob_data[1])
+    for idx, prob_data in enumerate(data):
+        plt.plot(x_axis_values[idx], cp.asnumpy(prob_data[0]), label=prob_data[1])
     plt.legend()
     plt.subplots_adjust(left=0.14, bottom=0.12, right=0.95, top=0.9)
     plt.savefig(

@@ -1,21 +1,26 @@
-# We simulate the time-development of the wave function in an NxNxN sized cube
+# We simulate the time-development of the wave function in an N_x x N_y x N_z sized cube
 # The origin of the coordinate system is in the center of the simulated volume
 # We use a right-handed system, where +Y is the upward direction
 # Values are given in the Hartree atomic unit system
 
-["wave_packet"]
+[simulation]
+delta_time_h_bar_per_hartree = 0.005
+is_dynamic_potential_mode = true
+method = "fft"
+
+[wave_packet]
 particle_mass = 1.0
-initial_wp_position_bohr_radii_3 = [-0.0, 0.0, 0.0]
+initial_wp_position_bohr_radii_3 = [0.0, 0.0, 0.0]
 initial_wp_velocity_bohr_radii_hartree_per_h_bar = [0.0, 0.0, 0.0]
 wp_width_bohr_radii = 2.0
 
-["volume"]
+[volume]
 simulated_volume_dimensions_bohr_radii_3 = [120.0, 120.0, 120.0] #Including draining potential regions
 number_of_voxels_3 = [256, 256, 256]         #Including draining potential regions
 viewing_window_boundary_bottom_corner_bohr_radii_3 = [-30.0, -30.0, -30.0]   # Same as the inner boundary of the draining potential
 viewing_window_boundary_top_corner_bohr_radii_3 = [30.0, 30.0, 30.0]   # Same as the inner boundary of the draining potential
 
-["drain"]
+[drain]
 outer_potential_hartree = -100.0
 interpolation_exponent = 3.0
 
@@ -84,18 +89,18 @@ visible=true
 #visible = true
 
 [iteration]
-delta_time_h_bar_per_hartree = 0.005
 total_iteration_count = 6000
-animation_frame_step_interval = 10
-png_step_interval = 5
-measurement_plane_capture_interval = 500
-probability_plot_interval = 500
-per_axis_probability_denisty_interval = 5
-wave_function_save_interval = 500
 
 [view]
-video_frame_rate = 25
 enable_visual_output = true
+enable_wave_function_save = false
+video_frame_rate = 25
+animation_frame_step_interval = 50
+png_step_interval = 50
+measurement_plane_capture_interval = 500
+probability_plot_interval = 500
+per_axis_probability_denisty_interval = 50
+wave_function_save_interval = 500
 
 [view.volumetric]
 camera_rotation_speed = -0.5

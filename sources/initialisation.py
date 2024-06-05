@@ -15,9 +15,8 @@ import sys
 def is_toml(file_name):
     return file_name.endswith('.toml')
 
-def initialize():
+def initialize(use_cache: bool = True):
     initialisation_start_time_s = time.time()
-    use_cache = False       # Toggle here if needed for testing
     config_dir = "config/"
     if os.path.exists(config_dir):
         conf_files = list(filter(is_toml, os.listdir(config_dir)))
