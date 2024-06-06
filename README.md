@@ -29,13 +29,15 @@ On Linux systems alternatively you can use APT:
   source .venv/bin/activate
   ```
   (To deactivate later, use the `deactivate` command)
-- While the virtual environment is active (This can be seen from the presence of the `(.venv)` label at the beginning of the prompt.), upgrade pip: `python3 -m pip install --upgrade pip`
-- Install the required packages by typing: `python3 -m pip install -r requirements.txt`
+- While the virtual environment is active (This can be seen from the presence of the `(.venv)` label at the beginning of the prompt.), upgrade pip: `python -m pip install --upgrade pip`
+- Install the required packages by typing: `python -m pip install -r requirements.txt`
 This might take a while.
 - After everything is installed, run the application by:
   ```
-  python3 wavefunctionsim.py
+  python wavefunctionsim.py
   ```
+## Generating documentation
+To generate code docuemntation from the root directory of the project run `sphinx-build -M html docs/source/ docs/build/`.
 
 ## How to use
 ### Configuration
