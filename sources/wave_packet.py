@@ -4,7 +4,7 @@ import math
 import sources.math_utils as math_utils
 from numba import jit, njit
 from pathlib import Path
-
+import os
 
 def P_free_space(r, t):
     return (
@@ -33,7 +33,7 @@ def wave_packet(x, y):
     return wave_0_x(x) * wave_0_y(y)
 
 
-wave_packet_kernel_source = Path("sources/cuda_kernels/gaussian_wave_packet.cu").read_text()
+wave_packet_kernel_source = Path("sources/cuda_kernels/gaussian_wave_packet.cu").read_text().replace("PATH_TO_SOURCES", os.path.abspath("sources"))
 
 def init_gaussian_wave_packet(
     delta_x_bohr_radii_3: np.array,

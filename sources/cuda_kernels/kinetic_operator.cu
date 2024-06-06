@@ -1,35 +1,9 @@
-#include <cupy/complex.cuh>
+#include "PATH_TO_SOURCES/cuda_kernels/common.cu"
 
-extern "C" float M_PI = 3.14159265359;
-
-extern "C" __device__ float3 scalarVectorMul(float s, const float3& v)
-{
-    return {s * v.x, s * v.y, s * v.z};
-}
-
-extern "C" __device__ float dot(const float3& a, const float3& b)
-{
-    return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-extern "C" __device__ complex<float> exp_i(float angle)
-{
-    return complex<float>(cosf(angle), sinf(angle));
-}
-
-extern "C" __device__ float3 diff(float3 a, float3 b)
-{
-    return {a.x - b.x, a.y - b.y, a.z - b.z};
-}
-
-extern "C" __device__ float3 div(float3 a, float3 b)
-{
-    return {a.x / b.x, a.y / b.y, a.z / b.z};
-}
 
 extern "C" __global__
 void kinetic_operator_kernel(
-    complex<float>* kinetic_operator,
+    complex<float>* __restrict__ kinetic_operator,
 
     float delta_x,
     float delta_y,

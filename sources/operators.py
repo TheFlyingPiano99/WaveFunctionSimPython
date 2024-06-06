@@ -3,8 +3,11 @@ import numpy as np
 import cupy as cp
 import sources.math_utils as math_utils
 from pathlib import Path
+import os
 
-kinetic_operator_kernel_source = Path("sources/cuda_kernels/kinetic_operator.cu").read_text()
+
+kinetic_operator_kernel_source = (Path("sources/cuda_kernels/kinetic_operator.cu")
+                                  .read_text().replace("PATH_TO_SOURCES", os.path.abspath("sources")))
 
 
 def init_kinetic_operator(delta_x_3: np.array, delta_time: float, shape: np.shape):
@@ -30,7 +33,8 @@ def init_kinetic_operator(delta_x_3: np.array, delta_time: float, shape: np.shap
     return P_kinetic
 
 
-potential_operator_kernel_source = Path("sources/cuda_kernels/potential_operator.cu").read_text()
+potential_operator_kernel_source = (Path("sources/cuda_kernels/potential_operator.cu")
+                                    .read_text().replace("PATH_TO_SOURCES", os.path.abspath("sources")))
 
 
 def init_potential_operator(P_potential: cp.ndarray, V: cp.ndarray, delta_time:float):

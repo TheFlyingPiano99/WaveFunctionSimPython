@@ -1,46 +1,9 @@
-#include <cupy/complex.cuh>
-
-extern "C" float M_PI = 3.14159265359;
-
-extern "C" __device__ float3 scalarVectorMul(float s, const float3& v)
-{
-    return {s * v.x, s * v.y, s * v.z};
-}
-
-extern "C" __device__ float dot(const float3& a, const float3& b)
-{
-    return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-extern "C" __device__ complex<float> exp_i(float angle)
-{
-    return complex<float>(cosf(angle), sinf(angle));
-}
-
-extern "C" __device__ complex<float> cexp_i(complex<float> cangle)
-{
-    return complex<float>(cosf(cangle.real()), sinf(cangle.real())) * expf(-cangle.imag());
-}
-
-extern "C" __device__ float3 diff(float3 a, float3 b)
-{
-    return {a.x - b.x, a.y - b.y, a.z - b.z};
-}
-
-extern "C" __device__ float3 mul(float3 a, float3 b)
-{
-    return {a.x * b.x, a.y * b.y, a.z * b.z};
-}
-
-extern "C" __device__ float3 div(float3 a, float3 b)
-{
-    return {a.x / b.x, a.y / b.y, a.z / b.z};
-}
+#include "PATH_TO_SOURCES/cuda_kernels/common.cu"
 
 
 extern "C" __global__
 void draining_potential_kernel(
-    complex<float>* V,
+    complex<float>* __restrict__ V,
 
     float delta_x,
     float delta_y,
