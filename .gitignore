@@ -9,4 +9,5 @@
 sources/__pycache__/*
 cache/*
 output/*
-
+docs/build/html
+docs/build/epub
