@@ -113,7 +113,7 @@ class SimState:
         ]
 
         # Init draining potential
-        self.drain_potential_description = potential.DrainPotentialDescription(config)
+        self.drain_potential_description = potential.DrainPotentialDescription(config)  # It processes the viewing boundaries
         self.viewing_window_bottom_corner_bohr_radii_3 = (
             self.drain_potential_description.boundary_bottom_corner_bohr_radii_3
         )
@@ -138,7 +138,7 @@ class SimState:
             dtype=np.int32,
         )
         # Swap coordinates if needed
-        for i in range(0, 3):
+        for i in range(3):
             if (
                 self.viewing_window_bottom_corner_voxel_3[i]
                 > self.viewing_window_top_corner_voxel_3[i]
@@ -148,6 +148,11 @@ class SimState:
                     i
                 ] = self.viewing_window_top_corner_voxel_3[i]
                 self.viewing_window_top_corner_voxel_3[i] = temp
+
+        # Correct max voxel if out of simulated voxel count:
+        for i in range(3):
+            if (self.viewing_window_top_corner_voxel_3[i] >= self.number_of_voxels_3[i]):
+                self.viewing_window_top_corner_voxel_3[i] = self.number_of_voxels_3[i] - 1
 
         try:
             self.enable_visual_output = config["view"]["enable_visual_output"]
@@ -161,6 +166,7 @@ class SimState:
             self.is_dynamic_potential_mode = config["simulation"]["is_dynamic_potential_mode"]
         except KeyError:
             self.is_dynamic_potential_mode = False
+
 
     def get_view_into_raw_wave_function(self):
         return math_utils.cut_window(
