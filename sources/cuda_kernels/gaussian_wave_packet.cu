@@ -20,12 +20,8 @@ void wave_packet_kernel(
     float k_z
 )
 {
-    int k = blockIdx.x * blockDim.x + threadIdx.x;
-    int j = blockIdx.y * blockDim.y + threadIdx.y;
-    int i = blockIdx.z * blockDim.z + threadIdx.z;
-    int idx = i * gridDim.x * blockDim.x * gridDim.y * blockDim.y
-            + j * gridDim.x * blockDim.x
-            + k;
+    uint3 voxel = get_voxel_coords();
+    int idx = get_array_index();
 
     float3 k_0 = {k_x, k_y, k_z};
     float3 r_0 = {r_x, r_y, r_z};
@@ -36,7 +32,7 @@ void wave_packet_kernel(
         (float)(gridDim.z * blockDim.z)
     };
     float3 r = diff(
-        mul(delta_r, {(float)i, (float)j, (float)k}),
+        mul(delta_r, {(float)voxel.x, (float)voxel.y, (float)voxel.z}),
         scalarVectorMul(0.5f, mul(N, delta_r))
     );
 

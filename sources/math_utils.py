@@ -115,3 +115,19 @@ def rotation_matrix(axis, theta):
     return np.array([[aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac)],
                      [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab)],
                      [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc]])
+
+
+grid_size = [0, 0, 0]
+
+def get_grid_size(shape: np.shape):
+    global grid_size
+    if (grid_size[0] > 0):  # Cached size
+        return tuple(grid_size)
+    grid_size = [64, 64, 64]
+    for i in range(3):
+        while True:
+            if (shape[i] // grid_size[i]) * grid_size[i] == shape[i]:
+                break
+            grid_size[i] = grid_size[i] + 1
+    grid_size = tuple(grid_size)
+    return grid_size

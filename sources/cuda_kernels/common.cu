@@ -54,5 +54,38 @@ __device__ constexpr float3 transform_corner_origin_to_center_origin_system(cons
     );
 }
 
+__device__ uint3 get_voxel_coords()
+{
+    return {
+        blockIdx.x * blockDim.x + threadIdx.x,
+        blockIdx.y * blockDim.y + threadIdx.y,
+        blockIdx.z * blockDim.z + threadIdx.z
+    };
+}
+
+__device__ uint3 get_voxel_coords_inverted()
+{
+    int x = gridDim.x * blockDim.x - (blockIdx.x * blockDim.x + threadIdx.x) - 1;
+    int y = gridDim.y * blockDim.y - (blockIdx.y * blockDim.y + threadIdx.y) - 1;
+    int z = gridDim.z * blockDim.z - (blockIdx.z * blockDim.z + threadIdx.z) - 1;
+    return {x, y, z};
+}
+
+__device__ int get_array_index()
+{
+    uint3 voxel = get_voxel_coords();
+    return voxel.x * gridDim.y * blockDim.y * gridDim.z * blockDim.z
+            + voxel.y * gridDim.z * blockDim.z
+            + voxel.z;
+}
+
+__device__ int get_array_index_inverted()
+{
+    uint3 voxel = get_voxel_coords_inverted();
+    return voxel.x * gridDim.y * blockDim.y * gridDim.z * blockDim.z
+            + voxel.y * gridDim.z * blockDim.z
+            + voxel.z;
+}
+
 
 #endif  // CUDA_COMMON

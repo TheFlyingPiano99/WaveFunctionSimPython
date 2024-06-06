@@ -433,6 +433,7 @@ def initialize(use_cache: bool = True):
                 V=sim_state.localised_potential_hartree,
                 delta_time=sim_state.delta_time_h_bar_per_hartree,
             )
+
             cp.save(file=os.path.join(sim_state.cache_dir, "potential_operator.npy"), arr=sim_state.potential_operator)
     try:
         with open(os.path.join(sim_state.cache_dir, "cached_parameters.toml"), mode="w") as cache_f:

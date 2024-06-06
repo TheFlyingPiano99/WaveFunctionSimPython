@@ -30,7 +30,6 @@ class VolumetricVisualization:
     def __init__(
         self, wave_function: cp.ndarray, potential: cp.ndarray, coulomb_potential: cp.ndarray, cam_rotation_speed=0.0, azimuth=0.0
     ):
-        print(wave_function.shape)
 
         # Prepare canvas
         self.canvas = scene.SceneCanvas(
@@ -204,7 +203,6 @@ class VolumetricVisualization:
         """
 
     def update(self, wave_function, potential, iter_count, delta_time_h_bar_per_hartree):
-        print(wave_function.shape)
         npad = ((1,1), (1,1), (1,1), (0,0))
         self.multi_volume_visual.update_volume_data(
             volume_data=np.pad(

@@ -93,9 +93,12 @@ def init_iter_data(sim_state: sim_st.SimState):
 
 def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools: measurement.MeasurementTools):
     # Update all measurement tools:
-    measurement_tools.measurement_volume_full.integrate_probability_density(
+    '''
+        measurement_tools.measurement_volume_full.integrate_probability_density(
         sim_state.probability_density
     )
+    '''
+
     '''
     measurement_tools.measurement_volume_first_half.integrate_probability_density(
         sim_state.probability_density
@@ -105,6 +108,7 @@ def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools:
     )
     '''
 
+    '''
     measurement_tools.measurement_plane.integrate(
         sim_state.probability_density,
         sim_state.delta_time_h_bar_per_hartree,
@@ -144,6 +148,7 @@ def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools:
             index=iter_data.i,
             show_fig=False,
         )
+    '''
     if (
             iter_data.i % iter_data.animation_frame_step_interval == 0
             or iter_data.i % iter_data.png_step_interval == 0
@@ -154,6 +159,9 @@ def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools:
             iter_count=iter_data.i,
             delta_time_h_bar_per_hartree=sim_state.delta_time_h_bar_per_hartree,
         )
+    if iter_data.i % iter_data.png_step_interval == 0:
+        measurement_tools.volumetric.render_to_png(out_dir=sim_state.output_dir, index=iter_data.i)
+    """
     if iter_data.i % iter_data.animation_frame_step_interval == 0:
         measurement_tools.animation_writer_3D.add_frame(
             measurement_tools.volumetric.render()
@@ -161,8 +169,6 @@ def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools:
         measurement_tools.animation_writer_per_axis.add_frame(
             measurement_tools.per_axis_density_plot
         )
-    if iter_data.i % iter_data.png_step_interval == 0:
-        measurement_tools.volumetric.render_to_png(out_dir=sim_state.output_dir, index=iter_data.i)
     if iter_data.i % iter_data.probability_plot_interval == 0:
         plot.plot_probability_evolution(
             out_dir=sim_state.output_dir,
@@ -184,6 +190,7 @@ def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools:
             delta_x_3=sim_state.delta_x_bohr_radii_3,
             delta_t=sim_state.delta_time_h_bar_per_hartree
         )
+    """
 
 
 def write_wave_function_to_file(sim_state: sim_st.SimState, iter_data):
@@ -236,8 +243,8 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools: measurement.Mea
         is_diverged = False # For comparison
         sim_state.simulation_method = "fft" if p == 0 else "power_series" # For p comparison
         sim_state.wave_tensor = cp.copy(copy_of_initial_wave_function)  # For p comparison
-        if sim_state.enable_visual_output:
-            measurement_tools.measurement_volume_full.clear()   # For p comparison
+        #if sim_state.enable_visual_output:
+        #    measurement_tools.measurement_volume_full.clear()   # For p comparison
         # Setup iteration parameters:
         iter_data = init_iter_data(sim_state)
         if (

@@ -151,7 +151,7 @@ class MultiVolumeVisual(Visual):
         self.set_gl_state("translucent", cull_face=False, depth_test=False)
 
         self.relative_step_size = relative_step_size
-        self.light_direction = np.array([-1.0, 1.0, 1.0], dtype=np.float_)
+        self.light_direction = np.array([1.0, 1.0, -1.0], dtype=np.float_)
         self.freeze()
 
         # Add supplied volumes

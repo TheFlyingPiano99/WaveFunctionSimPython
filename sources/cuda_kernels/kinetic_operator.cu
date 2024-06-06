@@ -12,15 +12,11 @@ void kinetic_operator_kernel(
     float delta_t
 )
 {
-    int k = blockIdx.x * blockDim.x + threadIdx.x;
-    int j = blockIdx.y * blockDim.y + threadIdx.y;
-    int i = blockIdx.z * blockDim.z + threadIdx.z;
-    int idx = i * gridDim.x * blockDim.x * gridDim.y * blockDim.y
-            + j * gridDim.x * blockDim.x
-            + k;
+    uint3 voxel = get_voxel_coords();
+    int idx = get_array_index();
 
     float3 f = div(
-        {(float)k, (float)j, (float)i},
+        {(float)voxel.x, (float)voxel.y, (float)voxel.z},
         {(float)(gridDim.x * blockDim.x - 1), (float)(gridDim.y * blockDim.y - 1), (float)(gridDim.z * blockDim.z - 1)}
     );
     float3 delta_r = {delta_x, delta_y, delta_z};

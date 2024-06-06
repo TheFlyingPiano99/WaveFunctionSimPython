@@ -14,7 +14,7 @@ def init_kinetic_operator(delta_x_3: np.array, delta_time: float, shape: np.shap
     kinetic_operator_kernel = cp.RawKernel(kinetic_operator_kernel_source,
                                  'kinetic_operator_kernel',
                                  enable_cooperative_groups=False)
-    grid_size = (64, 64, 64)
+    grid_size = math_utils.get_grid_size(shape)
     block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
     P_kinetic = cp.zeros(shape=shape, dtype=cp.csingle)
     kinetic_operator_kernel(
@@ -42,7 +42,7 @@ def init_potential_operator(P_potential: cp.ndarray, V: cp.ndarray, delta_time:f
                                  'potential_operator_kernel',
                                  enable_cooperative_groups=False)
     shape = P_potential.shape
-    grid_size = (64, 64, 64)
+    grid_size = math_utils.get_grid_size(shape)
     block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
     potential_operator_kernel(
         grid_size,

@@ -45,7 +45,8 @@ def init_gaussian_wave_packet(
     wave_packet_kernel = cp.RawKernel(wave_packet_kernel_source,
                                  'wave_packet_kernel',
                                  enable_cooperative_groups=False)
-    grid_size = (64, 64, 64)
+    grid_size = math_utils.get_grid_size(shape)
+
     block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
     wave_tensor = cp.zeros(shape=shape, dtype=cp.csingle)
     wave_packet_kernel(

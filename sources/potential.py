@@ -133,7 +133,7 @@ def add_draining_potential(
                                              'draining_potential_kernel',
                                              enable_cooperative_groups=False)
     shape = V.shape
-    grid_size = (64, 64, 64)
+    grid_size = math_utils.get_grid_size(shape)
     block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
     draining_potential_kernel(
         grid_size,
@@ -237,7 +237,7 @@ def add_double_slit(
                                       enable_cooperative_groups=False)
 
     shape = V.shape
-    grid_size = (64, 64, 64)
+    grid_size = math_utils.get_grid_size(shape)
     block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
     double_slit_kernel(
         grid_size,
@@ -348,7 +348,7 @@ def add_wall(
                                          enable_cooperative_groups=False)
 
     shape = V.shape
-    grid_size = (64, 64, 64)
+    grid_size = math_utils.get_grid_size(shape)
     block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
     potential_wall_kernel(
         grid_size,

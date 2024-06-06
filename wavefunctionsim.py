@@ -90,6 +90,8 @@ def sim():
             cam_rotation_speed=sim_state.config["view"]["volumetric"]["camera_rotation_speed"],
             azimuth=sim_state.config["view"]["volumetric"]["camera_azimuth"],
         )
+
+        """
         measurement_tools.volumetric.elevation = sim_state.config["view"]["volumetric"]["camera_elevation"]
         measurement_tools.volumetric.set_light_direction(sim_state.config["view"]["volumetric"]["light_direction"])
         measurement_tools.volumetric.light_rotation_speed = sim_state.config["view"]["volumetric"]["light_rotation_speed"]
@@ -113,6 +115,8 @@ def sim():
             top_corner=sim_state.viewing_window_top_corner_voxel_3,
             label="Full volume",
         )
+        """
+
         '''
         measurement_tools.measurement_volume_first_half = measurement.AAMeasurementVolume(
             bottom_corner=sim_state.viewing_window_bottom_corner_voxel_3,

@@ -19,18 +19,13 @@ void draining_potential_kernel(
     float exponent
 )
 {
-    int k = blockIdx.x * blockDim.x + threadIdx.x;
-    int j = blockIdx.y * blockDim.y + threadIdx.y;
-    int i = blockIdx.z * blockDim.z + threadIdx.z;
-
-    int idx = i * gridDim.x * blockDim.x * gridDim.y * blockDim.y
-            + j * gridDim.x * blockDim.x
-            + k;
+    uint3 voxel = get_voxel_coords();
+    int idx = get_array_index();
 
     float3 delta_r = {delta_x, delta_y, delta_z};
     float3 N = {(float)(gridDim.x * blockDim.x), (float)(gridDim.y * blockDim.y), (float)(gridDim.z * blockDim.z)};
     float3 pos = diff(
-        mul(delta_r, {k, j, i}),
+        mul(delta_r, {voxel.x, voxel.y, voxel.z}),
         scalarVectorMul(0.5f, mul(N, delta_r))
     );
     float ellipsoid_distance =
