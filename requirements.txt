@@ -16,3 +16,7 @@ imageio[ffmpeg]
 PyOpenGL
 cupy-cuda12x
 torch
+
+# For documentation generation:
+sphinx
+furo
