@@ -37,7 +37,10 @@ This might take a while.
   python wavefunctionsim.py
   ```
 ## Generating documentation
-To generate code docuemntation from the root directory of the project run `sphinx-build -M html docs/source/ docs/build/`.
+To generate code docuemntation from the root directory of the project run:
+```
+sphinx-build -M html docs/source/ docs/build/
+```
 
 ## How to use
 ### Configuration
