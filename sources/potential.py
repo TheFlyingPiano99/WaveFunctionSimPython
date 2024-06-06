@@ -89,6 +89,8 @@ class DrainPotentialDescription:
         print(f"Ellips. b: {self.ellipsoid_b}")
         print(f"Ellips. c: {self.ellipsoid_c}")
         print(f"Ellips. inner dist.: {self.inner_ellipsoid_distance}")
+        print(f"Bottom corner: ({self.boundary_bottom_corner_bohr_radii_3[0]}, {self.boundary_bottom_corner_bohr_radii_3[1]}, {self.boundary_bottom_corner_bohr_radii_3[2]}, )")
+        print(f"Top corner: ({self.boundary_top_corner_bohr_radii_3[0]}, {self.boundary_top_corner_bohr_radii_3[1]}, {self.boundary_top_corner_bohr_radii_3[2]}, )")
 
 
 

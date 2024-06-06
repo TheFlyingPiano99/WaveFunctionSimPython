@@ -149,7 +149,7 @@ def measure_and_render(iter_data, sim_state: sim_st.SimState, measurement_tools:
             or iter_data.i % iter_data.png_step_interval == 0
     ):
         measurement_tools.volumetric.update(
-            probability=sim_state.get_view_into_raw_wave_function(),
+            wave_function=sim_state.get_view_into_raw_wave_function(),
             potential=sim_state.get_view_into_complex_potential(),
             iter_count=iter_data.i,
             delta_time_h_bar_per_hartree=sim_state.delta_time_h_bar_per_hartree,

@@ -15,8 +15,8 @@ initial_wp_velocity_bohr_radii_hartree_per_h_bar = [0.0, 0.0, 0.0]
 wp_width_bohr_radii = 2.0
 
 [volume]
-simulated_volume_dimensions_bohr_radii_3 = [100.0, 120.0, 120.0] #Including draining potential regions
-number_of_voxels_3 = [256, 256, 256]         #Including draining potential regions
+simulated_volume_dimensions_bohr_radii_3 = [60.0, 120.0, 120.0] #Including draining potential regions
+number_of_voxels_3 = [128, 256, 256]         #Including draining potential regions
 viewing_window_boundary_bottom_corner_bohr_radii_3 = [-30.0, -30.0, -30.0]   # Same as the inner boundary of the draining potential
 viewing_window_boundary_top_corner_bohr_radii_3 = [30.0, 30.0, 30.0]   # Same as the inner boundary of the draining potential
 
@@ -45,34 +45,6 @@ visible=true
 #normal_vector_3 = [1.0, 0.0, 0.0]
 #thickness_bohr_radii = 10.0
 #visible=false
-
-#[[walls]]
-#potential_hartree = 20
-#center_bohr_radii_3 = [-30.0, 0.0, 0.0]
-#normal_vector_3 = [1.0, 0.0, 0.0]
-#thickness_bohr_radii = 10.0
-#visible=false
-
-#[[walls]]
-#potential_hartree = 20
-#center_bohr_radii_3 = [0.0, 0.0, 30.0]
-#normal_vector_3 = [0.0, 0.0, 1.0]
-#thickness_bohr_radii = 10.0
-#visible=false
-
-#[[walls]]
-#potential_hartree = 20
-#center_bohr_radii_3 = [0.0, 0.0, -30.0]
-#normal_vector_3 = [0.0, 0.0, 1.0]
-#thickness_bohr_radii = 10.0
-#visible=false
-
-#[[walls]]
-#potential_hartree = 8
-#center_bohr_radii_3 = [0.0, 0.0, 0.0]
-#normal_vector_3 = [0.0, 1.0, 0.0]
-#thickness_bohr_radii = 1.0
-#visible=true
 
 #[coulomb_potential]
 #charge_density_elementary_charge_per_bohr_radius = 600.0

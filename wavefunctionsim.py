@@ -84,7 +84,7 @@ def sim():
     if sim_state.enable_visual_output:
         measurement_tools = measurement.MeasurementTools()
         measurement_tools.volumetric = volume_visualization.VolumetricVisualization(
-            probability=sim_state.get_view_into_raw_wave_function(),
+            wave_function=sim_state.get_view_into_raw_wave_function(),
             potential=sim_state.get_view_into_complex_potential(),
             coulomb_potential=sim_state.get_view_into_coulomb_potential(),
             cam_rotation_speed=sim_state.config["view"]["volumetric"]["camera_rotation_speed"],

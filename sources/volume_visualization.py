@@ -28,8 +28,10 @@ class VolumetricVisualization:
     multi_volume_visual: multi_volume_visual.MultiVolume
 
     def __init__(
-        self, probability: np.ndarray, potential: np.ndarray, coulomb_potential: np.ndarray, cam_rotation_speed=0.0, azimuth=0.0
+        self, wave_function: cp.ndarray, potential: cp.ndarray, coulomb_potential: cp.ndarray, cam_rotation_speed=0.0, azimuth=0.0
     ):
+        print(wave_function.shape)
+
         # Prepare canvas
         self.canvas = scene.SceneCanvas(
             keys="interactive", bgcolor="white", size=(1024, 768), show=False
@@ -37,7 +39,7 @@ class VolumetricVisualization:
         self.view = self.canvas.central_widget.add_view()
 
         # create colormaps that work well for translucent density visualisation
-        class ProbabilityDensityColorMap(BaseColormap):
+        class WaveFunctionDensityColorMap(BaseColormap):
             glsl_map = """
             vec4 translucent_fire(float re, float im) {
                 float p = re * re + im * im;
@@ -94,11 +96,11 @@ class VolumetricVisualization:
             }
             """
 
-        self.probability_color_map = ProbabilityDensityColorMap()
+        self.wave_function_color_map = WaveFunctionDensityColorMap()
         self.potential_color_map = PotentialColorMap()
         self.coulomb_color_map = CoulombColorMap()
 
-        np_probability = cp.asnumpy(probability).astype(np.csingle).view(dtype=np.float32).reshape(probability.shape + (2,))
+        np_wave_function = cp.asnumpy(wave_function).astype(np.csingle).view(dtype=np.float32).reshape(wave_function.shape + (2,))
         np_potential = cp.asnumpy(potential).astype(np.csingle).view(dtype=np.float32).reshape(potential.shape + (2,))
         np_coulomb = cp.asnumpy(coulomb_potential).astype(np.csingle).view(dtype=np.float32).reshape(coulomb_potential.shape + (2,))
 
@@ -116,7 +118,7 @@ class VolumetricVisualization:
 
         npad = ((1,1), (1,1), (1,1), (0,0))
         padded_prob = np.pad(
-                    array=np_probability,
+                    array=np_wave_function,
                     pad_width=npad,
                     mode="constant",
                     constant_values=0.0,
@@ -125,7 +127,7 @@ class VolumetricVisualization:
             (
                 padded_prob,
                 self.normalized_complex_limit,
-                self.probability_color_map,
+                self.wave_function_color_map,
             ),
             (
                 np.pad(
@@ -201,11 +203,12 @@ class VolumetricVisualization:
 
         """
 
-    def update(self, probability, potential, iter_count, delta_time_h_bar_per_hartree):
+    def update(self, wave_function, potential, iter_count, delta_time_h_bar_per_hartree):
+        print(wave_function.shape)
         npad = ((1,1), (1,1), (1,1), (0,0))
         self.multi_volume_visual.update_volume_data(
             volume_data=np.pad(
-                array=cp.asnumpy(probability).astype(np.csingle).view(dtype=np.float32).reshape(probability.shape + (2,)),
+                array=cp.asnumpy(wave_function).astype(np.csingle).view(dtype=np.float32).reshape(wave_function.shape + (2,)),
                 pad_width=npad,
                 mode="constant",
                 constant_values=0.0,

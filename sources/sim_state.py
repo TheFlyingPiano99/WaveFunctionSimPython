@@ -154,6 +154,12 @@ class SimState:
             if (self.viewing_window_top_corner_voxel_3[i] >= self.number_of_voxels_3[i]):
                 self.viewing_window_top_corner_voxel_3[i] = self.number_of_voxels_3[i] - 1
 
+        self.viewing_window_top_corner_voxel_3 -= np.array([0, 1, 1]) # For testing
+
+        print(f"Bottom corner voxel: ({self.viewing_window_bottom_corner_voxel_3[0]}, {self.viewing_window_bottom_corner_voxel_3[1]}, {self.viewing_window_bottom_corner_voxel_3[2]})")
+        print(f"Top corner voxel: ({self.viewing_window_top_corner_voxel_3[0]}, {self.viewing_window_top_corner_voxel_3[1]}, {self.viewing_window_top_corner_voxel_3[2]})")
+
+
         try:
             self.enable_visual_output = config["view"]["enable_visual_output"]
         except KeyError:

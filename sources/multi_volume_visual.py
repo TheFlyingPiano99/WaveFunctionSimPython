@@ -307,8 +307,8 @@ class MultiVolumeVisual(Visual):
         self._vertices.set_data(pos)
         self._index_buffer.set_data(indices)
 
-        self._vertices.set_data(pos)
-        self._index_buffer.set_data(indices)
+        #self._vertices.set_data(pos)
+        #self._index_buffer.set_data(indices)
 
     def _compute_bounds(self, axis, view):
         return 0, self._vol_shape[axis]
