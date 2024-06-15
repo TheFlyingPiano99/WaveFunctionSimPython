@@ -28,22 +28,13 @@ def write_wave_function_to_file(sim_state: SimState, iter_data: IterData):
 
 def time_step(sim_state: SimState,
               measurement_tools: MeasurementTools,
-              iter_data: IterData,
-              next_s_kernel: cp.RawKernel = None,
-              s: cp.ndarray = None
-              ):
-
+              iter_data: IterData):
     sim_state.update_probability_density()
-
     if sim_state.is_wave_function_saving():
         write_wave_function_to_file(sim_state=sim_state, iter_data=iter_data)
-
     measurement_tools.measure_and_render(sim_state, iter_data)
-
     sim_state.evolve_state()
-
     sim_state.update_potential()
-
 
 def run_iteration(sim_state: SimState, measurement_tools: MeasurementTools, iter_data: IterData):
     print(Fore.GREEN + "Simulating " + Style.RESET_ALL + "(Press <Ctrl-c> to quit.)")
@@ -69,10 +60,7 @@ def run_iteration(sim_state: SimState, measurement_tools: MeasurementTools, iter
             iter_start_time_s = time.time()
 
             # Do simulation step:
-            if sim_state.get_simulation_method() == SimulationMethod.FOURIER:
-                time_step(sim_state, measurement_tools, iter_data)
-            elif sim_state.get_simulation_method() == SimulationMethod.POWER_SERIES:
-                time_step(sim_state, measurement_tools, iter_data, next_s_kernel=next_s_kernel, s=pingpong_buff)
+            time_step(sim_state, measurement_tools, iter_data)
 
             # update time variable and progress bar:
             iter_data.elapsed_system_time_s += time.time() - iter_start_time_s

@@ -18,14 +18,6 @@ def write_snapshot(sim_state: SimState, iter_data: IterData):
             f"{iter_data.i};"
             f"{iter_data.elapsed_system_time_s};"
             f"{iter_data.average_iteration_system_time_s};"
-            f"{iter_data.animation_frame_step_interval};"
-            f"{iter_data.png_step_interval};"
-            f"{iter_data.measurement_plane_capture_interval};"
-            f"{iter_data.probability_plot_interval};"
-            f"{iter_data.total_iteration_count};"
-            f"{iter_data.total_simulated_time};"
-            f"{iter_data.per_axis_probability_denisty_plot_interval};"
-            f"{iter_data.wave_function_save_interval};"
         )
 
 
@@ -43,14 +35,6 @@ def read_snapshot(sim_state: SimState, iter_data: IterData):
             iter_data.i = int(split_data[0])
             iter_data.elapsed_system_time_s = float(split_data[1])
             iter_data.average_iteration_system_time_s = float(split_data[2])
-            iter_data.animation_frame_step_interval = int(split_data[3])
-            iter_data.png_step_interval = int(split_data[4])
-            iter_data.measurement_plane_capture_interval = int(split_data[5])
-            iter_data.probability_plot_interval = int(split_data[6])
-            iter_data.total_iteration_count = int(split_data[7])
-            iter_data.total_simulated_time = float(split_data[8])
-            iter_data.per_axis_probability_denisty_plot_interval = int(split_data[9])
-            iter_data.wave_function_save_interval = int(split_data[10])
     except IOError:
         print("Failed to read " + os.path.join(sim_state.get_cache_dir(), "data_snapshot.txt"))
     return sim_state, iter_data

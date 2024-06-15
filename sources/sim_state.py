@@ -265,18 +265,11 @@ class SimState:
                     except IOError:
                         print(Fore.RED + "Found pre-initialized potential but failed to load!" + Style.RESET_ALL)
 
-            """
             print("Creating draining potential.")
-            dp = sim_state.drain_potential_description
-            sim_state.localised_potential_hartree = potential.add_draining_potential(
-                V=sim_state.localised_potential_hartree,
-                delta_x_3=sim_state.delta_x_bohr_radii_3,
-                inner_radius_bohr_radii=dp.inner_radius_bohr_radii,
-                outer_radius_bohr_radii=dp.outer_radius_bohr_radii,
-                max_potential_hartree=dp.max_potential_hartree,
-                exponent=dp.exponent,
+            self.__localised_potential_hartree = self.__absorbing_boundary_condition.add_potential(
+                V=self.__localised_potential_hartree,
+                delta_x_3=self.__delta_x_bohr_radii_3,
             )
-            """
 
             """
             try:
