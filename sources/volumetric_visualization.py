@@ -11,8 +11,11 @@ import sources.math_utils as math_utils
 import sources.multi_volume_visual as multi_volume_visual
 import os
 import cupy as cp
+from typing import Dict
+from sources.config_read_helper import try_read_param
 import warnings
 warnings.filterwarnings('ignore')
+
 
 class VolumetricVisualization:
     canvas: scene.SceneCanvas
@@ -26,6 +29,11 @@ class VolumetricVisualization:
     azimuth = 0.0
     light_elevation_axis: np.array
     multi_volume_visual: multi_volume_visual.MultiVolume
+
+    def __init__(
+        self, config: Dict
+    ):
+        pass
 
     def __init__(
         self, wave_function: cp.ndarray, potential: cp.ndarray, coulomb_potential: cp.ndarray, cam_rotation_speed=0.0, azimuth=0.0

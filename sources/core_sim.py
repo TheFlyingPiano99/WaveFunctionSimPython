@@ -68,8 +68,8 @@ def power_series_time_evolution(sim_state: sim_st.SimState, p: int, next_s_kerne
                 sim_state.wave_tensor,
                 cp.double(sim_state.delta_time_h_bar_per_hartree) if sim_state.double_precision_wave_tensor
                 else cp.float32(sim_state.delta_time_h_bar_per_hartree),
-                cp.double(sim_state.delta_x_bohr_radii_3) if sim_state.double_precision_wave_tensor
-                else cp.float32(sim_state.delta_x_bohr_radii_3),
+                cp.double(sim_state.delta_x_bohr_radii_3[0]) if sim_state.double_precision_wave_tensor
+                else cp.float32(sim_state.delta_x_bohr_radii_3[0]),
                 cp.double(sim_state.particle_mass) if sim_state.double_precision_wave_tensor
                 else cp.float32(sim_state.particle_mass),
                 cp.int32(shape[0]),
@@ -203,7 +203,7 @@ def write_wave_function_to_file(sim_state: sim_st.SimState, iter_data):
             print(Fore.RED + "\nERROR: Failed writing file: "+ os.path.join(sim_state.output_dir, f"wave_function/wave_function_{iter_data.i:04d}.npy") + Style.RESET_ALL)
 
 
-def sim_time_step(sim_state: sim_st.SimState, measurement_tools: measurement.MeasurementTools, iter_data: IterData):
+def sim_time_step(sim_state: sim_st.SimState, measurement_tools: measurement.MeasurementTools, iter_data: IterData, p: int = 0, next_s_kernel=0, s=0, v=0):
     sim_state.probability_density = math_utils.square_of_abs(
         sim_state.wave_tensor
     )
@@ -360,7 +360,10 @@ def run_iteration(sim_state: sim_st.SimState, measurement_tools: measurement.Mea
 
                 iter_start_time_s = time.time()
 
-                sim_time_step(sim_state, measurement_tools, iter_data)
+                if sim_state.simulation_method == "fft":
+                    sim_time_step(sim_state, measurement_tools, iter_data)
+                elif sim_state.simulation_method == "power_series":
+                    sim_time_step(sim_state, measurement_tools, iter_data, p=p, next_s_kernel=next_s_kernel, s=s, v=v)
 
                 iter_time = time.time() - iter_start_time_s
                 iter_data.elapsed_system_time_s += iter_time

@@ -4,94 +4,135 @@ import sources.math_utils as math_utils
 from numba import jit
 import math
 import sources.potential_kernels as kernels
+from typing import Dict
+from sources.config_read_helper import try_read_param
 
-class DrainPotentialDescription:
+
+class PreInitializedPotential:
+    path: str
+    enable: bool
+    visible: bool
+
+    def __init__(self, config: Dict):
+        self.path = try_read_param(config, "potential.pre_initialized_potential.path", "")
+        self.enable = try_read_param(config, "potential.pre_initialized_potential.enable", False)
+        self.visible = try_read_param(config, "potential.pre_initialized_potential.visible", True)
+
+class AbsorbingBoundaryCondition:
     boundary_bottom_corner_bohr_radii_3: np.array
     boundary_top_corner_bohr_radii_3: np.array
-    ellipsoid_a: float
-    ellipsoid_b: float
-    ellipsoid_c: float
-    inner_ellipsoid_distance: float
-    max_potential_hartree: float
-    exponent: float
 
+    outer_potential_in_positive_xyz_direction_hartree_3: np.array
+    outer_potential_in_negative_xyz_direction_hartree_3: np.array
 
-    def ellipsoid(self, v: np.array):
-        return pow(v[0], 2) / pow(self.ellipsoid_a, 2) + pow(v[1], 2) / pow(self.ellipsoid_b, 2) + pow(v[2], 2) / pow(self.ellipsoid_c, 2) - 1.0
+    start_offset_in_positive_xyz_direction_3: np.array
+    start_offset_in_negative_xyz_direction_3: np.array
+
+    slope_exponent_in_positive_xyz_direction_3: np.array
+    slope_exponent_in_negative_xyz_direction_3: np.array
 
     def __init__(self, config):
-        self.boundary_bottom_corner_bohr_radii_3 = np.array(
-            config["volume"]["viewing_window_boundary_bottom_corner_bohr_radii_3"]
+        pass
+
+    def add_potential(
+            V: cp.ndarray,
+            delta_x_3: np.array
+    ):
+        draining_potential_kernel = cp.RawKernel(kernels.draining_potential_kernel_source,
+                                                 'draining_potential_kernel',
+                                                 enable_cooperative_groups=False)
+        shape = V.shape
+        grid_size = math_utils.get_grid_size(shape)
+        block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
+        draining_potential_kernel(
+            grid_size,
+            block_size,
+            (
+                V,
+                cp.float32(delta_x_3[0]),
+                cp.float32(delta_x_3[1]),
+                cp.float32(delta_x_3[2]),
+
+                cp.float32(ellipsoid_a),
+                cp.float32(ellipsoid_b),
+                cp.float32(ellipsoid_c),
+
+                cp.float32(inner_ellipsoid_distance),
+
+                cp.float32(max_potential_hartree),
+                cp.float32(exponent),
+            )
         )
-        self.boundary_top_corner_bohr_radii_3 = np.array(
-            config["volume"]["viewing_window_boundary_top_corner_bohr_radii_3"]
+
+        return V
+
+
+class PotentialWall:
+    potential_hartree: float = 20.0
+    center_bohr_radii_3: np.array = np.array([0.0, 0.0, 0.0])
+    normal_vector_3: np.array = np.array([1.0, 0.0, 0.0])
+    thickness_bohr_radii: float = 5.0
+    outer_slope_thickness_bohr_radii: float = 0.0
+    slope_exponent: float = 1.0
+    velocity_bohr_radius_hartree_per_h_bar_3: np.array = np.array([0.0, 0.0, 0.0])
+    angular_velocity_rad_hartree_per_h_bar_3: np.array = np.array([0.0, 0.0, 0.0])
+    potential_change_rate_hartree_sqr_per_h_bar: float = 0.0
+    slit_count: int = 0
+    slit_spacing_bohr_radii: float = 1.0
+    slit_width_bohr_radii: float = 0.5
+    slit_rotation: float = 0.0
+    visible: bool = True
+
+    def __init__(self, wall_config: Dict):
+        self.potential_hartree = try_read_param(wall_config, "potential_hartree", 20)
+        self.center_bohr_radii_3 = try_read_param(wall_config, "center_bohr_radii_3", [0.0, 0.0, 0.0])
+        self.normal_vector_3 = try_read_param(wall_config, "normal_vector_3", [1.0, 0.0, 0.0])
+        self.thickness_bohr_radii = try_read_param(wall_config, "thickness_bohr_radii", 5.0)
+        self.outer_slope_thickness_bohr_radii = try_read_param(wall_config, "outer_slope_thickness_bohr_radii", 0.0)
+        self.slope_exponent = try_read_param(wall_config, "slope_exponent", 1.0)
+        self.velocity_bohr_radius_hartree_per_h_bar_3 = try_read_param(wall_config, "velocity_bohr_radius_hartree_per_h_bar_3", [0.0, 0.0, 0.0])
+        self.angular_velocity_rad_hartree_per_h_bar_3 = try_read_param(wall_config, "angular_velocity_rad_hartree_per_h_bar_3", [0.0, 0.0, 0.0])
+        self.potential_change_rate_hartree_sqr_per_h_bar = try_read_param(wall_config, "potential_change_rate_hartree_sqr_per_h_bar", 0.0)
+        self.slit_count = try_read_param(wall_config, "slit_count", 0)
+        self.slit_spacing_bohr_radii = try_read_param(wall_config, "slit_spacing_bohr_radii", 1.0)
+        self.slit_width_bohr_radii = try_read_param(wall_config, "slit_width_bohr_radii", 0.5)
+        self.slit_rotation = try_read_param(wall_config, "slit_rotation", 0.0)
+        self.visible = try_read_param(wall_config, "visible", True)
+
+    def add_potential(
+            self,
+            V: cp.ndarray,
+            delta_x_3: np.array,
+    ):
+        potential_wall_kernel = cp.RawKernel(kernels.potential_wall_kernel_source,
+                                             "potential_wall_kernel",
+                                             enable_cooperative_groups=False)
+
+        shape = V.shape
+        grid_size = math_utils.get_grid_size(shape)
+        block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
+        potential_wall_kernel(
+            grid_size,
+            block_size,
+            (
+                V,
+                cp.float32(delta_x_3[0]),
+                cp.float32(delta_x_3[1]),
+                cp.float32(delta_x_3[2]),
+
+                cp.float32(self.center_bohr_radii_3[0]),
+                cp.float32(self.center_bohr_radii_3[1]),
+                cp.float32(self.center_bohr_radii_3[2]),
+
+                cp.float32(self.normal_vector_3[0]),
+                cp.float32(self.normal_vector_3[1]),
+                cp.float32(self.normal_vector_3[2]),
+
+                cp.float32(self.thickness_bohr_radii),
+                cp.float32(self.potential_hartree)
+            )
         )
-        # Flip coordinates if inverted:
-        for i in range(3):
-            if (
-                    self.boundary_bottom_corner_bohr_radii_3[i]
-                    > self.boundary_top_corner_bohr_radii_3[i]
-            ):
-                temp = self.boundary_bottom_corner_bohr_radii_3[i]
-                self.boundary_bottom_corner_bohr_radii_3[i] = self.boundary_top_corner_bohr_radii_3[i]
-                self.boundary_top_corner_bohr_radii_3[i] = temp
-
-        simulated_volume_dimensions_3 = np.array(config["volume"]["simulated_volume_dimensions_bohr_radii_3"])
-
-        # Clip boundaries if too big:
-        for i in range(3):
-            if (
-                    self.boundary_bottom_corner_bohr_radii_3[i]
-                    < -simulated_volume_dimensions_3[i] * 0.5
-            ):
-                self.boundary_bottom_corner_bohr_radii_3[i] = -simulated_volume_dimensions_3[i] * 0.5
-            if (
-                    self.boundary_top_corner_bohr_radii_3[i]
-                    > simulated_volume_dimensions_3[i] * 0.5
-            ):
-                self.boundary_top_corner_bohr_radii_3[i] = simulated_volume_dimensions_3[i] * 0.5
-
-        # Find ellipsoid parameters (a, b, c):
-        self.ellipsoid_a = simulated_volume_dimensions_3[0] * 0.5
-        self.ellipsoid_b = simulated_volume_dimensions_3[1] * 0.5
-        self.ellipsoid_c = simulated_volume_dimensions_3[2] * 0.5
-
-        # Find farthest corner of the visualized boundary box:
-        max_dist = 0.0
-        max_corner = np.array([0.0, 0.0, 0.0])
-        for i in range(2):
-            for j in range(2):
-                for k in range(2):
-                    v = np.array([
-                        self.boundary_bottom_corner_bohr_radii_3[0] if i else self.boundary_top_corner_bohr_radii_3[0],
-                        self.boundary_bottom_corner_bohr_radii_3[1] if j else self.boundary_top_corner_bohr_radii_3[1],
-                        self.boundary_bottom_corner_bohr_radii_3[2] if k else self.boundary_top_corner_bohr_radii_3[2],
-                    ])
-                    d = math_utils.vector_length(v)
-                    if (d > max_dist):
-                        max_corner = v
-                        max_dist = d
-
-        self.max_potential_hartree = config["drain"][
-            "outer_potential_hartree"
-        ]
-        self.exponent = config["drain"]["interpolation_exponent"]
-
-        self.inner_ellipsoid_distance = self.ellipsoid(max_corner)
-        if (self.inner_ellipsoid_distance > 0.0):    # The fartherst corner is outside the ellipsoid
-            self.inner_ellipsoid_distance = 0
-            self.max_potential_hartree = 0.0
-            print("The viewing box is too large to add draining potential!")
-
-        print(f"Drain potential: {self.max_potential_hartree}")
-        print(f"Exponent: {self.exponent}")
-        print(f"Ellips. a: {self.ellipsoid_a}")
-        print(f"Ellips. b: {self.ellipsoid_b}")
-        print(f"Ellips. c: {self.ellipsoid_c}")
-        print(f"Ellips. inner dist.: {self.inner_ellipsoid_distance}")
-        print(f"Bottom corner: ({self.boundary_bottom_corner_bohr_radii_3[0]}, {self.boundary_bottom_corner_bohr_radii_3[1]}, {self.boundary_bottom_corner_bohr_radii_3[2]}, )")
-        print(f"Top corner: ({self.boundary_top_corner_bohr_radii_3[0]}, {self.boundary_top_corner_bohr_radii_3[1]}, {self.boundary_top_corner_bohr_radii_3[2]}, )")
-
+        return V
 
 
 def add_potential_box(
@@ -116,45 +157,6 @@ def add_potential_box(
                 V[x, y, z] += (
                         potential_wall_height_hartree * t / wall_thickness_bohr_radii
                 )
-    return V
-
-
-def add_draining_potential(
-        V: cp.ndarray,
-        delta_x_3: np.array,
-        ellipsoid_a: float,
-        ellipsoid_b: float,
-        ellipsoid_c: float,
-        inner_ellipsoid_distance: float,
-        max_potential_hartree: float,
-        exponent: float,
-):
-    draining_potential_kernel = cp.RawKernel(kernels.draining_potential_kernel_source,
-                                             'draining_potential_kernel',
-                                             enable_cooperative_groups=False)
-    shape = V.shape
-    grid_size = math_utils.get_grid_size(shape)
-    block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
-    draining_potential_kernel(
-        grid_size,
-        block_size,
-        (
-            V,
-            cp.float32(delta_x_3[0]),
-            cp.float32(delta_x_3[1]),
-            cp.float32(delta_x_3[2]),
-
-            cp.float32(ellipsoid_a),
-            cp.float32(ellipsoid_b),
-            cp.float32(ellipsoid_c),
-
-            cp.float32(inner_ellipsoid_distance),
-
-            cp.float32(max_potential_hartree),
-            cp.float32(exponent),
-        )
-    )
-
     return V
 
 
@@ -335,45 +337,6 @@ def add_wall_for_1D(V: cp.ndarray, delta_x_3: np.array, center_bohr_radius: floa
     return V
 
 
-def add_wall(
-        V: cp.ndarray,
-        delta_x_3: np.array,
-        center_bohr_radii_3: np.array,
-        normal_bohr_radii_3: np.array,
-        thickness_bohr_radius: float,
-        potential_hartree: float,
-):
-    potential_wall_kernel = cp.RawKernel(kernels.potential_wall_kernel_source,
-                                         "potential_wall_kernel",
-                                         enable_cooperative_groups=False)
-
-    shape = V.shape
-    grid_size = math_utils.get_grid_size(shape)
-    block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
-    potential_wall_kernel(
-        grid_size,
-        block_size,
-        (
-            V,
-            cp.float32(delta_x_3[0]),
-            cp.float32(delta_x_3[1]),
-            cp.float32(delta_x_3[2]),
-
-            cp.float32(center_bohr_radii_3[0]),
-            cp.float32(center_bohr_radii_3[1]),
-            cp.float32(center_bohr_radii_3[2]),
-
-            cp.float32(normal_bohr_radii_3[0]),
-            cp.float32(normal_bohr_radii_3[1]),
-            cp.float32(normal_bohr_radii_3[2]),
-
-            cp.float32(thickness_bohr_radius),
-            cp.float32(potential_hartree)
-        )
-    )
-    return V
-
-
 def add_coulomb_potential(V: cp.ndarray, delta_x_3: np.array, center_bohr_radius: np.array, gradient_dir: np.array,
                           charge_density: float,
                           oxide_start_bohr_radii: float, oxide_end_bohr_radii: float):
@@ -437,26 +400,17 @@ def add_optical_grid(V: cp.ndarray, delta_x_3: np.array, center_bohr_radius: np.
 
 
 def generate_potential_from_walls_and_drain(V: cp.ndarray, V_vis: cp.ndarray, delta_x_3: np.array,
-                                            drain_description: DrainPotentialDescription, walls: []):
+                                            absorbing_pontetial: AbsorbingBoundaryCondition, walls: list[PotentialWall]):
     V.fill(0.0)
     for w in walls:
-        add_wall(
+        w.add_potential(
             V=V,
             delta_x_3=delta_x_3,
-            center_bohr_radii_3=w.center_bohr_radii_3,
-            normal_bohr_radii_3=w.normal_bohr_radii_3,
-            thickness_bohr_radius=w.thickness_bohr_radii,
-            potential_hartree=w.potential_hartree
         )
     V_vis = V.copy()
-    add_draining_potential(V=V,
-                           delta_x_3=delta_x_3,
-                           ellipsoid_a=drain_description.ellipsoid_a,
-                           ellipsoid_b=drain_description.ellipsoid_b,
-                           ellipsoid_c=drain_description.ellipsoid_c,
-                           inner_ellipsoid_distance=drain_description.inner_ellipsoid_distance,
-                           max_potential_hartree=drain_description.max_potential_hartree,
-                           exponent=drain_description.exponent
-                           )
+    absorbing_pontetial.add_potential(
+        V=V,
+        delta_x_3=delta_x_3,
+    )
 
     return V, V_vis

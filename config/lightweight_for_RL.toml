@@ -3,56 +3,76 @@
 # We use a right-handed system, where +Y is the upward direction
 # Values are given in the Hartree atomic unit system
 
+# The naming convention is as follows: <descriptive name>_<measurement unit if any>_<vector dimension count if greater than 1>
+
+
 [simulation]
+method = "fourier"
 delta_time_h_bar_per_hartree = 0.005
+total_iteration_count = 6000
 is_dynamic_potential_mode = true
-method = "fft"
+enable_wave_function_saving = false
+double_precision_calculation = false
 
 [wave_packet]
-particle_mass = 1.0
-initial_wp_position_bohr_radii_3 = [-5.0, 0.0, 0.0]
-initial_wp_velocity_bohr_radii_hartree_per_h_bar = [1.0, 0.0, 0.0]
-wp_width_bohr_radii = 2.0
+particle_mass_electron_rest_mass = 1.0
+initial_wp_position_bohr_radii_3 = [-40.0, 0.0, 0.0]
+initial_wp_velocity_bohr_radii_hartree_per_h_bar_3 = [-1.0, 0.0, 0.0]
+initial_wp_width_bohr_radii = 2.0
 
 [volume]
-simulated_volume_dimensions_bohr_radii_3 = [120.0, 120.0, 120.0] #Including draining potential regions
-number_of_voxels_3 = [512, 100, 100]         #Including draining potential regions
-viewing_window_boundary_bottom_corner_bohr_radii_3 = [-30.0, -30.0, -30.0]   # Same as the inner boundary of the draining potential
-viewing_window_boundary_top_corner_bohr_radii_3 = [30.0, 30.0, 30.0]   # Same as the inner boundary of the draining potential
+simulated_volume_dimensions_bohr_radii_3 = [120.0, 120.0, 120.0] #Including absorbing potential regions
+number_of_voxels_3 = [256, 256, 256]         #Including absorbing potential regions
+observation_box_bottom_corner_bohr_radii_3 = [-45.0, -45.0, -45.0]   # Same as the inner boundary of the draining potential
+observation_box_top_corner_bohr_radii_3 = [45.0, 45.0, 45.0]   # Same as the inner boundary of the draining potential
 
-[drain]
-outer_potential_hartree = -100.0
-interpolation_exponent = 3.0
+[absorbing_boundary_condition]
+outer_potential_in_positive_xyz_direction_hartree_3 = [-100.0, -100.0, -100.0]
+outer_potential_in_negative_xyz_direction_hartree_3 = [-100.0, -100.0, -100.0]
+start_offset_in_positive_xyz_direction_3 = [1.0, 1.0, 1.0]
+start_offset_in_negative_xyz_direction_3 = [1.0, 1.0, 1.0]
+slope_exponent_in_positive_xyz_direction_3 = [3.0, 3.0, 3.0]    # e: f(x) = x^e,    x in [0, 1]
+slope_exponent_in_negative_xyz_direction_3 = [3.0, 3.0, 3.0]    # e: f(x) = x^e,    x in [0, 1]
+enable = true
 
+[potential.pre_initialized_potential]
+path = ""
+enable = false
+visible = true
 
-[[walls]]
+[[potential.walls]]
 potential_hartree = 200
 center_bohr_radii_3 = [30.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
 thickness_bohr_radii = 30.0
+outer_slope_thickness_bohr_radii = 2.0
+slope_exponent = 1.0    # e: f(x) = x^e,    x in [0, 1]
+velocity_bohr_radius_hartree_per_h_bar_3 = [-1.0, 0.0, 0.0]
+angular_velocity_rad_hartree_per_h_bar_3 = [0.0, 0.0, 0.0]
+potential_change_rate_hartree_sqr_per_h_bar = 0.0
+slit_count = 0
+slit_spacing_bohr_radii = 1.0
+slit_width_bohr_radii = 0.5
+slit_rotation = 0.0
+enable = true
 visible=true
 
-#[[walls]]
-#potential_hartree = 50
-#center_bohr_radii_3 = [20.0, 0.0, 0.0]
-#normal_vector_3 = [1.0, 0.0, 0.0]
-#thickness_bohr_radii = 1.0
-#visible=true
-
-#[[walls]]
-#potential_hartree = 20
-#center_bohr_radii_3 = [30.0, 0.0, 0.0]
-#normal_vector_3 = [1.0, 0.0, 0.0]
-#thickness_bohr_radii = 10.0
-#visible=false
-
-#[coulomb_potential]
-#charge_density_elementary_charge_per_bohr_radius = 600.0
-#center_bohr_radii_3 = [0.0, 11.0, 0.0]
-#gradient_direction = [0.0, 1.0, 0.0]
-#oxide_start_bohr_radii = 10
-#oxide_end_bohr_radii = 11
-#visible = false
+[[potential.walls]]
+potential_hartree = 200
+center_bohr_radii_3 = [50.0, 0.0, 0.0]
+normal_vector_3 = [1.0, 0.0, 0.0]
+thickness_bohr_radii = 30.0
+slope_thickness_bohr_radii = 2.0
+slope_exponent = 1.0    # e: f(x) = x^e,    x in [0, 1]
+velocity_bohr_radius_hartree_per_h_bar_3 = [0.0, 0.0, 0.0]
+angular_velocity_rad_hartree_per_h_bar_3 = [0.0, 0.0, 0.0]
+potential_change_rate_hartree_sqr_per_h_bar = 0.0
+slit_count = 0
+slit_spacing_bohr_radii = 1.0
+slit_width_bohr_radii = 0.5
+slit_rotation = 0.0
+enable = true
+visible=true
 
 #[linear_potential_gradient]
 #center_bohr_radii_3 = [0.0, 40.0, 0.0]
@@ -60,29 +80,18 @@ visible=true
 #gradient_magnitude_hartree_per_bohr_radius = 0.25
 #visible = true
 
-[iteration]
-total_iteration_count = 6000
-
-[view]
-enable_visual_output = true
-enable_wave_function_save = false
-video_frame_rate = 25
-animation_frame_step_interval = 50
-png_step_interval = 50
-measurement_plane_capture_interval = 500
-probability_plot_interval = 500
-per_axis_probability_denisty_interval = 50
-wave_function_save_interval = 500
-
-[view.volumetric]
+[measurement.volumetric]
 camera_rotation_speed = -0.5
 camera_azimuth = -10.0
 camera_elevation = 10.0
 light_direction = [1.0, 1.0, -1.0]
 light_rotation_speed = 0.001
 light_elevation_speed = 0.0
+animation_frame_rate = 25
+animation_frame_capture_iteration_interval = 50
+image_capture_iteration_interval = 50
 
-[view.per_axis_plot]
+[measurement.per_axis_plot]
 title = "Per-axis plot"
 x_axis_label = "X axis"
 y_axis_label = "Y axis"

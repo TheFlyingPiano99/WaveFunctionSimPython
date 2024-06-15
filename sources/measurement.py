@@ -2,8 +2,9 @@ import numpy as np
 from numba.experimental import jitclass
 from numba import types
 import numba
-import sources.volume_visualization as volume_visualization
+from sources.volumetric_visualization import VolumetricVisualization
 import sources.animation as animation
+from sources.sim_state import SimState
 
 class MeasurementPlane:
     def __init__(
@@ -167,11 +168,66 @@ class ProjectedMeasurement:
 
 
 class MeasurementTools:
-    measurement_plane: MeasurementPlane
-    volumetric: volume_visualization.VolumetricVisualization
-    animation_writer_3D: animation.AnimationWriter
-    animation_writer_per_axis: animation.AnimationWriter
-    x_axis_probability_density: ProjectedMeasurement
-    y_axis_probability_density: ProjectedMeasurement
-    z_axis_probability_density: ProjectedMeasurement
-    projected_potential: ProjectedMeasurement
+    __volumetric: VolumetricVisualization = None
+    __animation_writer_3D: animation.AnimationWriter = None
+    __animation_writer_per_axis: animation.AnimationWriter = None
+    __x_axis_probability_density: ProjectedMeasurement = None
+    __y_axis_probability_density: ProjectedMeasurement = None
+    __z_axis_probability_density: ProjectedMeasurement = None
+    __projected_potential: ProjectedMeasurement = None
+
+    def __init__(self, config, sim_state: SimState):
+        self.volumetric = VolumetricVisualization(
+            wave_function=sim_state.get_view_into_raw_wave_function(),
+            potential=sim_state.get_view_into_complex_potential(),
+            coulomb_potential=sim_state.get_view_into_coulomb_potential(),
+            cam_rotation_speed=config["view"]["volumetric"]["camera_rotation_speed"],
+            azimuth=config["view"]["volumetric"]["camera_azimuth"],
+        )
+
+        # Setup "per axis" probability density:
+        self.__x_axis_probability_density = ProjectedMeasurement(
+            min_voxel=sim_state.get_observation_box_bottom_corner_voxel_3()[0],
+            max_voxel=sim_state.get_observation_box_top_corner_voxel_3()[0],
+            near_voxel=sim_state.get_observation_box_bottom_corner_voxel_3()[1],
+            far_voxel=sim_state.get_observation_box_top_corner_voxel_3()[1],
+            left_edge=sim_state.get_observation_box_bottom_corner_bohr_radii_3()[0],
+            right_edge=sim_state.get_observation_box_top_corner_bohr_radii_3()[0],
+            sum_axis=(1, 2),
+            label=config["view"]["per_axis_plot"]["x_axis_label"],
+        )
+        self.__y_axis_probability_density = ProjectedMeasurement(
+            min_voxel=sim_state.get_observation_box_bottom_corner_voxel_3()[1],
+            max_voxel=sim_state.get_observation_box_top_corner_voxel_3()[1],
+            near_voxel=sim_state.get_observation_box_bottom_corner_voxel_3()[2],
+            far_voxel=sim_state.get_observation_box_top_corner_voxel_3()[2],
+            left_edge=sim_state.get_observation_box_bottom_corner_bohr_radii_3()[1],
+            right_edge=sim_state.get_observation_box_top_corner_bohr_radii_3()[1],
+            sum_axis=(0, 2),
+            label=config["view"]["per_axis_plot"]["y_axis_label"],
+        )
+        self.__z_axis_probability_density = ProjectedMeasurement(
+            min_voxel=sim_state.get_observation_box_bottom_corner_voxel_3()[2],
+            max_voxel=sim_state.get_observation_box_top_corner_voxel_3()[2],
+            near_voxel=sim_state.get_observation_box_bottom_corner_voxel_3()[0],
+            far_voxel=sim_state.get_observation_box_top_corner_voxel_3()[0],
+            left_edge=sim_state.get_observation_box_bottom_corner_bohr_radii_3()[2],
+            right_edge=sim_state.get_observation_box_top_corner_bohr_radii_3()[2],
+            sum_axis=(0, 1),
+            label=config["view"]["per_axis_plot"]["z_axis_label"],
+        )
+        self.__projected_potential = ProjectedMeasurement(
+            min_voxel=sim_state.get_observation_box_top_corner_voxel_3()[0],
+            max_voxel=sim_state.get_observation_box_top_corner_voxel_3()[0],
+            near_voxel=sim_state.get_number_of_voxels_3()[0] // 2,
+            far_voxel=sim_state.get_number_of_voxels_3()[0] // 2 + 1,
+            left_edge=sim_state.get_observation_box_bottom_corner_bohr_radii_3()[0],
+            right_edge=sim_state.get_observation_box_top_corner_bohr_radii_3()[0],
+            sum_axis=(1, 2),
+            label=sim_state.config["view"]["per_axis_plot"]["potential_label"],
+        )
+        # measurement_tools.projected_potential.scale_factor = sim_state.config["view"]["per_axis_plot"]["potential_plot_scale"]
+        self.__projected_potential.scale_factor = (0.20 / sim_state.get_view_into_potential().max())
+        # measurement_tools.projected_potential.offset = sim_state.config["view"]["per_axis_plot"]["potential_plot_offset"]
+        self.__projected_potential.offset = 0.0
+

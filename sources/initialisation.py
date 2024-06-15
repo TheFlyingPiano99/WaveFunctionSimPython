@@ -1,16 +1,12 @@
-import cupy as cp
 import time
 
-import numpy as np
 import toml
-from sources import wave_packet, potential, operators
-import sources.sim_state as sim_st
+from sources.sim_state import SimState
 import sources.text_writer as text_writer
 import os
-import filecmp
 from colorama import Fore, Style
-import sources.math_utils as math_utils
 import sys
+from sources.measurement import MeasurementTools
 
 def is_toml(file_name):
     return file_name.endswith('.toml')
@@ -41,11 +37,11 @@ def initialize(use_cache: bool = True):
         with open(config_dir + selected_conf_file, mode="r") as f:
             print(f"Opening {selected_conf_file}")
             config = toml.load(f)
-            sim_state = sim_st.SimState(config)
+            sim_state = SimState(config)
             try:
-                if not os.path.exists(sim_state.cache_dir):
-                    os.makedirs(sim_state.cache_dir, exist_ok=True)
-                with open(os.path.join(sim_state.cache_dir, "cached_parameters.toml"), mode="r") as cache_f:
+                if not os.path.exists(sim_state.get_cache_dir()):
+                    os.makedirs(sim_state.get_cache_dir(), exist_ok=True)
+                with open(os.path.join(sim_state.get_cache_dir(), "cached_parameters.toml"), mode="r") as cache_f:
                     cached_config = toml.load(cache_f)
                     if not cached_config == config:
                         print(
@@ -60,17 +56,17 @@ def initialize(use_cache: bool = True):
         print("Exiting application.")
         sys.exit(0)
 
-    sim_state.use_cache = use_cache
+    sim_state.set_use_cache(use_cache)
 
 
     # Warn user about not empty output directory:
-    if not os.path.exists(sim_state.output_dir):
-        os.makedirs(sim_state.output_dir, exist_ok=True)
-    if os.listdir(sim_state.output_dir):
+    if not os.path.exists(sim_state.get_output_dir()):
+        os.makedirs(sim_state.get_output_dir(), exist_ok=True)
+    if os.listdir(sim_state.get_output_dir()):
         answer = ""
         while not answer in {"y", "n"}:
             print("\n" + Fore.RED + "Output directory is not empty!\n"
-                'Continuing will possibly override files under "' + sim_state.output_dir + '".' + Style.RESET_ALL + "\n"
+                'Continuing will possibly override files under "' + sim_state.get_output_dir() + '".' + Style.RESET_ALL + "\n"
                                                                               "Would you still like to continue [y/n]?",
                 end=" ",
                 )
@@ -83,373 +79,23 @@ def initialize(use_cache: bool = True):
         "\n***************************************************************************************\n"
     )
 
-    print(text_writer.get_sim_state_description_text(sim_state, use_colors=True))
+    sim_state.initialize_state()
 
-    print(
-        "\n***************************************************************************************\n"
-    )
+    measurement_tools = MeasurementTools(config, sim_state)
 
-    print(Fore.GREEN + "Initializing wave packet" + Style.RESET_ALL)
-    sim_state.wp_width_bohr_radii = sim_state.config["wave_packet"][
-        "wp_width_bohr_radii"
-    ]
-    print(f"Wave packet width is {sim_state.wp_width_bohr_radii} Bohr radii.")
-    a = sim_state.wp_width_bohr_radii * 2.0
-
-    full_init = True
-    if use_cache:
-        try:
-            sim_state.wave_tensor = cp.load(file=os.path.join(sim_state.cache_dir, "gaussian_wave_packet.npy"))
-            full_init = False
-        except OSError:
-            print("No cached gaussian_wave_packet.npy found.")
-
-    if full_init:
-        sim_state.wave_tensor = cp.asarray(
-            wave_packet.init_gaussian_wave_packet(
-                sim_state.delta_x_bohr_radii_3,
-                a,
-                sim_state.initial_wp_position_bohr_radii_3,
-                sim_state.initial_wp_momentum_h_per_bohr_radius,
-                sim_state.number_of_voxels_3,
-            )
-        )
-        cp.save(file=os.path.join(sim_state.cache_dir, "gaussian_wave_packet.npy"), arr=sim_state.wave_tensor)
-    # Normalize:
-    sim_state.probability_density = cp.asnumpy(cp.square(cp.abs(sim_state.wave_tensor)))
-    sum_probability = cp.sum(sim_state.probability_density)
-    print(f"Sum of probabilities = {sum_probability:.8f}")
-    sim_state.wave_tensor = sim_state.wave_tensor / (sum_probability**0.5)
-    sim_state.probability_density = cp.asnumpy(cp.square(cp.abs(sim_state.wave_tensor)))
-    sum_probability = cp.sum(sim_state.probability_density)
-    print(f"Sum of probabilities after normalization = {sum_probability:.8f}")
-
-    if sim_state.simulation_method == "fft":
-        # Operators:
-        print("")
-        print(Fore.GREEN + "Initializing kinetic energy operator" + Style.RESET_ALL)
-
-        full_init = True
-        if use_cache:
-            try:
-                sim_state.kinetic_operator = cp.asarray(np.load(file=os.path.join(sim_state.cache_dir, "kinetic_operator.npy")))
-                full_init = False
-            except OSError:
-                print("No cached kinetic_operator.npy found.")
-        if full_init:
-            sim_state.kinetic_operator = operators.init_kinetic_operator(
-                delta_x_3=sim_state.delta_x_bohr_radii_3,
-                delta_time=sim_state.delta_time_h_bar_per_hartree,
-                shape=sim_state.number_of_voxels_3
-            )
-            cp.save(file=os.path.join(sim_state.cache_dir, "kinetic_operator.npy"), arr=sim_state.kinetic_operator)
-
-        print("")
-        print(Fore.GREEN + "Initializing potential energy operator" + Style.RESET_ALL)
-        print("")
-        print(text_writer.get_potential_description_text(sim_state, use_colors=True))
-
-    full_init = True
-    if use_cache:
-        try:
-            sim_state.localised_potential_hartree = cp.asarray(np.load(file=os.path.join(sim_state.cache_dir, "localized_potential.npy")))
-            sim_state.localised_potential_to_visualize_hartree = cp.asarray(np.load(file=os.path.join(sim_state.cache_dir, "localized_potential_to_visualize.npy")))
-            full_init = False
-        except OSError:
-            print("No cached localized_potential.npy found.")
-
-    if full_init:
-        sim_state.localised_potential_hartree = cp.zeros(
-            shape=sim_state.number_of_voxels_3, dtype=cp.complex64
-        )
-        sim_state.localised_potential_to_visualize_hartree = cp.zeros(
-            shape=sim_state.number_of_voxels_3, dtype=cp.csingle
-        )
-
-        # Load pre-initialized potential:
-        try:
-            pre_init_pot_conf = sim_state.config["pre_initialized_potential"]
-            print("Loading pre-initialized potential")
-            if os.path.exists(pre_init_pot_conf["path"]):
-                try:
-                    pre_init_pot = cp.asarray(np.load(file=pre_init_pot_conf["path"]))
-                    if pre_init_pot.shape == sim_state.localised_potential_hartree.shape:
-                        sim_state.localised_potential_hartree += pre_init_pot
-                        try:
-                            visible = pre_init_pot_conf["visible"]
-                            if visible:
-                                sim_state.localised_potential_to_visualize_hartree += pre_init_pot
-                        except KeyError:
-                            pass
-
-                    else:
-                        print(Fore.RED + "Pre-initialized potential has the wrong tensor shape!" + Style.RESET_ALL)
-                except IOError:
-                    print(Fore.RED + "Found pre-initialized potential but failed to load!" + Style.RESET_ALL)
-            else:
-                print(Fore.RED + "Path to pre-initialized potential (" + pre_init_pot_conf["path"] + ") is invalid!" + Style.RESET_ALL)
-        except KeyError:
-            print("No pre-initialized potential in configuration.")
-
-        """
-        print("Creating draining potential.")
-        dp = sim_state.drain_potential_description
-        sim_state.localised_potential_hartree = potential.add_draining_potential(
-            V=sim_state.localised_potential_hartree,
-            delta_x_3=sim_state.delta_x_bohr_radii_3,
-            inner_radius_bohr_radii=dp.inner_radius_bohr_radii,
-            outer_radius_bohr_radii=dp.outer_radius_bohr_radii,
-            max_potential_hartree=dp.max_potential_hartree,
-            exponent=dp.exponent,
-        )
-        """
-
-        try:
-            interaction = sim_state.config["particle_hard_interaction"]
-            r = interaction["particle_radius_bohr_radii"]
-            v = interaction["potential_hartree"]
-            print("Creating particle hard interaction potential.")
-            tensor = potential.particle_hard_interaction_potential(
-                delta_x_3=sim_state.delta_x_bohr_radii_3,
-                particle_radius_bohr_radius=r,
-                potential_hartree=v,
-                V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
-            )
-            sim_state.localised_potential_hartree += tensor
-            try:
-                visible = interaction["visible"]
-                if visible:
-                    sim_state.localised_potential_to_visualize_hartree += tensor
-            except KeyError:
-                pass
-        except KeyError:
-            pass
-
-        try:
-            interaction = sim_state.config["particle_inv_squared_interaction"]
-            v = interaction["center_potential_hartree"]
-            print("Creating particle inverse square interaction potential.")
-            tensor = potential.particle_inv_square_interaction_potential(
-                delta_x_3=sim_state.delta_x_bohr_radii_3,
-                potential_hartree=v,
-                V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
-            )
-            sim_state.localised_potential_hartree += tensor
-            try:
-                visible = interaction["visible"]
-                if visible:
-                    sim_state.localised_potential_to_visualize_hartree += tensor
-            except KeyError:
-                pass
-        except KeyError:
-            pass
-
-        try:
-            oscillator = sim_state.config["harmonic_oscillator_1d"]
-            omega = oscillator["angular_frequency_radian_hartree_per_h_bar"]
-            print("Creating harmonic oscillator.")
-            tensor = potential.add_harmonic_oscillator_for_1D(
-                delta_x_3=sim_state.delta_x_bohr_radii_3,
-                angular_frequency=omega,
-                V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
-            )
-            sim_state.localised_potential_hartree += tensor
-            try:
-                visible = oscillator["visible"]
-                if visible:
-                    sim_state.localised_potential_to_visualize_hartree += tensor
-            except KeyError:
-                pass
-        except KeyError:
-            pass
-
-        try:
-            walls_arr = sim_state.config["walls_1d"]
-            for wall_1d in walls_arr:
-                c = wall_1d["center_bohr_radii"]
-                v = wall_1d["potential_hartree"]
-                t = wall_1d["thickness_bohr_radii"]
-                print("Creating wall.")
-                tensor = potential.add_wall_for_1D(
-                    delta_x_3=sim_state.delta_x_bohr_radii_3,
-                    potential_hartree=v,
-                    thickness_bohr_radius=t,
-                    center_bohr_radius=c,
-                    V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
-                )
-                sim_state.localised_potential_hartree += tensor
-                try:
-                    visible = wall_1d["visible"]
-                    if visible:
-                        sim_state.localised_potential_to_visualize_hartree += tensor
-                except KeyError:
-                    pass
-        except KeyError:
-            pass
-
-        try:
-            walls_arr = sim_state.config["walls"]
-            for wall in walls_arr:
-                v = wall["potential_hartree"]
-                c = np.array(wall["center_bohr_radii_3"], dtype=float)
-                n = math_utils.normalize(np.array(wall["normal_vector_3"], dtype=float))
-                t = wall["thickness_bohr_radii"]
-
-                # Create high level object from the data:
-                w = sim_st.PotentialWall()
-                w.center_bohr_radii_3 = np.copy(c)
-                w.normal_bohr_radii_3 = np.copy(n)
-                w.potential_hartree = v
-                w.thickness_bohr_radii = t
-                sim_state.potential_walls.append(w)
-
-                print("Creating wall.")
-                tensor = potential.add_wall(
-                    delta_x_3=sim_state.delta_x_bohr_radii_3,
-                    potential_hartree=v,
-                    thickness_bohr_radius=t,
-                    center_bohr_radii_3=c,
-                    normal_bohr_radii_3=n,
-                    V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
-                )
-                sim_state.localised_potential_hartree += tensor
-                try:
-                    visible = wall["visible"]
-                    if visible:
-                        sim_state.localised_potential_to_visualize_hartree += tensor
-                except KeyError:
-                    pass
-        except KeyError:
-            pass
-
-        try:
-            grid_arr = sim_state.config["optical_grids"]
-            for grid in grid_arr:
-                v = grid["potential_hartree"]
-                c = np.array(grid["center_bohr_radii_3"], dtype=float)
-                n = math_utils.normalize(np.array(grid["normal_vector_3"], dtype=float))
-                d = grid["distance_between_nodes_bohr_radii"]
-                i = grid["node_in_one_direction"]
-                print("Creating optical grid.")
-                tensor = potential.add_optical_grid(
-                    delta_x_3=sim_state.delta_x_bohr_radii_3,
-                    potential_hartree=v,
-                    distance_between_nodes_bohr_radii=d,
-                    center_bohr_radius=c,
-                    normal=n,
-                    node_count=i,
-                    V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
-                )
-                sim_state.localised_potential_hartree += tensor
-                try:
-                    visible = grid["visible"]
-                    if visible:
-                        sim_state.localised_potential_to_visualize_hartree += tensor
-                except KeyError:
-                    pass
-        except KeyError:
-            pass
-
-        try:
-            ds_array = sim_state.config["double_slits"]
-            for double_slit in ds_array:
-                print("Creating double-slit.")
-                space_between_slits = double_slit["distance_between_slits_bohr_radii"]
-                tensor = potential.add_double_slit(
-                    V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
-                    delta_x_3=sim_state.delta_x_bohr_radii_3,
-                    center_bohr_radii_3=np.array(double_slit["center_bohr_radius_3"]),
-                    thickness_bohr_radii=double_slit["thickness_bohr_radii"],
-                    potential_hartree=double_slit["potential_hartree"],
-                    slit_width_bohr_radii=double_slit["slit_width_bohr_radii"],
-                    space_between_slits_bohr_radii=space_between_slits,
-                )
-                sim_state.localised_potential_hartree += tensor
-                try:
-                    visible = double_slit["visible"]
-                    if visible:
-                        sim_state.localised_potential_to_visualize_hartree += tensor
-                except KeyError:
-                    pass
-        except KeyError:
-            pass
-
-        try:
-            coulomb_potential = sim_state.config["coulomb_potential"]
-            print("Creating Coulomb potential.")
-            tensor = potential.add_coulomb_potential(
-                V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
-                delta_x_3=sim_state.delta_x_bohr_radii_3,
-                center_bohr_radius=np.array(coulomb_potential["center_bohr_radii_3"]),
-                gradient_dir=np.array(coulomb_potential["gradient_direction"]),
-                charge_density=coulomb_potential["charge_density_elementary_charge_per_bohr_radius"],
-                oxide_start_bohr_radii=coulomb_potential["oxide_start_bohr_radii"],
-                oxide_end_bohr_radii=coulomb_potential["oxide_end_bohr_radii"]
-            )
-            sim_state.localised_potential_hartree += tensor
-            visible = coulomb_potential["visible"]
-            if visible:
-                sim_state.localised_potential_to_visualize_hartree += tensor
-        except KeyError:
-            print("No Coulomb potential created")
-
-        try:
-            gradient = sim_state.config["linear_potential_gradient"]
-            print("Creating linear potential gradient.")
-            tensor = potential.add_linear_potential_gradient(
-                V=cp.zeros(shape=sim_state.number_of_voxels_3, dtype=cp.csingle),
-                delta_x_3=sim_state.delta_x_bohr_radii_3,
-                center_bohr_radius=np.array(gradient["center_bohr_radii_3"]),
-                gradient_dir=np.array(gradient["gradient_direction"]),
-                gradient_val=gradient["gradient_magnitude_hartree_per_bohr_radius"],
-            )
-            sim_state.localised_potential_hartree += tensor
-            visible = gradient["visible"]
-            if visible:
-                sim_state.coulomb_potential = tensor
-        except KeyError:
-            pass
-
-        np.save(
-            file=os.path.join(sim_state.cache_dir, "localized_potential.npy"),
-            arr=cp.asnumpy(sim_state.localised_potential_hartree),
-        )
-        np.save(file=os.path.join(sim_state.cache_dir, "localized_potential_to_visualize.npy"), arr=cp.asnumpy(sim_state.localised_potential_to_visualize_hartree))
-
-    full_init = True
-    if sim_state.simulation_method == "fft":
-        if use_cache:
-            try:
-                sim_state.potential_operator = cp.load(file=os.path.join(sim_state.cache_dir, "potential_operator.npy"))
-                full_init = False
-            except OSError:
-                print("No cached potential_operator.npy found.")
-        if full_init:
-            print("Creating potential operator.")
-            sim_state.potential_operator = cp.zeros(shape=sim_state.localised_potential_hartree.shape,
-                                                      dtype=sim_state.localised_potential_hartree.dtype)
-            sim_state.potential_operator = operators.init_potential_operator(
-                P_potential=sim_state.potential_operator,
-                V=sim_state.localised_potential_hartree,
-                delta_time=sim_state.delta_time_h_bar_per_hartree,
-            )
-
-            cp.save(file=os.path.join(sim_state.cache_dir, "potential_operator.npy"), arr=sim_state.potential_operator)
     try:
-        with open(os.path.join(sim_state.cache_dir, "cached_parameters.toml"), mode="w") as cache_f:
+        with open(os.path.join(sim_state.get_cache_dir(), "cached_parameters.toml"), mode="w") as cache_f:
             toml.dump(config, cache_f)
     except OSError as e:
-        print("Error while creating parameter cache: " )
+        print("Error while creating parameter cache: ")
         print(e)
 
     print(
-        f"Time spent with initialisation: {(time.time() - initialisation_start_time_s):.2f} s.\n"   # Extra new line at the end.
+        f"Time spent with initialisation: {(time.time() - initialisation_start_time_s):.2f} s.\n"
+        # Extra new line at the end.
     )
 
-
-    # For testing only:
-    sim_state.potential_walls[0].velocity_bohr_radius_hartree_per_h_bar = np.array([-2.0, 0.0, 0.0])
+    print(sim_state.get_simulation_method_text(use_colors=True))
 
 
-    print(text_writer.get_simulation_method_text(sim_state, use_colors=True))
-    return sim_state
+    return sim_state, measurement_tools

@@ -38,5 +38,5 @@ void draining_potential_kernel(
             0.0f,
             ellipsoid_distance - inner_ellipsoid_distance_bohr_radii
         ) / -inner_ellipsoid_distance_bohr_radii;
-    V[idx] += complex<float>(0.0f, powf(t, exponent) * max_potential_hartree);
+    // V[idx] += complex<float>(0.0f, powf(t, exponent) * max_potential_hartree);
 }
