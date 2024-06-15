@@ -161,7 +161,11 @@ class SimState:
             self.__pre_initialized_potential.enable = False     # Force disable if unavailable
 
         # Init absorbing potential:
-        self.__absorbing_boundary_condition = potential.AbsorbingBoundaryCondition(config)  # It processes the viewing boundaries
+        self.__absorbing_boundary_condition = potential.AbsorbingBoundaryCondition(
+            config,
+            bottom_corner=self.__observation_box_bottom_corner_bohr_radii_3,
+            top_corner=self.__observation_box_top_corner_bohr_radii_3
+        )  # It processes the viewing boundaries
         # Config potential walls:
         walls = try_read_param(config, "potential.walls", [])
         for w in walls:

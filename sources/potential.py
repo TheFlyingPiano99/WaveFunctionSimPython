@@ -31,8 +31,51 @@ class AbsorbingBoundaryCondition:
     slope_exponent_in_positive_xyz_direction_3: np.array
     slope_exponent_in_negative_xyz_direction_3: np.array
 
-    def __init__(self, config):
-        pass
+    enable: bool = True
+
+    def __init__(self, config, bottom_corner: np.array, top_corner: np.array):
+        self.boundary_bottom_corner_bohr_radii_3 = bottom_corner
+        self.boundary_top_corner_bohr_radii_3 = top_corner
+        self.outer_potential_in_positive_xyz_direction_hartree_3 = np.array(
+            try_read_param(
+            config,
+            "absorbing_boundary_condition.outer_potential_in_positive_xyz_direction_hartree_3",
+            [-100.0, -100.0, -100.0])
+        )
+        self.outer_potential_in_negative_xyz_direction_hartree_3 = np.array(
+            try_read_param(
+                config,
+            "absorbing_boundary_condition.outer_potential_in_negative_xyz_direction_hartree_3",
+            [-100.0, -100.0, -100.0])
+        )
+        self.start_offset_in_positive_xyz_direction_3 = np.array(
+            try_read_param(
+                config,
+                "absorbing_boundary_condition.start_offset_in_positive_xyz_direction_3",
+                [1.0, 1.0, 1.0]
+            )
+        )
+        self.start_offset_in_negative_xyz_direction_3 = np.array(
+            try_read_param(
+                config,
+                "absorbing_boundary_condition.start_offset_in_negative_xyz_direction_3",
+                [1.0, 1.0, 1.0]
+            )
+        )
+        self.slope_exponent_in_positive_xyz_direction_3 = np.array(
+            try_read_param(
+                config,
+                "absorbing_boundary_condition.slope_exponent_in_positive_xyz_direction_3",
+                [2.0, 2.0, 2.0]
+            )
+        )
+        self.slope_exponent_in_negative_xyz_direction_3 = np.array(
+            try_read_param(
+                config,
+                "absorbing_boundary_condition.slope_exponent_in_negative_xyz_direction_3",
+                [2.0, 2.0, 2.0]
+            )
+        )
 
     def add_potential(
             self,
@@ -54,14 +97,37 @@ class AbsorbingBoundaryCondition:
                 cp.float32(delta_x_3[1]),
                 cp.float32(delta_x_3[2]),
 
-                cp.float32(ellipsoid_a),
-                cp.float32(ellipsoid_b),
-                cp.float32(ellipsoid_c),
+                cp.float32(self.boundary_bottom_corner_bohr_radii_3[0]),
+                cp.float32(self.boundary_bottom_corner_bohr_radii_3[1]),
+                cp.float32(self.boundary_bottom_corner_bohr_radii_3[2]),
 
-                cp.float32(inner_ellipsoid_distance),
+                cp.float32(self.boundary_top_corner_bohr_radii_3[0]),
+                cp.float32(self.boundary_top_corner_bohr_radii_3[1]),
+                cp.float32(self.boundary_top_corner_bohr_radii_3[2]),
 
-                cp.float32(max_potential_hartree),
-                cp.float32(exponent),
+                cp.float32(self.outer_potential_in_positive_xyz_direction_hartree_3[0]),
+                cp.float32(self.outer_potential_in_positive_xyz_direction_hartree_3[1]),
+                cp.float32(self.outer_potential_in_positive_xyz_direction_hartree_3[2]),
+
+                cp.float32(self.outer_potential_in_negative_xyz_direction_hartree_3[0]),
+                cp.float32(self.outer_potential_in_negative_xyz_direction_hartree_3[1]),
+                cp.float32(self.outer_potential_in_negative_xyz_direction_hartree_3[2]),
+
+                cp.float32(self.start_offset_in_positive_xyz_direction_3[0]),
+                cp.float32(self.start_offset_in_positive_xyz_direction_3[1]),
+                cp.float32(self.start_offset_in_positive_xyz_direction_3[2]),
+
+                cp.float32(self.start_offset_in_negative_xyz_direction_3[0]),
+                cp.float32(self.start_offset_in_negative_xyz_direction_3[1]),
+                cp.float32(self.start_offset_in_negative_xyz_direction_3[2]),
+
+                cp.float32(self.slope_exponent_in_positive_xyz_direction_3[0]),
+                cp.float32(self.slope_exponent_in_positive_xyz_direction_3[1]),
+                cp.float32(self.slope_exponent_in_positive_xyz_direction_3[2]),
+
+                cp.float32(self.slope_exponent_in_negative_xyz_direction_3[0]),
+                cp.float32(self.slope_exponent_in_negative_xyz_direction_3[1]),
+                cp.float32(self.slope_exponent_in_negative_xyz_direction_3[2]),
             )
         )
 
