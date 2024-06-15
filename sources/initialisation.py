@@ -7,6 +7,8 @@ import os
 from colorama import Fore, Style
 import sys
 from sources.measurement import MeasurementTools
+from sources.iter_data import IterData
+import sources.snapshot_io as snapshot_io
 
 def is_toml(file_name):
     return file_name.endswith('.toml')
@@ -83,6 +85,19 @@ def initialize(use_cache: bool = True):
 
     measurement_tools = MeasurementTools(config, sim_state)
 
+    iter_data = IterData(config)
+
+    # Read snapshot of previous iteration:
+    if (
+        sim_state.is_use_cache()
+        and os.path.exists(os.path.join(sim_state.get_cache_dir(), "data_snapshot.txt"))
+        and os.path.exists(os.path.join(sim_state.get_cache_dir(), "wave_snapshot.npy"))
+    ):
+        sim_state, iter_data = snapshot_io.read_snapshot(sim_state, iter_data)
+        snapshot_io.remove_snapshot(sim_state)
+        print(Fore.BLUE + "Snapshot of an interrupted simulation loaded.\nResuming previous wave function.\n" + Style.RESET_ALL)
+
+
     try:
         with open(os.path.join(sim_state.get_cache_dir(), "cached_parameters.toml"), mode="w") as cache_f:
             toml.dump(config, cache_f)
@@ -98,4 +113,4 @@ def initialize(use_cache: bool = True):
     print(sim_state.get_simulation_method_text(use_colors=True))
 
 
-    return sim_state, measurement_tools
+    return sim_state, measurement_tools, iter_data

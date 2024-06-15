@@ -70,7 +70,8 @@ def sim():
         vdisplay.start()
         print("Created virtual display.\n")
 
-    sim_state, measurement_tools = init.initialize(use_cache)
+    # Initialization:
+    sim_state, measurement_tools, iter_data = init.initialize(use_cache)
 
     text_writer.write_sim_state(sim_state)
 
@@ -78,15 +79,13 @@ def sim():
         "\n****************************************************************************\n"
     )
 
-    # Run simulation
+    # Simulation:
     sim_state, measurement_tools, iter_data = core_sim.run_iteration(
-        sim_state, measurement_tools
+        sim_state, measurement_tools, iter_data
     )
 
     # Finishing steps:
-    if sim_state.enable_visual_output:
-        measurement_tools.animation_writer_3D.finish()
-        measurement_tools.animation_writer_per_axis.finish()
+    measurement_tools.finish()
     print(Fore.GREEN + "Simulation has finished." + Style.RESET_ALL)
     print(text_writer.get_finish_text(iter_data))
     text_writer.append_iter_data(iter_data, sim_state)

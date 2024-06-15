@@ -35,6 +35,7 @@ class AbsorbingBoundaryCondition:
         pass
 
     def add_potential(
+            self,
             V: cp.ndarray,
             delta_x_3: np.array
     ):
@@ -85,13 +86,13 @@ class PotentialWall:
 
     def __init__(self, wall_config: Dict):
         self.potential_hartree = try_read_param(wall_config, "potential_hartree", 20)
-        self.center_bohr_radii_3 = try_read_param(wall_config, "center_bohr_radii_3", [0.0, 0.0, 0.0])
-        self.normal_vector_3 = try_read_param(wall_config, "normal_vector_3", [1.0, 0.0, 0.0])
+        self.center_bohr_radii_3 = np.array(try_read_param(wall_config, "center_bohr_radii_3", [0.0, 0.0, 0.0]))
+        self.normal_vector_3 = np.array(try_read_param(wall_config, "normal_vector_3", [1.0, 0.0, 0.0]))
         self.thickness_bohr_radii = try_read_param(wall_config, "thickness_bohr_radii", 5.0)
         self.outer_slope_thickness_bohr_radii = try_read_param(wall_config, "outer_slope_thickness_bohr_radii", 0.0)
         self.slope_exponent = try_read_param(wall_config, "slope_exponent", 1.0)
-        self.velocity_bohr_radius_hartree_per_h_bar_3 = try_read_param(wall_config, "velocity_bohr_radius_hartree_per_h_bar_3", [0.0, 0.0, 0.0])
-        self.angular_velocity_rad_hartree_per_h_bar_3 = try_read_param(wall_config, "angular_velocity_rad_hartree_per_h_bar_3", [0.0, 0.0, 0.0])
+        self.velocity_bohr_radius_hartree_per_h_bar_3 = np.array(try_read_param(wall_config, "velocity_bohr_radius_hartree_per_h_bar_3", [0.0, 0.0, 0.0]))
+        self.angular_velocity_rad_hartree_per_h_bar_3 = np.array(try_read_param(wall_config, "angular_velocity_rad_hartree_per_h_bar_3", [0.0, 0.0, 0.0]))
         self.potential_change_rate_hartree_sqr_per_h_bar = try_read_param(wall_config, "potential_change_rate_hartree_sqr_per_h_bar", 0.0)
         self.slit_count = try_read_param(wall_config, "slit_count", 0)
         self.slit_spacing_bohr_radii = try_read_param(wall_config, "slit_spacing_bohr_radii", 1.0)
@@ -409,7 +410,7 @@ def generate_potential_from_walls_and_drain(V: cp.ndarray, V_vis: cp.ndarray, de
         )
     V_vis = V.copy()
     absorbing_pontetial.add_potential(
-        V=V,
+        V,
         delta_x_3=delta_x_3,
     )
 

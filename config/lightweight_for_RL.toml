@@ -8,10 +8,12 @@
 
 [simulation]
 method = "fourier"
+order_of_approximation = 10
 delta_time_h_bar_per_hartree = 0.005
 total_iteration_count = 6000
 is_dynamic_potential_mode = true
 enable_wave_function_saving = false
+wave_function_save_iteration_interval = 50
 double_precision_calculation = false
 
 [wave_packet]
@@ -90,6 +92,8 @@ light_elevation_speed = 0.0
 animation_frame_rate = 25
 animation_frame_capture_iteration_interval = 50
 image_capture_iteration_interval = 50
+enable_animation = true
+enable_image = true
 
 [measurement.per_axis_plot]
 title = "Per-axis plot"
@@ -99,6 +103,11 @@ z_axis_label = "Z axis"
 potential_label = "Potential"
 potential_plot_offset = -0.34
 potential_plot_scale = 0.02
+animation_frame_rate = 25
+animation_frame_capture_iteration_interval = 50
+image_capture_iteration_interval = 50
+enable_animation = true
+enable_image = true
 
 [paths]
 cache_dir = "./cache"

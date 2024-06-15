@@ -10,6 +10,7 @@ from sources import wave_packet, potential, operators
 from colorama import Fore, Style
 import os
 import io
+from pathlib import Path
 
 
 class SimulationMethod(Enum):
@@ -29,7 +30,6 @@ class SimState:
     __delta_x_bohr_radii_3: np.array([0.0, 0.0, 0.0])
     __upper_limit_on_delta_time_h_per_hartree: float
     __delta_time_h_bar_per_hartree: float
-    __total_iteration_count = 1000
     __wave_tensor: cp.ndarray
     __kinetic_operator: cp.ndarray
     __potential_operator: cp.ndarray
@@ -43,12 +43,17 @@ class SimState:
     __enable_visual_output: bool = True
     __double_precision_calculation: bool = False
     __enable_wave_function_saving: bool = True
+    __wave_function_save_iteration_interval: int = 1
     __absorbing_boundary_condition: potential.AbsorbingBoundaryCondition = None
     __potential_walls: list[potential.PotentialWall] = []
     __is_dynamic_potential_mode: bool = False
     __simulation_method: SimulationMethod = SimulationMethod.FOURIER
     __pre_initialized_potential: potential.PreInitializedPotential
-    def __init__(self, config):
+    __order_of_approximation: int = 10
+    __pingpong_buffer: list[cp.ndarray] = []
+    __next_s_kernel: cp.RawKernel = None
+
+    def __init__(self, config: Dict):
 
         # Set paths:
         self.__cache_dir = try_read_param(config, "paths.cache_dir", "./cache")
@@ -64,9 +69,10 @@ class SimState:
                     method_name in ["fft", "fourier"]
             ) else SimulationMethod.POWER_SERIES    # Only two options currently
 
-        self.__total_iteration_count = try_read_param(config, "simulation.total_iteration_count", 1000)
+        self.__order_of_approximation = try_read_param(config, "simulation.order_of_approximation", 10)
         self.__is_dynamic_potential_mode = try_read_param(config, "simulation.is_dynamic_potential_mode", True)
         self.__enable_wave_function_saving = try_read_param(config, "simulation.enable_wave_function_saving", False)
+        self.__wave_function_save_iteration_interval = try_read_param(config, "simulation.wave_function_save_iteration_interval", 1)
         self.__double_precision_calculation = try_read_param(config, "simulation.double_precision_calculation", False)
 
         # Wace packet:
@@ -494,7 +500,40 @@ class SimState:
 
                 cp.save(file=os.path.join(self.__cache_dir, "potential_operator.npy"),
                         arr=self.__potential_operator)
+        elif self.__simulation_method == SimulationMethod.POWER_SERIES:
+            # Define the kernel for the power series method
+            next_s_kernel_source = Path("sources/cuda_kernels/power_series_operator.cu").read_text().replace(
+                "PATH_TO_SOURCES", os.path.abspath("sources"))
+            self.__next_s_kernel = cp.RawKernel(
+                next_s_kernel_source,
+                "next_s",
+                enable_cooperative_groups=False
+            )
+            self.__pingpong_buffer = [
+                cp.zeros(shape=self.__number_of_voxels_3, dtype=self.__wave_tensor.dtype),
+                cp.zeros(shape=self.__number_of_voxels_3, dtype=self.__wave_tensor.dtype)
+            ]  # s is used as a pair of pingpong buffers to store power series elements
 
+    def get_delta_time_h_bar_per_hartree(self):
+        return self.__delta_time_h_bar_per_hartree
+
+    def set_wave_function(self, wave_func: cp.ndarray):
+        self.__wave_tensor = wave_func
+
+    def get_wave_function(self):
+        return self.__wave_tensor
+
+    def is_wave_function_saving(self):
+        return self.__enable_wave_function_saving
+
+    def get_wave_function_save_interval(self):
+        return self.__wave_function_save_iteration_interval
+
+    def get_simulation_method(self):
+        return self.__simulation_method
+
+    def is_use_cache(self):
+        return self.__use_cache
 
     def set_use_cache(self, uc: bool):
         self.__use_cache = uc
@@ -556,6 +595,14 @@ class SimState:
             top=self.__observation_box_top_corner_voxel_3,
         )
 
+    def get_copy_of_wave_function(self):
+        return cp.copy(self.__wave_tensor)
+
+    def update_probability_density(self):
+        self.__probability_density = math_utils.square_of_abs(
+            self.__wave_tensor
+        )
+
     def update_potential(self):
         if not self.__is_dynamic_potential_mode:
             return
@@ -601,8 +648,8 @@ class SimState:
             walls=self.__potential_walls
         )
 
-        if self.__simulation_method == "fft":
-            self.potential_operator = sources.operators.init_potential_operator(
+        if self.__simulation_method == SimulationMethod.FOURIER:
+            self.__potential_operator = sources.operators.init_potential_operator(
                 P_potential=self.__potential_operator,
                 V=self.__localised_potential_hartree,
                 delta_time=self.__delta_time_h_bar_per_hartree,
@@ -831,3 +878,64 @@ class SimState:
             text.write((Fore.BLUE if use_colors else "") + "Using the Power Series method to simulate the time development.\n")
             text.write("The order of approximation is p = 10.\n" + (Style.RESET_ALL if use_colors else ""))
         return text.getvalue()
+
+    def _fft_time_evolution(self):
+        moment_space_wave_tensor = cp.fft.fftn(self.__wave_tensor, norm="forward")
+        moment_space_wave_tensor = cp.multiply(self.__kinetic_operator, moment_space_wave_tensor)
+        self.__wave_tensor = cp.fft.fftn(moment_space_wave_tensor, norm="backward")
+        self.__wave_tensor = cp.multiply(self.__potential_operator, self.__wave_tensor)
+        moment_space_wave_tensor = cp.fft.fftn(self.__wave_tensor, norm="forward")
+        moment_space_wave_tensor = cp.multiply(self.__kinetic_operator, moment_space_wave_tensor)
+        self.__wave_tensor = cp.fft.fftn(moment_space_wave_tensor, norm="backward")
+
+    """
+    def _merged_fft_time_evolution(
+            self,
+    ):
+        moment_space_wave_tensor = cp.fft.fftn(wave_tensor, norm="forward")
+        moment_space_wave_tensor = cp.multiply(kinetic_operator, moment_space_wave_tensor)
+
+        for i in range(merged_iteration_count - 1):
+            wave_tensor = cp.fft.fftn(moment_space_wave_tensor, norm="backward")
+            wave_tensor = cp.multiply(potential_operator, wave_tensor)
+            moment_space_wave_tensor = cp.fft.fftn(wave_tensor, norm="forward")
+            moment_space_wave_tensor = cp.multiply(
+                merged_kinetic_operator, moment_space_wave_tensor
+            )
+
+        wave_tensor = cp.fft.fftn(moment_space_wave_tensor, norm="backward")
+        wave_tensor = cp.multiply(potential_operator, wave_tensor)
+        moment_space_wave_tensor = cp.fft.fftn(wave_tensor, norm="forward")
+        moment_space_wave_tensor = cp.multiply(kinetic_operator, moment_space_wave_tensor)
+        return cp.fft.fftn(moment_space_wave_tensor, norm="backward")
+    """
+
+    def _power_series_time_evolution(self):
+        shape = self.__wave_tensor.shape
+        grid_size = (64, 64, 64)
+        block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
+        pingpong_idx = 0
+        self.__pingpong_buffer[1 - pingpong_idx] = cp.copy(self.__wave_tensor)
+        for n in range(1, self.__order_of_approximation + 1):
+            self.__next_s_kernel(
+                grid_size,
+                block_size,
+                (
+                    self.__pingpong_buffer[1 - pingpong_idx],
+                    self.__pingpong_buffer[pingpong_idx],
+                    self.__localised_potential_hartree,
+                    self.__wave_tensor,
+                    cp.float32(self.__delta_time_h_bar_per_hartree),
+                    cp.float32(self.__delta_x_bohr_radii_3[0]),
+                    cp.float32(self.__wave_packet.get_particle_mass_electron_rest_mass()),
+                    cp.int32(shape[0]),
+                    cp.int32(n)
+                )
+            )
+            pingpong_idx = 1 - pingpong_idx
+
+    def evolve_state(self):
+        if self.__simulation_method == SimulationMethod.FOURIER:
+            self._fft_time_evolution()
+        elif self.__simulation_method == SimulationMethod.POWER_SERIES:
+            self._power_series_time_evolution()
