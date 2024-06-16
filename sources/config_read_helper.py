@@ -13,5 +13,5 @@ def try_read_param(config: Dict, tokens: str, default_val, reached_tokens: str =
                   + f"Falling back to the default value of {default_val}.\n"
                   + Style.RESET_ALL)
             return default_val
-        reached_tokens += "." + token
+        reached_tokens += ("." if len(reached_tokens) > 0 else "") + token
     return config  # At this point config should contain the value

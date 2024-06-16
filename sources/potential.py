@@ -77,11 +77,15 @@ class AbsorbingBoundaryCondition:
             )
         )
 
+        self.enable = try_read_param(config, "absorbing_boundary_condition.enable", True)
+
     def add_potential(
             self,
             V: cp.ndarray,
             delta_x_3: np.array
     ):
+        if not self.enable: # Do not add if disabled
+            return V
         draining_potential_kernel = cp.RawKernel(kernels.draining_potential_kernel_source,
                                                  'draining_potential_kernel',
                                                  enable_cooperative_groups=False)
@@ -138,8 +142,8 @@ class PotentialWall:
     potential_hartree: float = 20.0
     center_bohr_radii_3: np.array = np.array([0.0, 0.0, 0.0])
     normal_vector_3: np.array = np.array([1.0, 0.0, 0.0])
-    thickness_bohr_radii: float = 5.0
-    outer_slope_thickness_bohr_radii: float = 0.0
+    plateau_thickness_bohr_radii: float = 5.0
+    slope_thickness_bohr_radii: float = 0.0
     slope_exponent: float = 1.0
     velocity_bohr_radius_hartree_per_h_bar_3: np.array = np.array([0.0, 0.0, 0.0])
     angular_velocity_rad_hartree_per_h_bar_3: np.array = np.array([0.0, 0.0, 0.0])
@@ -154,8 +158,8 @@ class PotentialWall:
         self.potential_hartree = try_read_param(wall_config, "potential_hartree", 20)
         self.center_bohr_radii_3 = np.array(try_read_param(wall_config, "center_bohr_radii_3", [0.0, 0.0, 0.0]))
         self.normal_vector_3 = np.array(try_read_param(wall_config, "normal_vector_3", [1.0, 0.0, 0.0]))
-        self.thickness_bohr_radii = try_read_param(wall_config, "thickness_bohr_radii", 5.0)
-        self.outer_slope_thickness_bohr_radii = try_read_param(wall_config, "outer_slope_thickness_bohr_radii", 0.0)
+        self.plateau_thickness_bohr_radii = try_read_param(wall_config, "plateau_thickness_bohr_radii", 5.0)
+        self.slope_thickness_bohr_radii = try_read_param(wall_config, "slope_thickness_bohr_radii", 0.0)
         self.slope_exponent = try_read_param(wall_config, "slope_exponent", 1.0)
         self.velocity_bohr_radius_hartree_per_h_bar_3 = np.array(try_read_param(wall_config, "velocity_bohr_radius_hartree_per_h_bar_3", [0.0, 0.0, 0.0]))
         self.angular_velocity_rad_hartree_per_h_bar_3 = np.array(try_read_param(wall_config, "angular_velocity_rad_hartree_per_h_bar_3", [0.0, 0.0, 0.0]))
@@ -165,12 +169,16 @@ class PotentialWall:
         self.slit_width_bohr_radii = try_read_param(wall_config, "slit_width_bohr_radii", 0.5)
         self.slit_rotation = try_read_param(wall_config, "slit_rotation", 0.0)
         self.visible = try_read_param(wall_config, "visible", True)
+        self.enable = try_read_param(wall_config, "enable", True)
+
 
     def add_potential(
             self,
             V: cp.ndarray,
             delta_x_3: np.array,
     ):
+        if not self.enable: # Do not add if disabled
+            return V
         potential_wall_kernel = cp.RawKernel(kernels.potential_wall_kernel_source,
                                              "potential_wall_kernel",
                                              enable_cooperative_groups=False)
@@ -183,6 +191,8 @@ class PotentialWall:
             block_size,
             (
                 V,
+                cp.float32(self.potential_hartree),
+
                 cp.float32(delta_x_3[0]),
                 cp.float32(delta_x_3[1]),
                 cp.float32(delta_x_3[2]),
@@ -195,8 +205,13 @@ class PotentialWall:
                 cp.float32(self.normal_vector_3[1]),
                 cp.float32(self.normal_vector_3[2]),
 
-                cp.float32(self.thickness_bohr_radii),
-                cp.float32(self.potential_hartree)
+                cp.float32(self.plateau_thickness_bohr_radii),
+                cp.float32(self.slope_thickness_bohr_radii),
+                cp.float32(self.slope_exponent),
+                cp.float32(self.slit_count),
+                cp.float32(self.slit_spacing_bohr_radii),
+                cp.float32(self.slit_width_bohr_radii),
+                cp.float32(self.slit_rotation)
             )
         )
         return V

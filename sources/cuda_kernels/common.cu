@@ -6,7 +6,7 @@
 
 constexpr float M_PI = 3.14159265359;
 
-constexpr __device__ float3 scalarVectorMul(const float s, const float3& v)
+__device__ constexpr float3 scalarVectorMul(const float s, const float3& v)
 {
     return {s * v.x, s * v.y, s * v.z};
 }
@@ -14,6 +14,15 @@ constexpr __device__ float3 scalarVectorMul(const float s, const float3& v)
 constexpr __device__ float dot(const float3& a, const float3& b)
 {
     return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+constexpr __device__ float3 cross(const float3& a, const float3& b)
+{
+    return {
+        a.y * b.z - a.z * b.y,
+        a.z * b.x - a.x * b.z,
+        a.x * b.y - a.y * b.x
+    };
 }
 
 __device__ const complex<float> exp_i(float angle)
@@ -46,6 +55,11 @@ __device__ constexpr float3 div(const float3& a, const float3& b)
     return {a.x / b.x, a.y / b.y, a.z / b.z};
 }
 
+__device__ float3 normalize(const float3& a)
+{
+    return scalarVectorMul(1.0f / sqrtf(dot(a, a)), a);
+}
+
 __device__ constexpr float3 transform_corner_origin_to_center_origin_system(const float3& pos)
 {
     return diff(
@@ -65,9 +79,9 @@ __device__ uint3 get_voxel_coords()
 
 __device__ uint3 get_voxel_coords_inverted()
 {
-    int x = gridDim.x * blockDim.x - (blockIdx.x * blockDim.x + threadIdx.x) - 1;
-    int y = gridDim.y * blockDim.y - (blockIdx.y * blockDim.y + threadIdx.y) - 1;
-    int z = gridDim.z * blockDim.z - (blockIdx.z * blockDim.z + threadIdx.z) - 1;
+    unsigned int x = gridDim.x * blockDim.x - (blockIdx.x * blockDim.x + threadIdx.x) - 1;
+    unsigned int y = gridDim.y * blockDim.y - (blockIdx.y * blockDim.y + threadIdx.y) - 1;
+    unsigned int z = gridDim.z * blockDim.z - (blockIdx.z * blockDim.z + threadIdx.z) - 1;
     return {x, y, z};
 }
 
