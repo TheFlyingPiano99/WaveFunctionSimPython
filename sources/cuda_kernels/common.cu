@@ -102,4 +102,38 @@ __device__ int get_array_index_inverted()
 }
 
 
+__device__ float3 mat3x3_vector_mul(const float (&m)[3][3], const float3& v)
+{
+    return {
+        m[0][0] * v.x + m[0][1] * v.y + m[0][2] * v.z,
+        m[1][0] * v.x + m[1][1] * v.y + m[1][2] * v.z,
+        m[2][0] * v.x + m[2][1] * v.y + m[2][2] * v.z
+    };
+}
+
+
+__device__ float3 rotate_vector(const float3& v, const float3& axis, float rad)
+{
+    float q0 = cosf(rad / 2.0f);
+    float q1 = sinf(rad / 2.0f) * axis.x;
+    float q2 = sinf(rad / 2.0f) * axis.y;
+    float q3 = sinf(rad / 2.0f) * axis.z;
+    float Q[3][3] = { { 0.0f } }; // 3x3 rotation matrix
+
+    Q[0][0] = q0*q0 + q1*q1 - q2*q2 - q3*q3;
+    Q[0][1] = 2.0f * (q1*q2 - q0*q3);
+    Q[0][2] = 2.0f * (q1*q3 + q0*q2);
+
+    Q[1][0] = 2.0f * (q2*q1 + q0*q3);
+    Q[1][1] = q0*q0 - q1*q1 + q2*q2 - q3*q3;
+    Q[1][2] = 2.0f * (q2*q3 - q0*q1);
+
+    Q[2][0] = 2.0f * (q3*q1 - q0*q2);
+    Q[2][1] = 2.0f * (q3*q2 + q0*q1);
+    Q[2][2] = q0*q0 - q1*q1 - q2*q2 + q3*q3;
+
+    return mat3x3_vector_mul(Q, v);
+    //return v;
+}
+
 #endif  // CUDA_COMMON

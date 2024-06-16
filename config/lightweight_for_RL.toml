@@ -19,7 +19,7 @@ double_precision_calculation = false
 [wave_packet]
 particle_mass_electron_rest_mass = 1.0
 initial_wp_position_bohr_radii_3 = [-20.0, 0.0, 0.0]
-initial_wp_velocity_bohr_radii_hartree_per_h_bar_3 = [0.0, 0.0, 0.0]
+initial_wp_velocity_bohr_radii_hartree_per_h_bar_3 = [1.5, 0.0, 0.0]
 initial_wp_width_bohr_radii = 2.0
 
 [volume]
@@ -47,15 +47,15 @@ potential_hartree = 200
 center_bohr_radii_3 = [30.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
 plateau_thickness_bohr_radii = 5.0
-slope_thickness_bohr_radii = 10.0
+slope_thickness_bohr_radii = 0.0
 slope_exponent = 1.5    # e: f(x) = x^e,    x in [0, 1]
-velocity_bohr_radius_hartree_per_h_bar_3 = [-1.0, 0.0, 0.0]
+velocity_bohr_radius_hartree_per_h_bar_3 = [0.0, 0.0, 0.0]
 angular_velocity_rad_hartree_per_h_bar_3 = [0.0, 0.0, 0.0]
 potential_change_rate_hartree_sqr_per_h_bar = 0.0
 slit_count = 2
-slit_spacing_bohr_radii = 1.0
-slit_width_bohr_radii = 0.5
-slit_rotation = 0.0
+slit_spacing_bohr_radii = 5.0
+slit_width_bohr_radii = 2.0
+slit_rotation_radian = 0.785375
 enable = true
 visible=true
 
@@ -72,7 +72,7 @@ potential_change_rate_hartree_sqr_per_h_bar = 0.0
 slit_count = 0
 slit_spacing_bohr_radii = 1.0
 slit_width_bohr_radii = 0.5
-slit_rotation = 0.0
+slit_rotation_radian = 0.0
 enable = false
 visible=true
 
@@ -91,8 +91,8 @@ light_rotation_speed = 0.001
 light_elevation_speed = 0.0
 animation_frame_rate = 25
 animation_frame_capture_iteration_interval = 50
-image_capture_iteration_interval = 50
-enable_animation = true
+image_capture_iteration_interval = 100
+enable_animation = false
 enable_image = true
 
 [measurement.per_axis_plot]
@@ -106,8 +106,8 @@ potential_plot_scale = 0.02
 animation_frame_rate = 25
 animation_frame_capture_iteration_interval = 50
 image_capture_iteration_interval = 50
-enable_animation = true
-enable_image = true
+enable_animation = false
+enable_image = false
 
 [paths]
 cache_dir = "./cache"

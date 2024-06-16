@@ -6,6 +6,7 @@ import math
 import sources.potential_kernels as kernels
 from typing import Dict
 from sources.config_read_helper import try_read_param
+from colorama import Fore, Style
 
 
 class PreInitializedPotential:
@@ -151,7 +152,7 @@ class PotentialWall:
     slit_count: int = 0
     slit_spacing_bohr_radii: float = 1.0
     slit_width_bohr_radii: float = 0.5
-    slit_rotation: float = 0.0
+    slit_rotation_radian: float = 0.0
     visible: bool = True
 
     def __init__(self, wall_config: Dict):
@@ -165,9 +166,15 @@ class PotentialWall:
         self.angular_velocity_rad_hartree_per_h_bar_3 = np.array(try_read_param(wall_config, "angular_velocity_rad_hartree_per_h_bar_3", [0.0, 0.0, 0.0]))
         self.potential_change_rate_hartree_sqr_per_h_bar = try_read_param(wall_config, "potential_change_rate_hartree_sqr_per_h_bar", 0.0)
         self.slit_count = try_read_param(wall_config, "slit_count", 0)
+        if self.slit_count > 4:
+            print(Fore.RED + "Potential wall slit count is currently supported only up to 4 slits!" + Style.RESET_ALL)
+            self.slit_count = 4
+        elif self.slit_count < 0:
+            print(Fore.RED + "Negative potential wall slit count is invalid!" + Style.RESET_ALL)
+            self.slit_count = 0
         self.slit_spacing_bohr_radii = try_read_param(wall_config, "slit_spacing_bohr_radii", 1.0)
         self.slit_width_bohr_radii = try_read_param(wall_config, "slit_width_bohr_radii", 0.5)
-        self.slit_rotation = try_read_param(wall_config, "slit_rotation", 0.0)
+        self.slit_rotation_radian = try_read_param(wall_config, "slit_rotation_radian", 0.0)
         self.visible = try_read_param(wall_config, "visible", True)
         self.enable = try_read_param(wall_config, "enable", True)
 
@@ -208,10 +215,10 @@ class PotentialWall:
                 cp.float32(self.plateau_thickness_bohr_radii),
                 cp.float32(self.slope_thickness_bohr_radii),
                 cp.float32(self.slope_exponent),
-                cp.float32(self.slit_count),
+                cp.uint32(self.slit_count),
                 cp.float32(self.slit_spacing_bohr_radii),
                 cp.float32(self.slit_width_bohr_radii),
-                cp.float32(self.slit_rotation)
+                cp.float32(self.slit_rotation_radian)
             )
         )
         return V
