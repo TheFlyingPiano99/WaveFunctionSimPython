@@ -6,9 +6,29 @@
 
 constexpr float M_PI = 3.14159265359;
 
+__device__ float3 fabsf(const float3& v)
+{
+    return {fabsf(v.x), fabsf(v.y), fabsf(v.z)};
+}
+
 __device__ constexpr float3 scalarVectorMul(const float s, const float3& v)
 {
     return {s * v.x, s * v.y, s * v.z};
+}
+
+__device__ constexpr float3 operator*(const float s, const float3& v)
+{
+    return {s * v.x, s * v.y, s * v.z};
+}
+
+__device__ constexpr float3 operator*(const float3& v, const float s)
+{
+    return {s * v.x, s * v.y, s * v.z};
+}
+
+__device__ constexpr float3 operator-(const float3& v)
+{
+    return {-v.x, -v.y, -v.z};
 }
 
 constexpr __device__ float dot(const float3& a, const float3& b)
@@ -40,7 +60,17 @@ __device__ constexpr float3 add(const float3& a, const float3& b)
     return {a.x + b.x, a.y + b.y, a.z + b.z};
 }
 
+__device__ constexpr float3 operator+(const float3& a, const float3& b)
+{
+    return {a.x + b.x, a.y + b.y, a.z + b.z};
+}
+
 __device__ constexpr float3 diff(const float3& a, const float3& b)
+{
+    return {a.x - b.x, a.y - b.y, a.z - b.z};
+}
+
+__device__ constexpr float3 operator-(const float3& a, const float3& b)
 {
     return {a.x - b.x, a.y - b.y, a.z - b.z};
 }
@@ -50,9 +80,24 @@ __device__ float3 mul(const float3& a, const float3 b)
     return {a.x * b.x, a.y * b.y, a.z * b.z};
 }
 
+__device__ float3 operator*(const float3& a, const float3 b)
+{
+    return {a.x * b.x, a.y * b.y, a.z * b.z};
+}
+
 __device__ constexpr float3 div(const float3& a, const float3& b)
 {
     return {a.x / b.x, a.y / b.y, a.z / b.z};
+}
+
+__device__ constexpr float3 operator/(const float3& a, const float3& b)
+{
+    return {a.x / b.x, a.y / b.y, a.z / b.z};
+}
+
+__device__ float length(const float3& a)
+{
+    return sqrtf(dot(a, a));
 }
 
 __device__ float3 normalize(const float3& a)
@@ -102,7 +147,7 @@ __device__ int get_array_index_inverted()
 }
 
 
-__device__ float3 mat3x3_vector_mul(const float (&m)[3][3], const float3& v)
+__device__ float3 operator*(const float (&m)[3][3], const float3& v)
 {
     return {
         m[0][0] * v.x + m[0][1] * v.y + m[0][2] * v.z,
@@ -111,6 +156,15 @@ __device__ float3 mat3x3_vector_mul(const float (&m)[3][3], const float3& v)
     };
 }
 
+__device__ float4 operator*(const float (&m)[4][4], const float4& v)
+{
+    return {
+        m[0][0] * v.x + m[0][1] * v.y + m[0][2] * v.z + m[0][3] * v.w,
+        m[1][0] * v.x + m[1][1] * v.y + m[1][2] * v.z + m[1][3] * v.w,
+        m[2][0] * v.x + m[2][1] * v.y + m[2][2] * v.z + m[2][3] * v.w,
+        m[3][0] * v.x + m[3][1] * v.y + m[3][2] * v.z + m[3][3] * v.w,
+    };
+}
 
 __device__ float3 rotate_vector(const float3& v, const float3& axis, float rad)
 {
@@ -132,8 +186,12 @@ __device__ float3 rotate_vector(const float3& v, const float3& axis, float rad)
     Q[2][1] = 2.0f * (q3*q2 + q0*q1);
     Q[2][2] = q0*q0 - q1*q1 - q2*q2 + q3*q3;
 
-    return mat3x3_vector_mul(Q, v);
-    //return v;
+    return Q * v;
+}
+
+__device__ float mix(const float3& xyz, float u, float v)
+{
+    return xyz.z * v + (1.0f - v) * (xyz.y * u + xyz.x * (1.0f - u));
 }
 
 #endif  // CUDA_COMMON

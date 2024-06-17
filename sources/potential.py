@@ -26,8 +26,7 @@ class AbsorbingBoundaryCondition:
     outer_potential_in_positive_xyz_direction_hartree_3: np.array
     outer_potential_in_negative_xyz_direction_hartree_3: np.array
 
-    start_offset_in_positive_xyz_direction_3: np.array
-    start_offset_in_negative_xyz_direction_3: np.array
+    start_offset: float
 
     slope_exponent_in_positive_xyz_direction_3: np.array
     slope_exponent_in_negative_xyz_direction_3: np.array
@@ -49,19 +48,10 @@ class AbsorbingBoundaryCondition:
             "absorbing_boundary_condition.outer_potential_in_negative_xyz_direction_hartree_3",
             [-100.0, -100.0, -100.0])
         )
-        self.start_offset_in_positive_xyz_direction_3 = np.array(
-            try_read_param(
-                config,
-                "absorbing_boundary_condition.start_offset_in_positive_xyz_direction_3",
-                [1.0, 1.0, 1.0]
-            )
-        )
-        self.start_offset_in_negative_xyz_direction_3 = np.array(
-            try_read_param(
-                config,
-                "absorbing_boundary_condition.start_offset_in_negative_xyz_direction_3",
-                [1.0, 1.0, 1.0]
-            )
+        self.start_offset = try_read_param(
+            config,
+            "absorbing_boundary_condition.start_offset",
+            1.0
         )
         self.slope_exponent_in_positive_xyz_direction_3 = np.array(
             try_read_param(
@@ -87,17 +77,18 @@ class AbsorbingBoundaryCondition:
     ):
         if not self.enable: # Do not add if disabled
             return V
-        draining_potential_kernel = cp.RawKernel(kernels.draining_potential_kernel_source,
-                                                 'draining_potential_kernel',
+        absorbing_potential_kernel = cp.RawKernel(kernels.absorbing_potential_kernel_source,
+                                                 'absorbing_potential_kernel',
                                                  enable_cooperative_groups=False)
         shape = V.shape
         grid_size = math_utils.get_grid_size(shape)
         block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
-        draining_potential_kernel(
+        absorbing_potential_kernel(
             grid_size,
             block_size,
             (
                 V,
+
                 cp.float32(delta_x_3[0]),
                 cp.float32(delta_x_3[1]),
                 cp.float32(delta_x_3[2]),
@@ -110,6 +101,8 @@ class AbsorbingBoundaryCondition:
                 cp.float32(self.boundary_top_corner_bohr_radii_3[1]),
                 cp.float32(self.boundary_top_corner_bohr_radii_3[2]),
 
+                cp.float32(self.start_offset),
+
                 cp.float32(self.outer_potential_in_positive_xyz_direction_hartree_3[0]),
                 cp.float32(self.outer_potential_in_positive_xyz_direction_hartree_3[1]),
                 cp.float32(self.outer_potential_in_positive_xyz_direction_hartree_3[2]),
@@ -117,14 +110,6 @@ class AbsorbingBoundaryCondition:
                 cp.float32(self.outer_potential_in_negative_xyz_direction_hartree_3[0]),
                 cp.float32(self.outer_potential_in_negative_xyz_direction_hartree_3[1]),
                 cp.float32(self.outer_potential_in_negative_xyz_direction_hartree_3[2]),
-
-                cp.float32(self.start_offset_in_positive_xyz_direction_3[0]),
-                cp.float32(self.start_offset_in_positive_xyz_direction_3[1]),
-                cp.float32(self.start_offset_in_positive_xyz_direction_3[2]),
-
-                cp.float32(self.start_offset_in_negative_xyz_direction_3[0]),
-                cp.float32(self.start_offset_in_negative_xyz_direction_3[1]),
-                cp.float32(self.start_offset_in_negative_xyz_direction_3[2]),
 
                 cp.float32(self.slope_exponent_in_positive_xyz_direction_3[0]),
                 cp.float32(self.slope_exponent_in_positive_xyz_direction_3[1]),

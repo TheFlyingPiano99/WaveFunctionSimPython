@@ -18,7 +18,7 @@ double_precision_calculation = false
 
 [wave_packet]
 particle_mass_electron_rest_mass = 1.0
-initial_wp_position_bohr_radii_3 = [-20.0, 0.0, 0.0]
+initial_wp_position_bohr_radii_3 = [30.0, 0.0, 0.0]
 initial_wp_velocity_bohr_radii_hartree_per_h_bar_3 = [1.5, 0.0, 0.0]
 initial_wp_width_bohr_radii = 2.0
 
@@ -31,8 +31,7 @@ observation_box_top_corner_bohr_radii_3 = [45.0, 45.0, 45.0]   # Same as the inn
 [absorbing_boundary_condition]
 outer_potential_in_positive_xyz_direction_hartree_3 = [-100.0, -100.0, -100.0]
 outer_potential_in_negative_xyz_direction_hartree_3 = [-100.0, -100.0, -100.0]
-start_offset_in_positive_xyz_direction_3 = [1.0, 1.0, 1.0]
-start_offset_in_negative_xyz_direction_3 = [1.0, 1.0, 1.0]
+start_offset = 1.0
 slope_exponent_in_positive_xyz_direction_3 = [3.0, 3.0, 3.0]    # e: f(x) = x^e,    x in [0, 1]
 slope_exponent_in_negative_xyz_direction_3 = [3.0, 3.0, 3.0]    # e: f(x) = x^e,    x in [0, 1]
 enable = true
@@ -52,11 +51,11 @@ slope_exponent = 1.5    # e: f(x) = x^e,    x in [0, 1]
 velocity_bohr_radius_hartree_per_h_bar_3 = [0.0, 0.0, 0.0]
 angular_velocity_rad_hartree_per_h_bar_3 = [0.0, 0.0, 0.0]
 potential_change_rate_hartree_sqr_per_h_bar = 0.0
-slit_count = 2
+slit_count = 3
 slit_spacing_bohr_radii = 5.0
 slit_width_bohr_radii = 2.0
-slit_rotation_radian = 0.785375
-enable = true
+slit_rotation_radian = 0.0
+enable = false
 visible=true
 
 [[potential.walls]]
