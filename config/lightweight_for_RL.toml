@@ -18,8 +18,8 @@ double_precision_calculation = false
 
 [wave_packet]
 particle_mass_electron_rest_mass = 1.0
-initial_wp_position_bohr_radii_3 = [20.0, 0.0, 0.0]
-initial_wp_velocity_bohr_radii_hartree_per_h_bar_3 = [-1.5, 0.0, 0.0]
+initial_wp_position_bohr_radii_3 = [-10.0, 0.0, 0.0]
+initial_wp_velocity_bohr_radii_hartree_per_h_bar_3 = [1.5, 0.0, 0.0]
 initial_wp_width_bohr_radii = 2.0
 
 [volume]
@@ -122,20 +122,20 @@ enable_image = true
 
 [[measurement.plane_probability_currents]]
 name = "First plane"
-center_bohr_radii_3 = [-5.0, 0.0, 0.0]
+center_bohr_radii_3 = [0.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
-size_bohr_radii_2 = [60.0, 60.0]
-resolution_2 = [512, 512]
+size_bohr_radii_2 = [118.0, 118.0]
+resolution_2 = [128, 128]
 enable_image = true
 
 [[measurement.plane_probability_currents]]
 name = "Second plane"
 center_bohr_radii_3 = [5.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
-size_bohr_radii_2 = [60.0, 60.0]
-resolution_2 = [512, 512]
-enable_image = true
+size_bohr_radii_2 = [118.0, 118.0]
+resolution_2 = [128, 128]
 
+enable_image = false
 
 [paths]
 cache_dir = "./cache"

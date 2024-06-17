@@ -125,6 +125,7 @@ class PlaneProbabilityCurrent:
     __resolution_2: np.array
     __probability_current_density: cp.ndarray
     __probability_current_evolution: np.array = np.empty(shape=0, dtype=np.float32)
+    __integrated_probability_current_evolution: np.array = np.empty(shape=0, dtype=np.float32)
 
     def __init__(self, config: Dict):
         self.__name = try_read_param(config, "name", "Probability current", "measurement.plane_probability_currents")
@@ -175,16 +176,29 @@ class PlaneProbabilityCurrent:
                 cp.float32(self.__normal_vector_3[2]),
 
                 cp.float32(self.__size_bohr_radii_2[0]),
-                cp.float32(self.__size_bohr_radii_2[1])
+                cp.float32(self.__size_bohr_radii_2[1]),
+
+                cp.uint32(sim_state.get_number_of_voxels_3()[0]),
+                cp.uint32(sim_state.get_number_of_voxels_3()[1]),
+                cp.uint32(sim_state.get_number_of_voxels_3()[2])
 
             )
         )
-        probability_current = cp.sum(self.__probability_current_density)
+        probability_current = cp.sum(self.__probability_current_density) / 0.25
+
         self.__probability_current_evolution = (
             np.append(arr=self.__probability_current_evolution, values=probability_current))
+        self.__integrated_probability_current_evolution = np.append(
+            arr=self.__integrated_probability_current_evolution,
+            values=np.sum(self.__probability_current_evolution) * sim_state.get_delta_time_h_bar_per_hartree()
+        )
 
     def get_probability_current_evolution_with_name(self):
         return self.__probability_current_evolution, self.__name
+
+    def get_integrated_probability_current_evolution_with_name(self):
+        return self.__integrated_probability_current_evolution, self.__name
+
 
 class ProjectedMeasurement:
     probability_density: np.array
@@ -453,10 +467,27 @@ class MeasurementTools:
         if len(probability_current_evolutions) > 0:
             plot.plot_probability_evolution(
                 out_dir=sim_state.get_output_dir(),
-                file_name="plane_probability_current_evolution.png",
-                title="Plane probability current evolution",
+                file_name="probability_current_evolution.png",
+                title="Probability current evolution",
                 y_label="Probability current",
                 probability_evolutions=probability_current_evolutions,
+                delta_t=sim_state.get_delta_time_h_bar_per_hartree(),
+                show_fig=self.__show_figures
+            )
+
+        integrated_probability_current_evolutions = []
+        for p in self.__plane_probability_currents:
+            if p.is_enable_image():
+                integrated_probability_current_evolutions.append(
+                    p.get_integrated_probability_current_evolution_with_name()
+                )
+        if len(integrated_probability_current_evolutions) > 0:
+            plot.plot_probability_evolution(
+                out_dir=sim_state.get_output_dir(),
+                file_name="integrated_probability_current_evolution.png",
+                title="Integrated probability current evolution",
+                y_label="Probability",
+                probability_evolutions=integrated_probability_current_evolutions,
                 delta_t=sim_state.get_delta_time_h_bar_per_hartree(),
                 show_fig=self.__show_figures
             )

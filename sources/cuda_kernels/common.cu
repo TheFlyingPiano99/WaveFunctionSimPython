@@ -11,6 +11,16 @@ __device__ float3 fabsf(const float3& v)
     return {fabsf(v.x), fabsf(v.y), fabsf(v.z)};
 }
 
+__device__ complex<float> conj(const complex<float>& c)
+{
+    return complex<float>(c.real(), -c.imag());
+}
+
+__device__ complex<float> mul(const complex<float>& a, const complex<float>& b)
+{
+    return complex<float>(a.real() * b.real() - a.imag() * b.imag(), a.real() * b.imag() + a.imag() * b.real() );
+}
+
 __device__ constexpr float3 scalarVectorMul(const float s, const float3& v)
 {
     return {s * v.x, s * v.y, s * v.z};
@@ -151,6 +161,13 @@ __device__ int get_array_index(const uint3& voxel)
 {
     return voxel.x * gridDim.y * blockDim.y * gridDim.z * blockDim.z
             + voxel.y * gridDim.z * blockDim.z
+            + voxel.z;
+}
+
+__device__ int get_array_index(const uint3& voxel, const uint3& N)
+{
+    return voxel.x * N.y * N.z
+            + voxel.y * N.z
             + voxel.z;
 }
 
