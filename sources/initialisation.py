@@ -27,7 +27,10 @@ def initialize(use_cache: bool = True):
                 for idx, file  in enumerate(conf_files):
                     print(f"{idx} {file}")
                 print("Select one by entering its index number:", end=" ")
-                answer = int(input())
+                try:
+                    answer = int(input())
+                except ValueError:
+                    answer = -1
             selected_conf_file = conf_files[answer]
         else:
             print("No config file found under config folder.")

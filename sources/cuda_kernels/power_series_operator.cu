@@ -2,56 +2,50 @@
 
 extern "C" __global__
 void next_s(
-    complex<float>* s_prev, complex<float>* s_next, const complex<float>* v, complex<float>* wave_function,
-    float delta_t, float delta_x, float mass, int array_size, int n
+    complex<float>* s_prev,
+    complex<float>* s_next,
+    const complex<float>* v,
+    complex<float>* wave_function,
+    float delta_t,
+
+    float delta_x,
+    float delta_y,
+    float delta_z,
+
+    float mass,
+    int n
 )
 {
-    int k = blockIdx.x * blockDim.x + threadIdx.x;
-    int j = blockIdx.y * blockDim.y + threadIdx.y;
-    int i = blockIdx.z * blockDim.z + threadIdx.z;
-    int idx = i * array_size * array_size + j * array_size + k;
-    int idx_n00 = 0;
-    if (i > 0) {
-        idx_n00 = (i - 1) * array_size * array_size + j * array_size + k;
+    uint3 voxel = get_voxel_coords();
+    uint3 N = get_voxel_count();
+    int idx = get_array_index();
+
+    int idx_n00 = idx;
+    if (voxel.x > 0) {
+        idx_n00 = get_array_index({voxel.x - 1, voxel.y, voxel.z});
     }
-    else {
-        idx_n00 = (i) * array_size * array_size + j * array_size + k;
+    int idx_p00 = idx;
+    if (voxel.x < N.x - 1) {
+        idx_p00 = get_array_index({voxel.x + 1, voxel.y, voxel.z});
     }
-    int idx_p00 = 0;
-    if (i < array_size - 1) {
-        idx_p00 = (i + 1) * array_size * array_size + j * array_size + k;
+    int idx_0n0 = idx;
+    if (voxel.y > 0) {
+        idx_0n0 = get_array_index({voxel.x, voxel.y - 1, voxel.z});
     }
-    else {
-        idx_p00 = (i) * array_size * array_size + j * array_size + k;
+    int idx_0p0 = idx;
+    if (voxel.y < N.y - 1) {
+        idx_0p0 = get_array_index({voxel.x, voxel.y + 1, voxel.z});
     }
-    int idx_0n0 = 0;
-    if (j > 0) {
-        idx_0n0 = i * array_size * array_size + (j - 1) * array_size + k;
+    int idx_00n = idx;
+    if (voxel.z > 0) {
+        idx_00n = get_array_index({voxel.x, voxel.y, voxel.z - 1});
     }
-    else {
-        idx_0n0 = i * array_size * array_size + (j) * array_size + k;
+    int idx_00p = idx;
+    if (voxel.z < N.z - 1) {
+        idx_00p = get_array_index({voxel.x, voxel.y, voxel.z + 1});
     }
-    int idx_0p0 = 0;
-    if (j < array_size - 1) {
-        idx_0p0 = i * array_size * array_size + (j + 1) * array_size + k;
-    }
-    else {
-        idx_0p0 = i * array_size * array_size + (j) * array_size + k;
-    }
-    int idx_00n = 0;
-    if (k > 0) {
-        idx_00n = i * array_size * array_size + j * array_size + k - 1;
-    }
-    else {
-        idx_00n = i * array_size * array_size + j * array_size + k;
-    }
-    int idx_00p = 0;
-    if (k < array_size - 1) {
-        idx_00p = i * array_size * array_size + j * array_size + k + 1;
-    }
-    else {
-        idx_00p = i * array_size * array_size + j * array_size + k;
-    }
+
+    float3 delta_r = {delta_x, delta_y, delta_z};
 
     complex<float> laplace_s = (
           s_prev[idx_n00]
@@ -65,6 +59,7 @@ void next_s(
 
     complex<float> s = complex<float>(0.0f, 1.0f) * complex<float>(delta_t / (float)n, 0.0f)
         * (complex<float>(1.0f / 2.0f / mass, 0.0f) * laplace_s - complex<float>(v[idx]) * s_prev[idx]);
+
     s_next[idx] = s;
     wave_function[idx] += s;
 }

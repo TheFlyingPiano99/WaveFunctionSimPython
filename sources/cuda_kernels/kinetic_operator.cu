@@ -17,7 +17,7 @@ void kinetic_operator_kernel(
 
     float3 f = div(
         {(float)voxel.x, (float)voxel.y, (float)voxel.z},
-        {(float)(gridDim.x * blockDim.x - 1), (float)(gridDim.y * blockDim.y - 1), (float)(gridDim.z * blockDim.z - 1)}
+        {(float)(gridDim.x * blockDim.x), (float)(gridDim.y * blockDim.y), (float)(gridDim.z * blockDim.z)}
     );
     float3 delta_r = {delta_x, delta_y, delta_z};
 

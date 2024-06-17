@@ -9,17 +9,14 @@ import cupy as cp
 
 font_size = 16 # 18 would be too big
 
-def plot_probability_evolution(out_dir, probability_evolutions, delta_t, index, show_fig=False):
+def plot_probability_evolution(out_dir, probability_evolutions, delta_t, file_name, title, y_label, show_fig=False):
     # Path:
-    dir = os.path.join(out_dir, "probability_evolution/")
-    if not os.path.exists(dir):
-        os.makedirs(dir, exist_ok=True)
     matplotlib.rcParams.update({'font.size': font_size})
     plt.clf()  # Clear figure
     plt.grid(True)
     plt.xlabel("Elapsed time [ħ/Hartree]")
-    plt.ylabel("Probability")
-    plt.title("Integrated probability density")
+    plt.ylabel(y_label)
+    plt.title(title)
     n = probability_evolutions[0][0].size # Assuming that all lists are of the same size
     x = np.linspace(start=0, stop=n * delta_t, dtype=None, num=n)
     plt.xlim(0, n * delta_t)
@@ -28,7 +25,7 @@ def plot_probability_evolution(out_dir, probability_evolutions, delta_t, index, 
         plt.plot(x, cp.asnumpy(prob_data[0]), label=prob_data[1])
     plt.legend()
     plt.tight_layout()
-    plt.savefig(os.path.join(dir, f"probability_evolution_{index:04d}.png"))
+    plt.savefig(os.path.join(out_dir, file_name))
     if show_fig:
         plt.show()
 

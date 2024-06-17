@@ -85,7 +85,7 @@ def sim():
     )
 
     # Finishing steps:
-    measurement_tools.finish()
+    measurement_tools.finish(sim_state)
     print(Fore.GREEN + "Simulation has finished." + Style.RESET_ALL)
     print(text_writer.get_finish_text(iter_data))
     text_writer.append_iter_data(iter_data, sim_state)

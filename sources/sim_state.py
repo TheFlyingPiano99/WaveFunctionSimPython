@@ -75,7 +75,7 @@ class SimState:
         self.__wave_function_save_iteration_interval = try_read_param(config, "simulation.wave_function_save_iteration_interval", 1)
         self.__double_precision_calculation = try_read_param(config, "simulation.double_precision_calculation", False)
 
-        # Wace packet:
+        # Wave packet:
         self.__wave_packet = wave_packet.GaussianWavePacket(config)
 
         # Set Volume parameters:
@@ -105,8 +105,8 @@ class SimState:
         # Flip coordinates if inverted:
         for i in range(3):
             if (
-                    self.__observation_box_bottom_corner_bohr_radii_3[i]
-                    > self.__observation_box_top_corner_bohr_radii_3[i]
+                    self.__observation_box_bottom_corner_bohr_radii_3[i] >
+                    self.__observation_box_top_corner_bohr_radii_3[i]
             ):
                 temp = self.__observation_box_bottom_corner_bohr_radii_3[i]
                 self.__observation_box_bottom_corner_bohr_radii_3[i] = self.__observation_box_top_corner_bohr_radii_3[i]
@@ -197,11 +197,11 @@ class SimState:
             )
             cp.save(file=os.path.join(self.__cache_dir, "gaussian_wave_packet.npy"), arr=self.__wave_tensor)
         # Normalize:
-        self.__probability_density = cp.asnumpy(cp.square(cp.abs(self.__wave_tensor)))
+        self.__probability_density = math_utils.square_of_abs(self.__wave_tensor)
         sum_probability = cp.sum(self.__probability_density)
         print(f"Sum of probabilities = {sum_probability:.8f}")
         self.__wave_tensor = self.__wave_tensor / (sum_probability ** 0.5)
-        self.__probability_density = cp.asnumpy(cp.square(cp.abs(self.__wave_tensor)))
+        self.__probability_density = math_utils.square_of_abs(self.__wave_tensor)
         sum_probability = cp.sum(self.__probability_density)
         print(f"Sum of probabilities after normalization = {sum_probability:.8f}")
 
@@ -249,7 +249,7 @@ class SimState:
                 shape=self.__number_of_voxels_3, dtype=cp.complex64
             )
             self.__localised_potential_to_visualize_hartree = cp.zeros(
-                shape=self.__number_of_voxels_3, dtype=cp.csingle
+                shape=self.__number_of_voxels_3, dtype=cp.complex64
             )
 
             if self.__pre_initialized_potential.enable:
@@ -507,12 +507,15 @@ class SimState:
                 enable_cooperative_groups=False
             )
             self.__pingpong_buffer = [
-                cp.zeros(shape=self.__number_of_voxels_3, dtype=self.__wave_tensor.dtype),
-                cp.zeros(shape=self.__number_of_voxels_3, dtype=self.__wave_tensor.dtype)
+                cp.zeros(shape=self.__wave_tensor.shape, dtype=self.__wave_tensor.dtype),
+                cp.zeros(shape=self.__wave_tensor.shape, dtype=self.__wave_tensor.dtype)
             ]  # s is used as a pair of pingpong buffers to store power series elements
 
     def get_delta_time_h_bar_per_hartree(self):
         return self.__delta_time_h_bar_per_hartree
+
+    def get_delta_x_bohr_radii_3(self):
+        return self.__delta_x_bohr_radii_3
 
     def set_wave_function(self, wave_func: cp.ndarray):
         self.__wave_tensor = wave_func
@@ -556,37 +559,60 @@ class SimState:
     def get_observation_box_top_corner_bohr_radii_3(self):
         return self.__observation_box_top_corner_bohr_radii_3
 
-    def get_view_into_raw_wave_function(self):
-        return math_utils.cut_window(
+    def get_view_into_wave_function(self):
+        return math_utils.cut_bounding_box(
             arr=self.__wave_tensor,
             bottom=self.__observation_box_bottom_corner_voxel_3,
             top=self.__observation_box_top_corner_voxel_3,
         )
 
+    def _transform_physical_coordinate_to_voxel_3(self, pos_bohr_radii_3: np.array):
+        return math_utils.transform_center_origin_to_corner_origin_system(
+            pos_bohr_radii_3,
+            self.__simulated_volume_dimensions_bohr_radii_3
+        ) / self.__delta_x_bohr_radii_3
 
-    def get_view_into_probability_density(self):
-        return math_utils.cut_window(
+    def _transform_voxel_to_physical_coordinate_3(self, voxel_3: np.array):
+        return math_utils.transform_corner_origin_to_center_origin_system(
+            voxel_3,
+            self.__number_of_voxels_3
+        ) * self.__delta_x_bohr_radii_3
+
+    def get_view_into_probability_density(
+            self,
+            bottom_corner_bohr_radii: np.array = None,
+            top_corner_bohr_radii: np.array = None
+    ):
+        if not (bottom_corner_bohr_radii is None) and not (top_corner_bohr_radii is None):
+            bottom_voxel_3 = self._transform_physical_coordinate_to_voxel_3(bottom_corner_bohr_radii)
+            top_voxel_3 = self._transform_physical_coordinate_to_voxel_3(top_corner_bohr_radii)
+            return math_utils.cut_bounding_box(
+                arr=self.__probability_density,
+                bottom=bottom_voxel_3,
+                top=top_voxel_3
+            )
+        return math_utils.cut_bounding_box(
             arr=self.__probability_density,
             bottom=self.__observation_box_bottom_corner_voxel_3,
             top=self.__observation_box_top_corner_voxel_3,
         )
 
     def get_view_into_potential(self):
-        return math_utils.cut_window(
+        return math_utils.cut_bounding_box(
             arr=cp.real(self.__localised_potential_to_visualize_hartree),
             bottom=self.__observation_box_bottom_corner_voxel_3,
             top=self.__observation_box_top_corner_voxel_3,
         )
 
     def get_view_into_complex_potential(self):
-        return math_utils.cut_window(
+        return math_utils.cut_bounding_box(
             arr=self.__localised_potential_to_visualize_hartree,
             bottom=self.__observation_box_bottom_corner_voxel_3,
             top=self.__observation_box_top_corner_voxel_3,
         )
 
     def get_view_into_coulomb_potential(self):
-        return math_utils.cut_window(
+        return math_utils.cut_bounding_box(
             arr=self.__coulomb_potential,
             bottom=self.__observation_box_bottom_corner_voxel_3,
             top=self.__observation_box_top_corner_voxel_3,
@@ -922,10 +948,14 @@ class SimState:
                     self.__pingpong_buffer[pingpong_idx],
                     self.__localised_potential_hartree,
                     self.__wave_tensor,
+
                     cp.float32(self.__delta_time_h_bar_per_hartree),
+
                     cp.float32(self.__delta_x_bohr_radii_3[0]),
+                    cp.float32(self.__delta_x_bohr_radii_3[1]),
+                    cp.float32(self.__delta_x_bohr_radii_3[2]),
+
                     cp.float32(self.__wave_packet.get_particle_mass_electron_rest_mass()),
-                    cp.int32(shape[0]),
                     cp.int32(n)
                 )
             )

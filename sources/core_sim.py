@@ -21,7 +21,7 @@ def write_wave_function_to_file(sim_state: SimState, iter_data: IterData):
         if not os.path.exists(os.path.join(sim_state.get_output_dir(), f"wave_function")):
             os.makedirs(os.path.join(sim_state.get_output_dir(), f"wave_function"), exist_ok=True)
         try:
-            cp.save(arr=sim_state.get_view_into_raw_wave_function(), file=os.path.join(sim_state.get_output_dir(), f"wave_function/wave_function_{iter_data.i:04d}.npy"))
+            cp.save(arr=sim_state.get_view_into_wave_function(), file=os.path.join(sim_state.get_output_dir(), f"wave_function/wave_function_{iter_data.i:04d}.npy"))
         except IOError:
             print(Fore.RED + "\nERROR: Failed writing file: "+ os.path.join(sim_state.get_output_dir(), f"wave_function/wave_function_{iter_data.i:04d}.npy") + Style.RESET_ALL)
 
@@ -55,6 +55,7 @@ def run_iteration(sim_state: SimState, measurement_tools: MeasurementTools, iter
         for iter_data.i in range(start_index, iter_data.total_iteration_count):
             if iter_data.is_quit:   # Quit simulation
                 snapshot_io.write_snapshot(sim_state, iter_data)
+                measurement_tools.finish(sim_state)
                 sys.exit(0)
 
             iter_start_time_s = time.time()
@@ -69,7 +70,7 @@ def run_iteration(sim_state: SimState, measurement_tools: MeasurementTools, iter
 
     # Calculate resulting time statistics after the iteration:
     iter_data.total_simulated_time = (
-        sim_state.delta_time_h_bar_per_hartree * iter_data.total_iteration_count
+        sim_state.get_delta_time_h_bar_per_hartree() * iter_data.total_iteration_count
     )
     iter_data.average_iteration_system_time_s = iter_data.elapsed_system_time_s / float(
         iter_data.total_iteration_count

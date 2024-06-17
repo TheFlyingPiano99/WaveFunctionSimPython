@@ -113,6 +113,15 @@ __device__ constexpr float3 transform_corner_origin_to_center_origin_system(cons
     );
 }
 
+__device__ uint3 get_voxel_count()
+{
+    return {
+        gridDim.x * blockDim.x,
+        gridDim.y * blockDim.y,
+        gridDim.z * blockDim.z
+    };
+}
+
 __device__ uint3 get_voxel_coords()
 {
     return {
@@ -133,6 +142,13 @@ __device__ uint3 get_voxel_coords_inverted()
 __device__ int get_array_index()
 {
     uint3 voxel = get_voxel_coords();
+    return voxel.x * gridDim.y * blockDim.y * gridDim.z * blockDim.z
+            + voxel.y * gridDim.z * blockDim.z
+            + voxel.z;
+}
+
+__device__ int get_array_index(const uint3& voxel)
+{
     return voxel.x * gridDim.y * blockDim.y * gridDim.z * blockDim.z
             + voxel.y * gridDim.z * blockDim.z
             + voxel.z;

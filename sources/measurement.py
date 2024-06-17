@@ -8,6 +8,11 @@ from sources.sim_state import SimState
 from sources.config_read_helper import try_read_param
 from sources.iter_data import IterData
 import os
+from typing import Dict
+from colorama import Fore, Style
+import cupy as cp
+import sources.plot as plot
+from pathlib import Path
 
 class MeasurementPlane:
     def __init__(
@@ -55,47 +60,131 @@ class MeasurementPlane:
         return self.plane_dwell_time_density
 
 
-class AAMeasurementVolume:
+class VolumeProbability:
+    __name: str
+    __bottom_corner_bohr_radii_3: np.array
+    __top_corner_bohr_radii_3: np.array
+    __enable_image: bool
+    __probability_evolution: np.array = np.empty(shape=0, dtype=np.float64)
+
     def __init__(
         self,
-        bottom_corner : np.array,
-        top_corner: np.array,
-        label : str,
+        config: Dict
     ):
-        self.top_corner = top_corner
-        self.bottom_corner = bottom_corner
-        self.label = label
-        self.probability = 0.0
-        self.probability_evolution = np.empty(shape=0, dtype=np.float64)
+        self.__name = try_read_param(config, "name", "Volume probability", "measurement.volume_probabilities")
+        self.__bottom_corner_bohr_radii_3 = np.array(
+            try_read_param(config, "bottom_corner_bohr_radii_3", [-10.0, -10.0, -10.0], "measurement.volume_probabilities")
+        )
+        self.__top_corner_bohr_radii_3 = np.array(
+            try_read_param(config, "top_corner_bohr_radii_3", [10.0, 10.0, 10.0], "measurement.volume_probabilities")
+        )
+        for i in range(3):  # flip coordinates between bottom and top if in wrong order
+            if self.__bottom_corner_bohr_radii_3[i] > self.__top_corner_bohr_radii_3[i]:
+                temp = self.__bottom_corner_bohr_radii_3[i]
+                self.__bottom_corner_bohr_radii_3[i] = self.__top_corner_bohr_radii_3[i]
+                self.__top_corner_bohr_radii_3[i] = temp
+        self.__enable_image = try_read_param(config, "enable_image", True, "measurement.volume_probabilities")
 
-    def integrate_probability_density(self, probability_density):
-        self.probability = min(np.sum(
-            probability_density[
-                self.bottom_corner[0] : self.top_corner[0],
-                self.bottom_corner[1] : self.top_corner[1],
-                self.bottom_corner[2] : self.top_corner[2],
-            ]
-        ), 10.0)
-        self.probability_evolution = np.append(
-            arr=self.probability_evolution, values=self.probability
+    def get_name(self):
+        return self.__name
+
+    def set_name(self, n: str):
+        self.__name = n
+
+    def is_enable_image(self):
+        return self.__enable_image
+
+    def integrate_probability_density(self, sim_state: SimState):
+        probability_density = sim_state.get_view_into_probability_density(
+            bottom_corner_bohr_radii=self.__bottom_corner_bohr_radii_3,
+            top_corner_bohr_radii=self.__top_corner_bohr_radii_3
+        )
+        probability = min(cp.sum(
+            probability_density
+        ), 10.0)    # Min is to prevent inf value if the simulation diverges
+        self.__probability_evolution = np.append(
+            arr=self.__probability_evolution, values=probability
         )
 
+    def get_probability_evolution_with_name(self):
+        return self.__probability_evolution, self.__name
+
     def clear(self):
-        self.probability = 0.0
-        self.probability_evolution = np.empty(shape=0, dtype=np.float64)
-
-    def get_probability(self):
-        return self.probability
-
-    def get_probability_evolution(self):
-        return self.probability_evolution, self.label
+        self.__probability_evolution = np.empty(shape=0, dtype=np.float64)
 
 
-"""
-For calculating the probability density per axis
-without any assuptions about the other dimensions.
-"""
+probability_current_density_kernel = Path("sources/cuda_kernels/probability_current_density.cu").read_text().replace("PATH_TO_SOURCES", os.path.abspath("sources"))
 
+class PlaneProbabilityCurrent:
+    __name: str
+    __center_bohr_radii_3: np.array
+    __normal_vector_3: np.array
+    __enable_image: np.array
+    __kernel: cp.RawKernel
+    __size_bohr_radii_2: np.array
+    __resolution_2: np.array
+    __probability_current_density: cp.ndarray
+    __probability_current_evolution: np.array = np.empty(shape=0, dtype=np.float32)
+
+    def __init__(self, config: Dict):
+        self.__name = try_read_param(config, "name", "Probability current", "measurement.plane_probability_currents")
+        self.__center_bohr_radii_3 = np.array(
+            try_read_param(config, "center_bohr_radii_3", "measurement.plane_probability_currents")
+        )
+        self.__normal_vector_3 = np.array(
+            try_read_param(config, "normal_vector_3", "measurement.plane_probability_currents")
+        )
+        self.__enable_image = try_read_param(config, "enable_image", "measurement.plane_probability_currents")
+        self.__size_bohr_radii_2 = np.array(try_read_param(config, "size_bohr_radii_2", [60.0, 60.0], "measurement.plane_probability_currents"))
+        self.__resolution_2 = np.array(try_read_param(config, "resolution_2", [512, 512], "measurement.plane_probability_currents"))
+        self.__kernel = cp.RawKernel(
+            probability_current_density_kernel,
+            "probability_current_density_kernel"
+        )
+        self.__probability_current_density = cp.zeros(shape=[self.__resolution_2[0], self.__resolution_2[1]], dtype=cp.float32)
+
+    def get_name(self):
+        return self.__name
+
+    def set_name(self, n: str):
+        self.__name = n
+
+    def is_enable_image(self):
+        return self.__enable_image
+
+    def calculate(self, sim_state: SimState):
+        grid_size = (self.__resolution_2[0] // 32, self.__resolution_2[1] // 32, 1)
+        block_size = (self.__resolution_2[0] // grid_size[0], self.__resolution_2[1] // grid_size[1], 1)
+        self.__kernel(
+            grid_size,
+            block_size,
+            (
+                sim_state.get_wave_function(),
+                self.__probability_current_density,
+
+                cp.float32(sim_state.get_delta_x_bohr_radii_3()[0]),
+                cp.float32(sim_state.get_delta_x_bohr_radii_3()[1]),
+                cp.float32(sim_state.get_delta_x_bohr_radii_3()[2]),
+
+                cp.float32(self.__center_bohr_radii_3[0]),
+                cp.float32(self.__center_bohr_radii_3[1]),
+                cp.float32(self.__center_bohr_radii_3[2]),
+
+                cp.float32(self.__normal_vector_3[0]),
+                cp.float32(self.__normal_vector_3[1]),
+                cp.float32(self.__normal_vector_3[2]),
+
+                cp.float32(self.__size_bohr_radii_2[0]),
+                cp.float32(self.__size_bohr_radii_2[1])
+
+            )
+        )
+        probability_current = cp.sum(self.__probability_current_density)
+        self.__probability_current_evolution = (
+            np.append(arr=self.__probability_current_evolution, values=probability_current))
+
+    def get_probability_current_evolution_with_name(self):
+        return self.__probability_current_evolution, self.__name
 
 class ProjectedMeasurement:
     probability_density: np.array
@@ -184,15 +273,36 @@ class MeasurementTools:
     __enable_per_axis_image = False
     __enable_per_axis_animation = False
     __per_axis_image_capture_interval: int = 50
+    __volume_probabilities: list[VolumeProbability] = []
+    __plane_probability_currents: list[PlaneProbabilityCurrent] = []
+    __show_figures: bool = True
+
+    def _resolve_naming_conflicts(self, list, new_item):
+        for item in list:
+            if (item.get_name() == new_item.get_name()):
+                print(
+                    Fore.RED + f"Found multiple measurement tools of the same type with equal name: \"{new_item.get_name()}\"" + Style.RESET_ALL)
+                index = 1
+                unique_name = False
+                while not unique_name:
+                    unique_name = True
+                    for item2 in list:
+                        if (new_item.get_name() + f"_{index}") == item2.get_name():
+                            unique_name = False
+                            index += 1
+                            break
+                new_item.set_name(new_item.get_name() + f"_{index}")
+                print(Fore.RED + f"Renamed one to \"{new_item.get_name()}\"." + Style.RESET_ALL)
+                break
 
 
-    def __init__(self, config, sim_state: SimState):
+    def __init__(self, config: Dict, sim_state: SimState):
         # Volumetric visualization:
         self.__enable_volumetric_animation = try_read_param(config, "measurement.volumetric.enable_animation", False)
         self.__enable_volumetric_image = try_read_param(config, "measurement.volumetric.enable_image", False)
         if self.__enable_volumetric_image or self.__enable_volumetric_animation:
             self.__volumetric = VolumetricVisualization(
-                wave_function=sim_state.get_view_into_raw_wave_function(),
+                wave_function=sim_state.get_view_into_wave_function(),
                 potential=sim_state.get_view_into_complex_potential(),
                 coulomb_potential=sim_state.get_view_into_coulomb_potential(),
                 cam_rotation_speed=try_read_param(config, "measurement.volumetric.camera_rotation_speed", 0.0),
@@ -259,65 +369,20 @@ class MeasurementTools:
                 try_read_param(config, "measurement.per_axis_plot.animation_frame_capture_iteration_interval", 1)
             )
 
+        # Volume probability:
+        volume_confs = try_read_param(config, "measurement.volume_probabilities", [])
+        for conf in volume_confs:
+            new_v = VolumeProbability(conf)
+            self._resolve_naming_conflicts(self.__volume_probabilities, new_v)
+            self.__volume_probabilities.append(new_v)
+
+        plane_confs = try_read_param(config, "measurement.plane_probability_currents", [])
+        for conf in plane_confs:
+            new_p = PlaneProbabilityCurrent(conf)
+            self._resolve_naming_conflicts(self.__plane_probability_currents, new_p)
+            self.__plane_probability_currents.append(new_p)
+
     def measure_and_render(self, sim_state: SimState, iter_data: IterData):
-        # Update all measurement tools:
-        '''
-            measurement_tools.measurement_volume_full.integrate_probability_density(
-            sim_state.probability_density
-        )
-        '''
-
-        '''
-        measurement_tools.measurement_volume_first_half.integrate_probability_density(
-            sim_state.probability_density
-        )
-        measurement_tools.measurement_volume_second_half.integrate_probability_density(
-            sim_state.probability_density
-        )
-        '''
-
-        '''
-        measurement_tools.measurement_plane.integrate(
-            sim_state.probability_density,
-            sim_state.delta_time_h_bar_per_hartree,
-        )
-
-        if (
-                iter_data.i % iter_data.per_axis_probability_denisty_plot_interval == 0
-                or iter_data.i % iter_data.animation_frame_step_interval == 0
-        ):
-            measurement_tools.x_axis_probability_density.integrate_probability_density(
-                sim_state.probability_density
-            )
-            measurement_tools.y_axis_probability_density.integrate_probability_density(
-                sim_state.probability_density
-            )
-            measurement_tools.z_axis_probability_density.integrate_probability_density(
-                sim_state.probability_density
-            )
-            measurement_tools.projected_potential.integrate_probability_density(
-                np.real(sim_state.localised_potential_to_visualize_hartree)
-            )
-
-        # Plot state:
-        if iter_data.i % iter_data.per_axis_probability_denisty_plot_interval == 0:
-            measurement_tools.per_axis_density_plot = plot.plot_per_axis_probability_density(
-                out_dir=sim_state.output_dir,
-                title=sim_state.config["view"]["per_axis_plot"]["title"],
-                data=[
-                    measurement_tools.x_axis_probability_density.get_probability_density_with_label(),
-                    measurement_tools.y_axis_probability_density.get_probability_density_with_label(),
-                    measurement_tools.z_axis_probability_density.get_probability_density_with_label(),
-                    measurement_tools.projected_potential.get_probability_density_with_label(),
-                ],
-                delta_x_3=sim_state.delta_x_bohr_radii_3,
-                delta_t=sim_state.delta_time_h_bar_per_hartree,
-                potential_scale=sim_state.config["view"]["per_axis_plot"]["potential_plot_scale"],
-                index=iter_data.i,
-                show_fig=False,
-            )
-        '''
-
         # Update the volumetric visualization if needed:
         if (
                 (
@@ -331,7 +396,7 @@ class MeasurementTools:
                 )
         ):
             self.__volumetric.update(
-                wave_function=sim_state.get_view_into_raw_wave_function(),
+                wave_function=sim_state.get_view_into_wave_function(),
                 potential=sim_state.get_view_into_complex_potential(),
                 iter_count=iter_data.i,
                 delta_time_h_bar_per_hartree=sim_state.get_delta_time_h_bar_per_hartree(),
@@ -351,37 +416,47 @@ class MeasurementTools:
         ):
             self.__volumetric.render_to_png(out_dir=sim_state.get_output_dir(), index=iter_data.i)
 
-        """
-        if iter_data.i % iter_data.animation_frame_step_interval == 0:
-            measurement_tools.animation_writer_3D.add_frame(
-                measurement_tools.volumetric.render()
-            )
-            measurement_tools.animation_writer_per_axis.add_frame(
-                measurement_tools.per_axis_density_plot
-            )
-        if iter_data.i % iter_data.probability_plot_interval == 0:
-            plot.plot_probability_evolution(
-                out_dir=sim_state.output_dir,
-                probability_evolutions=[
-                    measurement_tools.measurement_volume_full.get_probability_evolution(),
-                    #measurement_tools.measurement_volume_first_half.get_probability_evolution(),
-                    #measurement_tools.measurement_volume_second_half.get_probability_evolution(),
-                ],
-                delta_t=sim_state.delta_time_h_bar_per_hartree,
-                index=iter_data.i,
-                show_fig=False,
-            )
-        if iter_data.i % iter_data.measurement_plane_capture_interval == 0:
-            plot.plot_canvas(
-                out_dir=sim_state.output_dir,
-                plane_probability_density=measurement_tools.measurement_plane.get_probability_density(),
-                plane_dwell_time_density=measurement_tools.measurement_plane.get_dwell_time(),
-                index=iter_data.i,
-                delta_x_3=sim_state.delta_x_bohr_radii_3,
-                delta_t=sim_state.delta_time_h_bar_per_hartree
-            )
-        """
+        for volume in self.__volume_probabilities:
+            if volume.is_enable_image():
+                volume.integrate_probability_density(sim_state)
 
-    def finish(self):
-        self.__animation_writer_volumetric.finish()
-        self.__animation_writer_per_axis.finish()
+        for plane in self.__plane_probability_currents:
+            if plane.is_enable_image():
+                plane.calculate(sim_state)
+
+
+    def finish(self, sim_state: SimState):
+        if self.__enable_volumetric_animation:
+            self.__animation_writer_volumetric.finish()
+        if self.__enable_per_axis_animation:
+            self.__animation_writer_per_axis.finish()
+
+        volume_probability_evolutions = []
+        for v in self.__volume_probabilities:
+            if v.is_enable_image():
+                volume_probability_evolutions.append(v.get_probability_evolution_with_name())
+        if len(volume_probability_evolutions) > 0:
+            plot.plot_probability_evolution(
+                out_dir=sim_state.get_output_dir(),
+                file_name="volume_probability_evolution.png",
+                title="Volume probability evolution",
+                y_label="Probability",
+                probability_evolutions=volume_probability_evolutions,
+                delta_t=sim_state.get_delta_time_h_bar_per_hartree(),
+                show_fig=self.__show_figures
+            )
+
+        probability_current_evolutions = []
+        for p in self.__plane_probability_currents:
+            if p.is_enable_image():
+                probability_current_evolutions.append(p.get_probability_current_evolution_with_name())
+        if len(probability_current_evolutions) > 0:
+            plot.plot_probability_evolution(
+                out_dir=sim_state.get_output_dir(),
+                file_name="plane_probability_current_evolution.png",
+                title="Plane probability current evolution",
+                y_label="Probability current",
+                probability_evolutions=probability_current_evolutions,
+                delta_t=sim_state.get_delta_time_h_bar_per_hartree(),
+                show_fig=self.__show_figures
+            )
