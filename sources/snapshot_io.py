@@ -8,10 +8,12 @@ from sources.iter_data import IterData
 
 def write_snapshot(sim_state: SimState, iter_data: IterData):
     print("\nCreating snapshot. Please wait for the application to exit by itself!")
+    """
     try:
         cp.save(arr=sim_state.get_wave_function(), file=os.path.join(sim_state.get_cache_dir(), "wave_snapshot.npy"))
     except IOError:
         print("\nFailed writing snapshot of the wave function.")
+    """
 
     with io.open(os.path.join(sim_state.get_cache_dir(), "data_snapshot.txt"), mode="w") as f:
         f.write(

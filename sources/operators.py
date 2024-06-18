@@ -6,17 +6,14 @@ from pathlib import Path
 import os
 
 
-kinetic_operator_kernel_source = (Path("sources/cuda_kernels/kinetic_operator.cu")
-                                  .read_text().replace("PATH_TO_SOURCES", os.path.abspath("sources")))
-
-
-def init_kinetic_operator(delta_x_3: np.array, delta_time: float, shape: np.shape):
-    kinetic_operator_kernel = cp.RawKernel(kinetic_operator_kernel_source,
-                                 'kinetic_operator_kernel',
-                                 enable_cooperative_groups=False)
+def init_kinetic_operator(delta_x_3: np.array, delta_time: float, mass: float, shape: np.shape):
     grid_size = math_utils.get_grid_size(shape)
     block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
-    P_kinetic = cp.zeros(shape=shape, dtype=cp.csingle)
+
+    f_x = cp.fft.fftfreq(n=shape[0], d=delta_x_3[0])
+    f_y = cp.fft.fftfreq(n=shape[1], d=delta_x_3[1])
+    f_z = cp.fft.fftfreq(n=shape[2], d=delta_x_3[2])
+
     kinetic_operator_kernel(
         grid_size,
         block_size,
@@ -27,7 +24,12 @@ def init_kinetic_operator(delta_x_3: np.array, delta_time: float, shape: np.shap
             cp.float32(delta_x_3[1]),
             cp.float32(delta_x_3[2]),
 
-            cp.float32(delta_time)
+            cp.float32(delta_time),
+            cp.float32(mass),
+
+            f_x,
+            f_y,
+            f_z
         )
     )
     return P_kinetic

@@ -3,7 +3,7 @@
 
 extern "C" __global__
 void wave_packet_kernel(
-    complex<float>* __restrict__ wave_tensor,
+    complex<T_WF_FLOAT>* __restrict__ wave_tensor,
 
     float delta_x,
     float delta_y,
@@ -36,10 +36,10 @@ void wave_packet_kernel(
         scalarVectorMul(0.5f, mul(N, delta_r))
     );
 
-    complex<float> val =
-        powf(2.0f / M_PI / a / a, 3.0f / 4.0f)
+    complex<T_WF_FLOAT> val =
+        (T_WF_FLOAT)powf(2.0f / M_PI / a / a, 3.0f / 4.0f)
         * exp_i(dot(k_0, r))
-        * expf(
+        * (T_WF_FLOAT)expf(
             -dot(diff(r, r_0), diff(r, r_0)) / a / a
         );
     wave_tensor[idx] = val;

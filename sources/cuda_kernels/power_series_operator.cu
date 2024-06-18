@@ -5,7 +5,7 @@ void next_s(
     complex<float>* s_prev,
     complex<float>* s_next,
     const complex<float>* v,
-    complex<float>* wave_function,
+    complex<T_WF_FLOAT>* wave_function,
     float delta_t,
 
     float delta_x,

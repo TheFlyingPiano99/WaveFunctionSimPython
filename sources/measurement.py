@@ -116,8 +116,6 @@ class VolumeProbability:
         self.__probability_evolution = np.empty(shape=0, dtype=np.float64)
 
 
-probability_current_density_kernel = Path("sources/cuda_kernels/probability_current_density.cu").read_text().replace("PATH_TO_SOURCES", os.path.abspath("sources"))
-
 class PlaneProbabilityCurrent:
     __name: str
     __center_bohr_radii_3: np.array
@@ -130,7 +128,7 @@ class PlaneProbabilityCurrent:
     __probability_current_evolution: np.array = np.empty(shape=0, dtype=np.float32)
     __integrated_probability_current_evolution: np.array = np.empty(shape=0, dtype=np.float32)
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: Dict, sim_state: SimState):
         self.__name = try_read_param(config, "name", "Probability current", "measurement.plane_probability_currents")
         self.__center_bohr_radii_3 = np.array(
             try_read_param(config, "center_bohr_radii_3", "measurement.plane_probability_currents")
@@ -141,6 +139,12 @@ class PlaneProbabilityCurrent:
         self.__enable_image = try_read_param(config, "enable_image", "measurement.plane_probability_currents")
         self.__size_bohr_radii_2 = np.array(try_read_param(config, "size_bohr_radii_2", [60.0, 60.0], "measurement.plane_probability_currents"))
         self.__resolution_2 = np.array(try_read_param(config, "resolution_2", [512, 512], "measurement.plane_probability_currents"))
+
+        probability_current_density_kernel = (
+            Path("sources/cuda_kernels/probability_current_density.cu").read_text().replace("PATH_TO_SOURCES",
+                                                                                            os.path.abspath("sources"))
+            .replace("T_WF_FLOAT",
+                     "double" if sim_state.is_double_precision_calculation() else "float"))
         self.__kernel = cp.RawKernel(
             probability_current_density_kernel,
             "probability_current_density_kernel"
@@ -165,6 +169,8 @@ class PlaneProbabilityCurrent:
             (
                 sim_state.get_wave_function(),
                 self.__probability_current_density,
+
+                cp.float32(sim_state.get_particle_mass()),
 
                 cp.float32(sim_state.get_delta_x_bohr_radii_3()[0]),
                 cp.float32(sim_state.get_delta_x_bohr_radii_3()[1]),
@@ -407,7 +413,7 @@ class MeasurementTools:
 
         plane_confs = try_read_param(config, "measurement.plane_probability_currents", [])
         for conf in plane_confs:
-            new_p = PlaneProbabilityCurrent(conf)
+            new_p = PlaneProbabilityCurrent(conf, sim_state)
             self._resolve_naming_conflicts(self.__plane_probability_currents, new_p)
             self.__plane_probability_currents.append(new_p)
 
@@ -487,7 +493,9 @@ class MeasurementTools:
                 y_label="Probability current",
                 probability_evolutions=probability_current_evolutions,
                 delta_t=sim_state.get_delta_time_h_bar_per_hartree(),
-                show_fig=self.__show_figures
+                show_fig=self.__show_figures,
+                y_min = -1.0,
+                y_max = 1.0
             )
 
         integrated_probability_current_evolutions = []
@@ -504,5 +512,7 @@ class MeasurementTools:
                 y_label="Probability",
                 probability_evolutions=integrated_probability_current_evolutions,
                 delta_t=sim_state.get_delta_time_h_bar_per_hartree(),
-                show_fig=self.__show_figures
+                show_fig=self.__show_figures,
+                y_min=-1.0,
+                y_max=1.0
             )

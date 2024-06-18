@@ -186,7 +186,7 @@ class VolumetricVisualization:
             parent=self.canvas.scene,
             color="black",
         )
-        self.text1.font_size = 36
+        self.text1.font_size = 18
         self.text1.pos = self.canvas.size[0] // 2, self.canvas.size[1] // 14
         self.text1.text = f"Elapsed time = {0.0:.2f} ħ/Hartree = {math_utils.h_bar_per_hartree_to_fs(0.0):.2f} fs"
 

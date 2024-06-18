@@ -52,6 +52,11 @@ class SimState:
     __order_of_approximation: int = 10
     __pingpong_buffer: list[cp.ndarray] = []
     __next_s_kernel: cp.RawKernel = None
+    __kinetic_operator_kernel: cp.RawKernel = None
+    __potential_operator_kernel: cp.RawKernel = None
+    __kernel_grid_size = (32, 32, 32)
+    __kernel_block_size = (32, 32, 32)
+    __wave_numbers: list[cp.array]  # Used to simplify the calculation of wave number coordinates in k space
 
     def __init__(self, config: Dict):
 
@@ -193,9 +198,10 @@ class SimState:
                 self.__wave_packet.init_wave_packet(
                     self.__delta_x_bohr_radii_3,
                     self.__number_of_voxels_3,
+                    self.__double_precision_calculation
                 )
             )
-            cp.save(file=os.path.join(self.__cache_dir, "gaussian_wave_packet.npy"), arr=self.__wave_tensor)
+            #cp.save(file=os.path.join(self.__cache_dir, "gaussian_wave_packet.npy"), arr=self.__wave_tensor)
         # Normalize:
         self.__probability_density = math_utils.square_of_abs(self.__wave_tensor)
         dxdydz = self.__delta_x_bohr_radii_3[0] * self.__delta_x_bohr_radii_3[1] * self.__delta_x_bohr_radii_3[2]
@@ -205,34 +211,6 @@ class SimState:
         self.__probability_density = math_utils.square_of_abs(self.__wave_tensor)
         sum_probability = cp.sum(self.__probability_density) * dxdydz
         print(f"Sum of probabilities after normalization = {sum_probability:.8f}")
-
-        if self.__simulation_method == SimulationMethod.FOURIER:
-            # Operators:
-            print("")
-            print(Fore.GREEN + "Initializing kinetic energy operator" + Style.RESET_ALL)
-
-            full_init = True
-            if self.__use_cache:
-                try:
-                    self.__kinetic_operator = cp.asarray(
-                        np.load(file=os.path.join(self.__cache_dir, "kinetic_operator.npy")))
-                    full_init = False
-                except OSError:
-                    print("No cached kinetic_operator.npy found.")
-            if full_init:
-                self.__kinetic_operator = operators.init_kinetic_operator(
-                    delta_x_3=self.__delta_x_bohr_radii_3,
-                    delta_time=self.__delta_time_h_bar_per_hartree,
-                    shape=self.__number_of_voxels_3
-                )
-                cp.save(file=os.path.join(self.__cache_dir, "kinetic_operator.npy"), arr=self.__kinetic_operator)
-
-            print("")
-            print(Fore.GREEN + "Initializing potential energy operator" + Style.RESET_ALL)
-            print("")
-            print(self.get_potential_description_text(use_colors=True))
-        elif self.__simulation_method == SimulationMethod.POWER_SERIES:
-            pass
 
         full_init = True
         if self.__use_cache:
@@ -276,107 +254,12 @@ class SimState:
                 print("Creating wall.")
                 tensor = wall.add_potential(
                     delta_x_3=self.__delta_x_bohr_radii_3,
-                    V=cp.zeros(shape=self.__number_of_voxels_3, dtype=cp.csingle),
+                    V=cp.zeros(shape=self.__number_of_voxels_3, dtype=cp.complex64),
                 )
                 self.__localised_potential_hartree += tensor
                 if wall.visible:
                     self.__localised_potential_to_visualize_hartree += tensor
 
-            """
-            try:
-                grid_arr = self.__config["optical_grids"]
-                for grid in grid_arr:
-                    v = grid["potential_hartree"]
-                    c = np.array(grid["center_bohr_radii_3"], dtype=float)
-                    n = math_utils.normalize(np.array(grid["normal_vector_3"], dtype=float))
-                    d = grid["distance_between_nodes_bohr_radii"]
-                    i = grid["node_in_one_direction"]
-                    print("Creating optical grid.")
-                    tensor = potential.add_optical_grid(
-                        delta_x_3=self.__delta_x_bohr_radii_3,
-                        potential_hartree=v,
-                        distance_between_nodes_bohr_radii=d,
-                        center_bohr_radius=c,
-                        normal=n,
-                        node_count=i,
-                        V=cp.zeros(shape=self.__number_of_voxels_3, dtype=cp.csingle),
-                    )
-                    self.__localised_potential_hartree += tensor
-                    try:
-                        visible = grid["visible"]
-                        if visible:
-                            self.__localised_potential_to_visualize_hartree += tensor
-                    except KeyError:
-                        pass
-            except KeyError:
-                pass
-            """
-
-            """
-            try:
-                ds_array = self.__config["double_slits"]
-                for double_slit in ds_array:
-                    print("Creating double-slit.")
-                    space_between_slits = double_slit["distance_between_slits_bohr_radii"]
-                    tensor = potential.add_double_slit(
-                        V=cp.zeros(shape=self.__number_of_voxels_3, dtype=cp.csingle),
-                        delta_x_3=self.__delta_x_bohr_radii_3,
-                        center_bohr_radii_3=np.array(double_slit["center_bohr_radius_3"]),
-                        thickness_bohr_radii=double_slit["thickness_bohr_radii"],
-                        potential_hartree=double_slit["potential_hartree"],
-                        slit_width_bohr_radii=double_slit["slit_width_bohr_radii"],
-                        space_between_slits_bohr_radii=space_between_slits,
-                    )
-                    self.__localised_potential_hartree += tensor
-                    try:
-                        visible = double_slit["visible"]
-                        if visible:
-                            self.__localised_potential_to_visualize_hartree += tensor
-                    except KeyError:
-                        pass
-            except KeyError:
-                pass
-            """
-
-            """
-            try:
-                coulomb_potential = self.__config["coulomb_potential"]
-                print("Creating Coulomb potential.")
-                tensor = potential.add_coulomb_potential(
-                    V=cp.zeros(shape=self.__number_of_voxels_3, dtype=cp.csingle),
-                    delta_x_3=self.__delta_x_bohr_radii_3,
-                    center_bohr_radius=np.array(coulomb_potential["center_bohr_radii_3"]),
-                    gradient_dir=np.array(coulomb_potential["gradient_direction"]),
-                    charge_density=coulomb_potential["charge_density_elementary_charge_per_bohr_radius"],
-                    oxide_start_bohr_radii=coulomb_potential["oxide_start_bohr_radii"],
-                    oxide_end_bohr_radii=coulomb_potential["oxide_end_bohr_radii"]
-                )
-                self.__localised_potential_hartree += tensor
-                visible = coulomb_potential["visible"]
-                if visible:
-                    self.__localised_potential_to_visualize_hartree += tensor
-            except KeyError:
-                print("No Coulomb potential created")
-            """
-
-            """
-            try:
-                gradient = self.__config["linear_potential_gradient"]
-                print("Creating linear potential gradient.")
-                tensor = potential.add_linear_potential_gradient(
-                    V=cp.zeros(shape=self.__number_of_voxels_3, dtype=cp.csingle),
-                    delta_x_3=self.__delta_x_bohr_radii_3,
-                    center_bohr_radius=np.array(gradient["center_bohr_radii_3"]),
-                    gradient_dir=np.array(gradient["gradient_direction"]),
-                    gradient_val=gradient["gradient_magnitude_hartree_per_bohr_radius"],
-                )
-                self.__localised_potential_hartree += tensor
-                visible = gradient["visible"]
-                if visible:
-                    self.__coulomb_potential = tensor
-            except KeyError:
-                pass
-            """
 
             np.save(
                 file=os.path.join(self.__cache_dir, "localized_potential.npy"),
@@ -385,31 +268,36 @@ class SimState:
             np.save(file=os.path.join(self.__cache_dir, "localized_potential_to_visualize.npy"),
                     arr=cp.asnumpy(self.__localised_potential_to_visualize_hartree))
 
-        full_init = True
+        shape = self.__number_of_voxels_3
+        self.__kernel_grid_size = math_utils.get_grid_size(shape)
+        self.__kernel_block_size = (shape[0] // self.__kernel_grid_size[0], shape[1] // self.__kernel_grid_size[1], shape[2] // self.__kernel_grid_size[2])
         if self.__simulation_method == SimulationMethod.FOURIER:
-            if self.__use_cache:
-                try:
-                    self.__potential_operator = cp.load(
-                        file=os.path.join(self.__cache_dir, "potential_operator.npy"))
-                    full_init = False
-                except OSError:
-                    print("No cached potential_operator.npy found.")
-            if full_init:
-                print("Creating potential operator.")
-                self.__potential_operator = cp.zeros(shape=self.__localised_potential_hartree.shape,
-                                                        dtype=self.__localised_potential_hartree.dtype)
-                self.__potential_operator = operators.init_potential_operator(
-                    P_potential=self.__potential_operator,
-                    V=self.__localised_potential_hartree,
-                    delta_time=self.__delta_time_h_bar_per_hartree,
-                )
+            kinetic_operator_kernel_source = (Path("sources/cuda_kernels/kinetic_operator.cu")
+                                              .read_text().replace("PATH_TO_SOURCES", os.path.abspath("sources"))
+                                              .replace("T_WF_FLOAT",
+                                                       "double" if self.__double_precision_calculation else "float"))
 
-                cp.save(file=os.path.join(self.__cache_dir, "potential_operator.npy"),
-                        arr=self.__potential_operator)
+            self.__kinetic_operator_kernel = cp.RawKernel(kinetic_operator_kernel_source,
+                                                   'kinetic_operator_kernel',
+                                                   enable_cooperative_groups=False)
+            potential_operator_kernel_source = (Path("sources/cuda_kernels/potential_operator.cu")
+                                                .read_text().replace("PATH_TO_SOURCES", os.path.abspath("sources"))
+                                                .replace("T_WF_FLOAT",
+                                                         "double" if self.__double_precision_calculation else "float"))
+            self.__potential_operator_kernel = cp.RawKernel(potential_operator_kernel_source,
+                                                   'potential_operator_kernel',
+                                                   enable_cooperative_groups=False)
+            self.__wave_numbers = []
+            self.__wave_numbers.append(cp.fft.fftfreq(n=shape[0], d=self.__delta_x_bohr_radii_3[0]))
+            self.__wave_numbers.append(cp.fft.fftfreq(n=shape[1], d=self.__delta_x_bohr_radii_3[1]))
+            self.__wave_numbers.append(cp.fft.fftfreq(n=shape[2], d=self.__delta_x_bohr_radii_3[2]))
+
         elif self.__simulation_method == SimulationMethod.POWER_SERIES:
             # Define the kernel for the power series method
-            next_s_kernel_source = Path("sources/cuda_kernels/power_series_operator.cu").read_text().replace(
+            next_s_kernel_source = (Path("sources/cuda_kernels/power_series_operator.cu").read_text().replace(
                 "PATH_TO_SOURCES", os.path.abspath("sources"))
+                .replace("T_WF_FLOAT",
+                         "double" if self.__double_precision_calculation else "float"))
             self.__next_s_kernel = cp.RawKernel(
                 next_s_kernel_source,
                 "next_s",
@@ -475,6 +363,9 @@ class SimState:
             top=self.__observation_box_top_corner_voxel_3,
         )
 
+    def is_double_precision_calculation(self):
+        return self.__double_precision_calculation
+
     def _transform_physical_coordinate_to_voxel_3(self, pos_bohr_radii_3: np.array):
         return math_utils.transform_center_origin_to_corner_origin_system(
             pos_bohr_radii_3,
@@ -530,6 +421,9 @@ class SimState:
     def get_copy_of_wave_function(self):
         return cp.copy(self.__wave_tensor)
 
+    def get_particle_mass(self):
+        return self.__wave_packet.get_particle_mass_electron_rest_mass()
+
     def update_probability_density(self):
         self.__probability_density = math_utils.square_of_abs(
             self.__wave_tensor
@@ -580,13 +474,6 @@ class SimState:
             walls=self.__potential_walls
         )
 
-        if self.__simulation_method == SimulationMethod.FOURIER:
-            self.__potential_operator = sources.operators.init_potential_operator(
-                P_potential=self.__potential_operator,
-                V=self.__localised_potential_hartree,
-                delta_time=self.__delta_time_h_bar_per_hartree,
-            )
-
     def write_potential_wall_warnings(self, text, wall_potential, wall, use_colors):
         time_times_potential = wall_potential * self.__delta_time_h_bar_per_hartree
         text.write(f"Obstacle wall potential is {wall_potential} Hartree.\n")
@@ -621,100 +508,6 @@ class SimState:
             + (Style.RESET_ALL if use_colors else "")
         )
 
-        """
-        try:
-            slits = self.__config["double_slits"]
-            text.write(
-                "Double slits:\n"
-            )
-            for slit in slits:
-                wall_potential = slit["potential_hartree"]
-                self.write_potential_wall_warnings(text, wall_potential, slit, use_colors)
-
-                space_between_slits = slit["distance_between_slits_bohr_radii"]
-                if space_between_slits > self.__de_broglie_wave_length_bohr_radii:
-                    text.write(
-                        (Fore.RED if use_colors else "")
-                        + f"WARNING: Space between slits = {space_between_slits} exceeds the de Brogile wavelength = {self.__de_broglie_wave_length_bohr_radii:.4f} of the particle!"
-                        + (Style.RESET_ALL if use_colors else "")
-                    )
-                text.write("\n")
-        except KeyError:
-            pass
-
-        try:
-            walls = self.__config["walls"]
-            text.write(
-                "Walls:\n"
-            )
-            for i, wall in enumerate(walls):
-                text.write(
-                    f"{i + 1}.\n"
-                )
-                wall_potential = wall["potential_hartree"]
-                self.write_potential_wall_warnings(text, wall_potential, wall, use_colors)
-                thickness = wall["thickness_bohr_radii"]
-                text.write(f"Wall thickness is {thickness:.2f} Bohr radii.\n")
-                text.write("\n")
-        except KeyError:
-            pass
-
-        try:
-            walls = self.__config["walls_1d"]
-            text.write(
-                "1D walls:\n"
-            )
-            for i, wall in enumerate(walls):
-                text.write(
-                    f"{i + 1}.\n"
-                )
-                wall_potential = wall["potential_hartree"]
-                self.write_potential_wall_warnings(text, wall_potential, wall, use_colors)
-                thickness = wall["thickness_bohr_radii"]
-                text.write(f"Wall thickness is {thickness:.2f} Bohr radii.\n")
-                center = wall["center_bohr_radii"]
-                text.write(f"Wall center is at the x = {center:.2f} Bohr radius coordinate.\n")
-                text.write("\n")
-        except KeyError:
-            pass
-
-        try:
-            interaction = self.__config["particle_hard_interaction"]
-            text.write("1D particle hard interaction potential:\n")
-            v = interaction["potential_hartree"]
-            text.write(f"Potential is {v} Hartree.\n")
-            r = interaction["particle_radius_bohr_radii"]
-            text.write(f"Particle radius is {r} Bohr radii.\n")
-            text.write("\n")
-        except KeyError:
-            pass
-
-        try:
-            interaction = self.__config["particle_inv_squared_interaction"]
-            text.write("1D particle inverse squared interaction potential:\n")
-            v = interaction["central_potential_hartree"]
-            text.write(f"Potential at unit distance is {v} Hartree.\n")
-            text.write("\n")
-        except KeyError:
-            pass
-
-
-        try:
-            oscillator = self.__config["harmonic_oscillator_1d"]
-            text.write("1D particle harmonic oscillator:\n")
-            omega = oscillator["angular_frequency"]
-            text.write(f"Angular velocity is {omega} radian * Hartree / h-bar.\n")
-            text.write("\n")
-        except KeyError:
-            pass
-
-        drain_max = self.__config["drain"]["outer_potential_hartree"]
-        text.write(
-            f"Draining potential value at the outer edge is {drain_max:.1f} Hartree.\n"
-        )
-        exponent = self.__config["drain"]["interpolation_exponent"]
-        text.write(f"Draining potential exponent is {exponent:.1f}.\n")
-        """
         return text.getvalue()
 
 
@@ -812,13 +605,62 @@ class SimState:
         return text.getvalue()
 
     def _fft_time_evolution(self):
-        moment_space_wave_tensor = cp.fft.fftn(self.__wave_tensor, norm="forward")
-        moment_space_wave_tensor = cp.multiply(self.__kinetic_operator, moment_space_wave_tensor)
-        self.__wave_tensor = cp.fft.fftn(moment_space_wave_tensor, norm="backward")
-        self.__wave_tensor = cp.multiply(self.__potential_operator, self.__wave_tensor)
-        moment_space_wave_tensor = cp.fft.fftn(self.__wave_tensor, norm="forward")
-        moment_space_wave_tensor = cp.multiply(self.__kinetic_operator, moment_space_wave_tensor)
-        self.__wave_tensor = cp.fft.fftn(moment_space_wave_tensor, norm="backward")
+
+        moment_space_wave_tensor = cp.fft.fftn(self.__wave_tensor, norm="ortho")
+
+        self.__kinetic_operator_kernel(
+            self.__kernel_grid_size,
+            self.__kernel_block_size,
+            (
+                moment_space_wave_tensor,
+
+                cp.float32(self.__delta_x_bohr_radii_3[0]),
+                cp.float32(self.__delta_x_bohr_radii_3[1]),
+                cp.float32(self.__delta_x_bohr_radii_3[2]),
+
+                cp.float32(self.__delta_time_h_bar_per_hartree),
+                cp.float32(self.__wave_packet.get_particle_mass_electron_rest_mass()),
+
+                self.__wave_numbers[0],
+                self.__wave_numbers[1],
+                self.__wave_numbers[2]
+            )
+        )
+
+        self.__wave_tensor = cp.fft.ifftn(moment_space_wave_tensor, norm="ortho")
+
+        self.__potential_operator_kernel(
+            self.__kernel_grid_size,
+            self.__kernel_block_size,
+            (
+                self.__wave_tensor,
+                self.__localised_potential_hartree,
+                cp.float32(self.__delta_time_h_bar_per_hartree)
+            )
+        )
+
+        moment_space_wave_tensor = cp.fft.fftn(self.__wave_tensor, norm="ortho")
+
+        self.__kinetic_operator_kernel(
+            self.__kernel_grid_size,
+            self.__kernel_block_size,
+            (
+                moment_space_wave_tensor,
+
+                cp.float32(self.__delta_x_bohr_radii_3[0]),
+                cp.float32(self.__delta_x_bohr_radii_3[1]),
+                cp.float32(self.__delta_x_bohr_radii_3[2]),
+
+                cp.float32(self.__delta_time_h_bar_per_hartree),
+                cp.float32(self.__wave_packet.get_particle_mass_electron_rest_mass()),
+
+                self.__wave_numbers[0],
+                self.__wave_numbers[1],
+                self.__wave_numbers[2]
+            )
+        )
+
+        self.__wave_tensor = cp.fft.ifftn(moment_space_wave_tensor, norm="ortho")
 
     """
     def _merged_fft_time_evolution(

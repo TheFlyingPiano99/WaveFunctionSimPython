@@ -13,20 +13,20 @@ delta_time_h_bar_per_hartree = 0.01
 total_iteration_count = 6000
 is_dynamic_potential_mode = true
 enable_wave_function_saving = false
-wave_function_save_iteration_interval = 50
+wave_function_save_iteration_interval = 1
 double_precision_calculation = false
 
 [wave_packet]
 particle_mass_electron_rest_mass = 1.0
-initial_wp_position_bohr_radii_3 = [-15.0, 0.0, 0.0]
-initial_wp_velocity_bohr_radii_hartree_per_h_bar_3 = [1.5, 0.0, 0.0]
+initial_wp_position_bohr_radii_3 = [-20.0, 0.0, 0.0]
+initial_wp_velocity_bohr_radii_hartree_per_h_bar_3 = [2.0, 0.0, 0.0]
 initial_wp_width_bohr_radii = 2.0
 
 [volume]
-simulated_volume_dimensions_bohr_radii_3 = [120.0, 120.0, 120.0] #Including absorbing potential regions
-number_of_voxels_3 = [256, 128, 128]         #Including absorbing potential regions
-observation_box_bottom_corner_bohr_radii_3 = [-45.0, -45.0, -45.0]   # Same as the inner boundary of the draining potential
-observation_box_top_corner_bohr_radii_3 = [45.0, 45.0, 45.0]   # Same as the inner boundary of the draining potential
+simulated_volume_dimensions_bohr_radii_3 = [200.0, 200.0, 200.0] #Including absorbing potential regions
+number_of_voxels_3 = [1024, 128, 128]         #Including absorbing potential regions
+observation_box_bottom_corner_bohr_radii_3 = [-60.0, -60.0, -60.0]   # Same as the inner boundary of the draining potential
+observation_box_top_corner_bohr_radii_3 = [60.0, 60.0, 60.0]   # Same as the inner boundary of the draining potential
 
 [absorbing_boundary_condition]
 outer_potential_in_positive_xyz_direction_hartree_3 = [-100.0, -100.0, -100.0]
@@ -43,9 +43,9 @@ visible = true
 
 [[potential.walls]]
 potential_hartree = 200
-center_bohr_radii_3 = [30.0, 0.0, 0.0]
+center_bohr_radii_3 = [10.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
-plateau_thickness_bohr_radii = 5.0
+plateau_thickness_bohr_radii = 10.0
 slope_thickness_bohr_radii = 0.0
 slope_exponent = 1.5    # e: f(x) = x^e,    x in [0, 1]
 velocity_bohr_radius_hartree_per_h_bar_3 = [0.0, 0.0, 0.0]
@@ -124,18 +124,9 @@ enable_image = true
 name = "First plane"
 center_bohr_radii_3 = [0.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
-size_bohr_radii_2 = [118.0, 118.0]
-resolution_2 = [128, 128]
-enable_image = true
-
-[[measurement.plane_probability_currents]]
-name = "Second plane"
-center_bohr_radii_3 = [5.0, 0.0, 0.0]
-normal_vector_3 = [1.0, 0.0, 0.0]
-size_bohr_radii_2 = [118.0, 118.0]
+size_bohr_radii_2 = [120.0, 120.0]
 resolution_2 = [512, 512]
-
-enable_image = false
+enable_image = true
 
 [paths]
 cache_dir = "./cache"

@@ -20,10 +20,12 @@ def write_wave_function_to_file(sim_state: SimState, iter_data: IterData):
     if iter_data.i % sim_state.get_wave_function_save_interval() == 0:
         if not os.path.exists(os.path.join(sim_state.get_output_dir(), f"wave_function")):
             os.makedirs(os.path.join(sim_state.get_output_dir(), f"wave_function"), exist_ok=True)
+        """
         try:
             cp.save(arr=sim_state.get_view_into_wave_function(), file=os.path.join(sim_state.get_output_dir(), f"wave_function/wave_function_{iter_data.i:04d}.npy"))
         except IOError:
             print(Fore.RED + "\nERROR: Failed writing file: "+ os.path.join(sim_state.get_output_dir(), f"wave_function/wave_function_{iter_data.i:04d}.npy") + Style.RESET_ALL)
+        """
 
 
 def time_step(sim_state: SimState,

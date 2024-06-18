@@ -3,8 +3,10 @@
 
 extern "C" __global__
 void probability_current_density_kernel(
-    complex<float>* wave_function,
+    complex<T_WF_FLOAT>* wave_function,
     float* __restrict__ probability_current_density,
+
+    float mass,
 
     float delta_x,
     float delta_y,
@@ -64,8 +66,11 @@ void probability_current_density_kernel(
     float3 fVoxel = r / delta_r + 0.5f * float3{(float)N.x, (float)N.y, (float)N.z};
     uint3 voxel = {(unsigned int)fVoxel.x, (unsigned int)fVoxel.y, (unsigned int)fVoxel.z};
 
+    // Calculate array indices:
+
     int idx = get_array_index(voxel, N);
 
+    // 1th step:
     int idx_n00 = idx;
     if (voxel.x > 0) {
         idx_n00 = get_array_index({voxel.x - 1, voxel.y, voxel.z}, N);
@@ -91,23 +96,96 @@ void probability_current_density_kernel(
         idx_00p = get_array_index({voxel.x, voxel.y, voxel.z + 1}, N);
     }
 
-    complex<float> psi = wave_function[idx];
-    complex<float> wf_n00 = wave_function[idx_n00];
-    complex<float> wf_p00 = wave_function[idx_p00];
-    complex<float> wf_0n0 = wave_function[idx_0n0];
-    complex<float> wf_0p0 = wave_function[idx_0p0];
-    complex<float> wf_00n = wave_function[idx_00n];
-    complex<float> wf_00p = wave_function[idx_00p];
-    // Derivate:
-    complex<float> dX = (wf_p00 - wf_n00) / 2.0f / delta_x;
-    complex<float> dY = (wf_0p0 - wf_0n0) / 2.0f / delta_y;
-    complex<float> dZ = (wf_00p - wf_00n) / 2.0f / delta_z;
-    complex<float> gradPsi = normal.x * dX + normal.y * dY + normal.z * dZ;
+    // 2nd step:
+    int idx_2_n00 = idx;
+    if (voxel.x > 1) {
+        idx_2_n00 = get_array_index({voxel.x - 2, voxel.y, voxel.z}, N);
+    }
+    int idx_2_p00 = idx;
+    if (voxel.x < N.x - 2) {
+        idx_2_p00 = get_array_index({voxel.x + 2, voxel.y, voxel.z}, N);
+    }
+    int idx_2_0n0 = idx;
+    if (voxel.y > 1) {
+        idx_2_0n0 = get_array_index({voxel.x, voxel.y - 2, voxel.z}, N);
+    }
+    int idx_2_0p0 = idx;
+    if (voxel.y < N.y - 2) {
+        idx_2_0p0 = get_array_index({voxel.x, voxel.y + 2, voxel.z}, N);
+    }
+    int idx_2_00n = idx;
+    if (voxel.z > 1) {
+        idx_2_00n = get_array_index({voxel.x, voxel.y, voxel.z - 2}, N);
+    }
+    int idx_2_00p = idx;
+    if (voxel.z < N.z - 2) {
+        idx_2_00p = get_array_index({voxel.x, voxel.y, voxel.z + 2}, N);
+    }
 
-    complex<float> iUnit = complex<float>(0.0f, 1.0f);
+    // 3nd step:
+    int idx_3_n00 = idx;
+    if (voxel.x > 2) {
+        idx_3_n00 = get_array_index({voxel.x - 3, voxel.y, voxel.z}, N);
+    }
+    int idx_3_p00 = idx;
+    if (voxel.x < N.x - 3) {
+        idx_3_p00 = get_array_index({voxel.x + 3, voxel.y, voxel.z}, N);
+    }
+    int idx_3_0n0 = idx;
+    if (voxel.y > 2) {
+        idx_3_0n0 = get_array_index({voxel.x, voxel.y - 3, voxel.z}, N);
+    }
+    int idx_3_0p0 = idx;
+    if (voxel.y < N.y - 3) {
+        idx_3_0p0 = get_array_index({voxel.x, voxel.y + 3, voxel.z}, N);
+    }
+    int idx_3_00n = idx;
+    if (voxel.z > 2) {
+        idx_3_00n = get_array_index({voxel.x, voxel.y, voxel.z - 3}, N);
+    }
+    int idx_3_00p = idx;
+    if (voxel.z < N.z - 3) {
+        idx_3_00p = get_array_index({voxel.x, voxel.y, voxel.z + 3}, N);
+    }
+
+    // Sample:
+
+    // 1th step:
+    complex<T_WF_FLOAT> psi = wave_function[idx];
+    complex<T_WF_FLOAT> wf_n00 = wave_function[idx_n00];
+    complex<T_WF_FLOAT> wf_p00 = wave_function[idx_p00];
+    complex<T_WF_FLOAT> wf_0n0 = wave_function[idx_0n0];
+    complex<T_WF_FLOAT> wf_0p0 = wave_function[idx_0p0];
+    complex<T_WF_FLOAT> wf_00n = wave_function[idx_00n];
+    complex<T_WF_FLOAT> wf_00p = wave_function[idx_00p];
+
+    // 2th step:
+    complex<T_WF_FLOAT> wf_2_n00 = wave_function[idx_2_n00];
+    complex<T_WF_FLOAT> wf_2_p00 = wave_function[idx_2_p00];
+    complex<T_WF_FLOAT> wf_2_0n0 = wave_function[idx_2_0n0];
+    complex<T_WF_FLOAT> wf_2_0p0 = wave_function[idx_2_0p0];
+    complex<T_WF_FLOAT> wf_2_00n = wave_function[idx_2_00n];
+    complex<T_WF_FLOAT> wf_2_00p = wave_function[idx_2_00p];
+
+    // 3th step:
+    complex<T_WF_FLOAT> wf_3_n00 = wave_function[idx_3_n00];
+    complex<T_WF_FLOAT> wf_3_p00 = wave_function[idx_3_p00];
+    complex<T_WF_FLOAT> wf_3_0n0 = wave_function[idx_3_0n0];
+    complex<T_WF_FLOAT> wf_3_0p0 = wave_function[idx_3_0p0];
+    complex<T_WF_FLOAT> wf_3_00n = wave_function[idx_3_00n];
+    complex<T_WF_FLOAT> wf_3_00p = wave_function[idx_3_00p];
+
+    // Gradient:
+    complex<T_WF_FLOAT> dX = -(-wf_3_p00 + (T_WF_FLOAT)9.0 * wf_2_p00 - (T_WF_FLOAT)45.0 * wf_p00 + (T_WF_FLOAT)45.0 * wf_n00 - (T_WF_FLOAT)9.0 * wf_2_n00 + wf_3_n00) / (T_WF_FLOAT)60.0 / (T_WF_FLOAT)delta_x;
+    complex<T_WF_FLOAT> dY = -(-wf_3_0p0 + (T_WF_FLOAT)9.0 * wf_2_0p0 - (T_WF_FLOAT)45.0 * wf_0p0 + (T_WF_FLOAT)45.0 * wf_0n0 - (T_WF_FLOAT)9.0 * wf_2_0n0 + wf_3_0n0) / (T_WF_FLOAT)60.0 / (T_WF_FLOAT)delta_y;
+    complex<T_WF_FLOAT> dZ = -(-wf_3_00p + (T_WF_FLOAT)9.0 * wf_2_00p - (T_WF_FLOAT)45.0 * wf_00p + (T_WF_FLOAT)45.0 * wf_00n - (T_WF_FLOAT)9.0 * wf_2_00n + wf_3_00n) / (T_WF_FLOAT)60.0 / (T_WF_FLOAT)delta_z;
+    complex<T_WF_FLOAT> dPsi = (T_WF_FLOAT)normal.x * dX + (T_WF_FLOAT)normal.y * dY + (T_WF_FLOAT)normal.z * dZ;
+
+    complex<T_WF_FLOAT> iUnit = complex<T_WF_FLOAT>(0.0f, 1.0f);
     float hBar = 1.0f;
-    float mass = 1.0f;
-    probability_current_density[planeIdx] = (-iUnit * hBar / 2.0f / mass * (
-        mul(conj(psi), gradPsi) - mul(psi, conj(gradPsi))
-    )).real();
+    probability_current_density[planeIdx] = ((T_WF_FLOAT)(-hBar / 2.0f / mass) * iUnit
+        * (
+            conj(psi) * dPsi - psi * conj(dPsi)
+        )
+    ).real();
 }

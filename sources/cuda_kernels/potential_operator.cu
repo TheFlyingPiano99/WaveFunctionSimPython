@@ -3,15 +3,16 @@
 
 extern "C" __global__
 void potential_operator_kernel(
-    complex<float>* __restrict__ potential_operator,
+    complex<T_WF_FLOAT>* __restrict__ wave_function,
     complex<float>* __restrict__ V,
     float delta_t
 )
 {
     int idx = get_array_index();
-    int inv_idx = get_array_index_inverted();
+    //int inv_idx = get_array_index_inverted();
 
-    complex<float> angle = -delta_t * V[inv_idx];
+    float hBar = 1.0f;
+    complex<float> angle = (T_WF_FLOAT)(-delta_t / hBar) * V[idx];
 
-    potential_operator[idx] = cexp_i(angle);
+    wave_function[idx] *= cexp_i(angle);
 }

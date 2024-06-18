@@ -3,7 +3,6 @@
 
 #include <cupy/complex.cuh>
 
-
 constexpr float M_PI = 3.14159265359;
 
 __device__ float3 fabsf(const float3& v)
@@ -11,14 +10,10 @@ __device__ float3 fabsf(const float3& v)
     return {fabsf(v.x), fabsf(v.y), fabsf(v.z)};
 }
 
-__device__ complex<float> conj(const complex<float>& c)
+template<typename T>
+__device__ complex<T> mul(const complex<T>& a, const complex<T>& b)
 {
-    return complex<float>(c.real(), -c.imag());
-}
-
-__device__ complex<float> mul(const complex<float>& a, const complex<float>& b)
-{
-    return complex<float>(a.real() * b.real() - a.imag() * b.imag(), a.real() * b.imag() + a.imag() * b.real() );
+    return complex<T>(a.real() * b.real() - a.imag() * b.imag(), a.real() * b.imag() + a.imag() * b.real() );
 }
 
 __device__ constexpr float3 scalarVectorMul(const float s, const float3& v)
@@ -60,9 +55,10 @@ __device__ const complex<float> exp_i(float angle)
     return complex<float>(cosf(angle), sinf(angle));
 }
 
-__device__ const complex<float> cexp_i(const complex<float>& cangle)
+template<typename T>
+__device__ const complex<T> cexp_i(const complex<T>& cangle)
 {
-    return complex<float>(cosf(cangle.real()), sinf(cangle.real())) * expf(-cangle.imag());
+    return complex<T>(cosf(cangle.real()), sinf(cangle.real())) * (T)expf(-cangle.imag());
 }
 
 __device__ constexpr float3 add(const float3& a, const float3& b)

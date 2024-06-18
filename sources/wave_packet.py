@@ -19,14 +19,14 @@ def P_free_space(r, t):
 
 
 def wave_0_x(x):
-    sum = cp.csingle(0.0)
+    sum = cp.complex128(0.0)
     for i in range(10):
         sum += P_free_space(cp.array([x, 0]), i)
     return sum
 
 
 def wave_0_y(y):
-    sum = cp.csingle(0.0)
+    sum = cp.complex128(0.0)
     for i in range(10):
         sum += P_free_space(cp.array([0, y]), i)
     return sum
@@ -87,9 +87,6 @@ class GaussianWavePacket(WavePacket):
         )
         self.__initial_wp_width_bohr_radii = try_read_param(config, "wave_packet.initial_wp_width_bohr_radii", 2.0)
 
-    wave_packet_kernel_source = Path("sources/cuda_kernels/gaussian_wave_packet.cu").read_text().replace(
-        "PATH_TO_SOURCES", os.path.abspath("sources"))
-
     def get_initial_wp_width_bohr_radii(self):
         return self.__initial_wp_width_bohr_radii
 
@@ -97,14 +94,20 @@ class GaussianWavePacket(WavePacket):
             self,
             delta_x_bohr_radii_3: np.array,
             shape: np.shape,
+            double_precision_calculation: bool = False
     ):
-        wave_packet_kernel = cp.RawKernel(self.wave_packet_kernel_source,
+        wave_packet_kernel_source = (Path("sources/cuda_kernels/gaussian_wave_packet.cu").read_text().replace(
+            "PATH_TO_SOURCES", os.path.abspath("sources"))
+                 .replace("T_WF_FLOAT",
+                          "double" if double_precision_calculation else "float"))
+
+        wave_packet_kernel = cp.RawKernel(wave_packet_kernel_source,
                                           'wave_packet_kernel',
                                           enable_cooperative_groups=False)
         grid_size = math_utils.get_grid_size(shape)
 
         block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
-        wave_tensor = cp.zeros(shape=shape, dtype=cp.csingle)   # Prepare an empty tensor
+        wave_tensor = cp.zeros(shape=shape, dtype=(cp.complex128 if double_precision_calculation else cp.complex64))   # Prepare an empty tensor
         wave_packet_kernel(
             grid_size,
             block_size,

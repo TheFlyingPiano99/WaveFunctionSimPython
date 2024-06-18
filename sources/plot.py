@@ -9,7 +9,17 @@ import cupy as cp
 
 font_size = 16 # 18 would be too big
 
-def plot_probability_evolution(out_dir, probability_evolutions, delta_t, file_name, title, y_label, show_fig=False):
+def plot_probability_evolution(
+        out_dir,
+        probability_evolutions,
+        delta_t,
+        file_name,
+        title,
+        y_label,
+        show_fig=False,
+        y_min=0.0,
+        y_max=1.0
+):
     # Path:
     matplotlib.rcParams.update({'font.size': font_size})
     plt.clf()  # Clear figure
@@ -20,7 +30,7 @@ def plot_probability_evolution(out_dir, probability_evolutions, delta_t, file_na
     n = probability_evolutions[0][0].size # Assuming that all lists are of the same size
     x = np.linspace(start=0, stop=n * delta_t, dtype=None, num=n)
     plt.xlim(0, n * delta_t)
-    plt.ylim(0.0, 2.0)
+    plt.ylim(y_min, y_max)
     for prob_data in probability_evolutions:
         plt.plot(x, cp.asnumpy(prob_data[0]), label=prob_data[1])
     plt.legend()

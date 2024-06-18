@@ -3,33 +3,26 @@
 
 extern "C" __global__
 void kinetic_operator_kernel(
-    complex<float>* __restrict__ kinetic_operator,
+    complex<T_WF_FLOAT>* __restrict__ k_space_wave_function,
 
     float delta_x,
     float delta_y,
     float delta_z,
 
-    float delta_t
+    float delta_t,
+    float mass,
+
+    double* frequencies_x,
+    double* frequencies_y,
+    double* frequencies_z
 )
 {
     uint3 voxel = get_voxel_coords();
     int idx = get_array_index();
 
-    float3 f = div(
-        {(float)voxel.x, (float)voxel.y, (float)voxel.z},
-        {(float)(gridDim.x * blockDim.x), (float)(gridDim.y * blockDim.y), (float)(gridDim.z * blockDim.z)}
-    );
-    float3 delta_r = {delta_x, delta_y, delta_z};
-
-    // Account for numpy fftn's "negative frequency in second half" pattern
-    if (f.x > 0.5f)
-        f.x = 1.0f - f.x;
-    if (f.y > 0.5f)
-        f.y = 1.0f - f.y;
-    if (f.z > 0.5f)
-        f.z = 1.0f - f.z;
-
-    float3 momentum = scalarVectorMul(2.0f * M_PI, div(f, delta_r));
-    float angle = -dot(momentum, momentum) * delta_t / 4.0f;
-    kinetic_operator[idx] = exp_i(angle);
+    // Calculate wavenumber:
+    float3 k = 2.0f * M_PI * float3{frequencies_x[voxel.x], frequencies_y[voxel.y], frequencies_z[voxel.z]};
+    float hBar = 1.0f;
+    float angle = -dot(k, k) * hBar * delta_t / 4.0f / mass;
+    k_space_wave_function[idx] *= exp_i(angle);
 }
