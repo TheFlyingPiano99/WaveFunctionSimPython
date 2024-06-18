@@ -9,7 +9,7 @@
 [simulation]
 method = "fourier"
 order_of_approximation = 10
-delta_time_h_bar_per_hartree = 0.005
+delta_time_h_bar_per_hartree = 0.01
 total_iteration_count = 6000
 is_dynamic_potential_mode = true
 enable_wave_function_saving = false
@@ -18,13 +18,13 @@ double_precision_calculation = false
 
 [wave_packet]
 particle_mass_electron_rest_mass = 1.0
-initial_wp_position_bohr_radii_3 = [-10.0, 0.0, 0.0]
-initial_wp_velocity_bohr_radii_hartree_per_h_bar_3 = [1.5, 0.0, 0.0]
+initial_wp_position_bohr_radii_3 = [-25.0, 0.0, 0.0]
+initial_wp_velocity_bohr_radii_hartree_per_h_bar_3 = [1.0, 0.0, 0.0]
 initial_wp_width_bohr_radii = 2.0
 
 [volume]
 simulated_volume_dimensions_bohr_radii_3 = [120.0, 120.0, 120.0] #Including absorbing potential regions
-number_of_voxels_3 = [512, 128, 128]         #Including absorbing potential regions
+number_of_voxels_3 = [256, 128, 128]         #Including absorbing potential regions
 observation_box_bottom_corner_bohr_radii_3 = [-45.0, -45.0, -45.0]   # Same as the inner boundary of the draining potential
 observation_box_top_corner_bohr_radii_3 = [45.0, 45.0, 45.0]   # Same as the inner boundary of the draining potential
 
@@ -90,9 +90,9 @@ light_rotation_speed = 0.001
 light_elevation_speed = 0.0
 animation_frame_rate = 25
 animation_frame_capture_iteration_interval = 50
-image_capture_iteration_interval = 100
+image_capture_iteration_interval = 500
 enable_animation = false
-enable_image = false
+enable_image = true
 
 [measurement.per_axis_plot]
 title = "Per-axis plot"
@@ -104,7 +104,7 @@ potential_plot_offset = -0.34
 potential_plot_scale = 0.02
 animation_frame_rate = 25
 animation_frame_capture_iteration_interval = 50
-image_capture_iteration_interval = 50
+image_capture_iteration_interval = 100
 enable_animation = false
 enable_image = false
 
@@ -125,7 +125,7 @@ name = "First plane"
 center_bohr_radii_3 = [0.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
 size_bohr_radii_2 = [118.0, 118.0]
-resolution_2 = [128, 128]
+resolution_2 = [512, 512]
 enable_image = true
 
 [[measurement.plane_probability_currents]]
@@ -133,7 +133,7 @@ name = "Second plane"
 center_bohr_radii_3 = [5.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
 size_bohr_radii_2 = [118.0, 118.0]
-resolution_2 = [128, 128]
+resolution_2 = [512, 512]
 
 enable_image = false
 

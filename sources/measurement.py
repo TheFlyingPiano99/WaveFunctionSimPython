@@ -99,9 +99,12 @@ class VolumeProbability:
             bottom_corner_bohr_radii=self.__bottom_corner_bohr_radii_3,
             top_corner_bohr_radii=self.__top_corner_bohr_radii_3
         )
+        dxdydz = (sim_state.get_delta_x_bohr_radii_3()[0]
+                  * sim_state.get_delta_x_bohr_radii_3()[1]
+                  * sim_state.get_delta_x_bohr_radii_3()[2])
         probability = min(cp.sum(
             probability_density
-        ), 10.0)    # Min is to prevent inf value if the simulation diverges
+        ) * dxdydz, 10.0)    # Min is to prevent inf value if the simulation diverges
         self.__probability_evolution = np.append(
             arr=self.__probability_evolution, values=probability
         )
@@ -180,11 +183,20 @@ class PlaneProbabilityCurrent:
 
                 cp.uint32(sim_state.get_number_of_voxels_3()[0]),
                 cp.uint32(sim_state.get_number_of_voxels_3()[1]),
-                cp.uint32(sim_state.get_number_of_voxels_3()[2])
+                cp.uint32(sim_state.get_number_of_voxels_3()[2]),
 
+                cp.float32(sim_state.get_observation_box_bottom_corner_bohr_radii_3()[0]),
+                cp.float32(sim_state.get_observation_box_bottom_corner_bohr_radii_3()[1]),
+                cp.float32(sim_state.get_observation_box_bottom_corner_bohr_radii_3()[2]),
+
+                cp.float32(sim_state.get_observation_box_top_corner_bohr_radii_3()[0]),
+                cp.float32(sim_state.get_observation_box_top_corner_bohr_radii_3()[1]),
+                cp.float32(sim_state.get_observation_box_top_corner_bohr_radii_3()[2])
             )
         )
-        probability_current = cp.sum(self.__probability_current_density) / 0.25
+        dwdh = (self.__size_bohr_radii_2[0] / self.__resolution_2[0]
+                * self.__size_bohr_radii_2[1] / self.__resolution_2[1])
+        probability_current = cp.sum(self.__probability_current_density) * dwdh
 
         self.__probability_current_evolution = (
             np.append(arr=self.__probability_current_evolution, values=probability_current))
@@ -277,7 +289,8 @@ class MeasurementTools:
     __volumetric: VolumetricVisualization = None
     __enable_volumetric_image = False
     __enable_volumetric_animation = False
-    __volumetric_image_capture_interval: int = 50
+    __volumetric_image_capture_interval: int
+    __volumetric_animation_capture_interval: int
     __animation_writer_volumetric: animation.AnimationWriter = None
     __animation_writer_per_axis: animation.AnimationWriter = None
     __x_axis_probability_density: ProjectedMeasurement = None
@@ -314,6 +327,8 @@ class MeasurementTools:
         # Volumetric visualization:
         self.__enable_volumetric_animation = try_read_param(config, "measurement.volumetric.enable_animation", False)
         self.__enable_volumetric_image = try_read_param(config, "measurement.volumetric.enable_image", False)
+        self.__volumetric_image_capture_interval = try_read_param(config, "measurement.volumetric.image_capture_iteration_interval", 100)
+        self.__volumetric_animation_capture_interval = try_read_param(config, "measurement.volumetric.animation_frame_capture_iteration_interval", 5)
         if self.__enable_volumetric_image or self.__enable_volumetric_animation:
             self.__volumetric = VolumetricVisualization(
                 wave_function=sim_state.get_view_into_wave_function(),

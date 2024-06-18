@@ -198,11 +198,12 @@ class SimState:
             cp.save(file=os.path.join(self.__cache_dir, "gaussian_wave_packet.npy"), arr=self.__wave_tensor)
         # Normalize:
         self.__probability_density = math_utils.square_of_abs(self.__wave_tensor)
-        sum_probability = cp.sum(self.__probability_density)
+        dxdydz = self.__delta_x_bohr_radii_3[0] * self.__delta_x_bohr_radii_3[1] * self.__delta_x_bohr_radii_3[2]
+        sum_probability = cp.sum(self.__probability_density) * dxdydz
         print(f"Sum of probabilities = {sum_probability:.8f}")
         self.__wave_tensor = self.__wave_tensor / (sum_probability ** 0.5)
         self.__probability_density = math_utils.square_of_abs(self.__wave_tensor)
-        sum_probability = cp.sum(self.__probability_density)
+        sum_probability = cp.sum(self.__probability_density) * dxdydz
         print(f"Sum of probabilities after normalization = {sum_probability:.8f}")
 
         if self.__simulation_method == SimulationMethod.FOURIER:
@@ -270,98 +271,6 @@ class SimState:
                 V=self.__localised_potential_hartree,
                 delta_x_3=self.__delta_x_bohr_radii_3,
             )
-
-            """
-            try:
-                interaction = self.__config["particle_hard_interaction"]
-                r = interaction["particle_radius_bohr_radii"]
-                v = interaction["potential_hartree"]
-                print("Creating particle hard interaction potential.")
-                tensor = potential.particle_hard_interaction_potential(
-                    delta_x_3=self.__delta_x_bohr_radii_3,
-                    particle_radius_bohr_radius=r,
-                    potential_hartree=v,
-                    V=cp.zeros(shape=self.__number_of_voxels_3, dtype=cp.csingle),
-                )
-                self.__localised_potential_hartree += tensor
-                try:
-                    visible = interaction["visible"]
-                    if visible:
-                        self.__localised_potential_to_visualize_hartree += tensor
-                except KeyError:
-                    pass
-            except KeyError:
-                pass
-            """
-
-            """
-            try:
-                interaction = self.__config["particle_inv_squared_interaction"]
-                v = interaction["center_potential_hartree"]
-                print("Creating particle inverse square interaction potential.")
-                tensor = potential.particle_inv_square_interaction_potential(
-                    delta_x_3=self.__delta_x_bohr_radii_3,
-                    potential_hartree=v,
-                    V=cp.zeros(shape=self.__number_of_voxels_3, dtype=cp.csingle),
-                )
-                self.__localised_potential_hartree += tensor
-                try:
-                    visible = interaction["visible"]
-                    if visible:
-                        self.__localised_potential_to_visualize_hartree += tensor
-                except KeyError:
-                    pass
-            except KeyError:
-                pass
-            """
-
-            """
-            try:
-                oscillator = self.__config["harmonic_oscillator_1d"]
-                omega = oscillator["angular_frequency_radian_hartree_per_h_bar"]
-                print("Creating harmonic oscillator.")
-                tensor = potential.add_harmonic_oscillator_for_1D(
-                    delta_x_3=self.__delta_x_bohr_radii_3,
-                    angular_frequency=omega,
-                    V=cp.zeros(shape=self.__number_of_voxels_3, dtype=cp.csingle),
-                )
-                self.__localised_potential_hartree += tensor
-                try:
-                    visible = oscillator["visible"]
-                    if visible:
-                        self.__localised_potential_to_visualize_hartree += tensor
-                except KeyError:
-                    pass
-            except KeyError:
-                pass
-
-            """
-
-            """
-            try:
-                walls_arr = self.__config["walls_1d"]
-                for wall_1d in walls_arr:
-                    c = wall_1d["center_bohr_radii"]
-                    v = wall_1d["potential_hartree"]
-                    t = wall_1d["thickness_bohr_radii"]
-                    print("Creating wall.")
-                    tensor = potential.add_wall_for_1D(
-                        delta_x_3=self.__delta_x_bohr_radii_3,
-                        potential_hartree=v,
-                        thickness_bohr_radius=t,
-                        center_bohr_radius=c,
-                        V=cp.zeros(shape=self.__number_of_voxels_3, dtype=cp.csingle),
-                    )
-                    self.__localised_potential_hartree += tensor
-                    try:
-                        visible = wall_1d["visible"]
-                        if visible:
-                            self.__localised_potential_to_visualize_hartree += tensor
-                    except KeyError:
-                        pass
-            except KeyError:
-                pass
-            """
 
             for wall in self.__potential_walls:
                 print("Creating wall.")

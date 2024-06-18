@@ -41,7 +41,11 @@ def initialize(use_cache: bool = True):
         # Opening the selected file:
         with open(config_dir + selected_conf_file, mode="r") as f:
             print(f"Opening {selected_conf_file}")
-            config = toml.load(f)
+            try:
+                config = toml.load(f)
+            except toml.decoder.TomlDecodeError:
+                print(Fore.RED + "Failed to decode TOML file. There are possibly errors in the file." + Style.RESET_ALL)
+                sys.exit(1)
             sim_state = SimState(config)
             try:
                 if not os.path.exists(sim_state.get_cache_dir()):
