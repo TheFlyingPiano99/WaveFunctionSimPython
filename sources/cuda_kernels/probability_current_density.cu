@@ -56,8 +56,10 @@ void probability_current_density_kernel(
     if (r.x < bounding_bottom_x || r.x > bounding_top_x
     || r.y < bounding_bottom_y || r.y > bounding_top_y
     || r.z < bounding_bottom_z || r.z > bounding_top_z) // Terminate if outside the bounding box
+    {
         probability_current_density[planeIdx] = 0.0f;
         return;
+    }
 
     float3 fVoxel = r / delta_r + 0.5f * float3{(float)N.x, (float)N.y, (float)N.z};
     uint3 voxel = {(unsigned int)fVoxel.x, (unsigned int)fVoxel.y, (unsigned int)fVoxel.z};
@@ -105,9 +107,7 @@ void probability_current_density_kernel(
     complex<float> iUnit = complex<float>(0.0f, 1.0f);
     float hBar = 1.0f;
     float mass = 1.0f;
-    float dwdh = width / (float)(gridDim.x * blockDim.x) * height / (float)(gridDim.y * blockDim.y);
     probability_current_density[planeIdx] = (-iUnit * hBar / 2.0f / mass * (
         mul(conj(psi), gradPsi) - mul(psi, conj(gradPsi))
-    )).real() / dwdh;
-    //probability_current_density[planeIdx] = (iUnit * hBar / 2.0f / mass).imag() / 512.0 / 512.0;
+    )).real();
 }

@@ -18,8 +18,8 @@ double_precision_calculation = false
 
 [wave_packet]
 particle_mass_electron_rest_mass = 1.0
-initial_wp_position_bohr_radii_3 = [-25.0, 0.0, 0.0]
-initial_wp_velocity_bohr_radii_hartree_per_h_bar_3 = [1.0, 0.0, 0.0]
+initial_wp_position_bohr_radii_3 = [-15.0, 0.0, 0.0]
+initial_wp_velocity_bohr_radii_hartree_per_h_bar_3 = [1.5, 0.0, 0.0]
 initial_wp_width_bohr_radii = 2.0
 
 [volume]
@@ -125,7 +125,7 @@ name = "First plane"
 center_bohr_radii_3 = [0.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
 size_bohr_radii_2 = [118.0, 118.0]
-resolution_2 = [512, 512]
+resolution_2 = [128, 128]
 enable_image = true
 
 [[measurement.plane_probability_currents]]
