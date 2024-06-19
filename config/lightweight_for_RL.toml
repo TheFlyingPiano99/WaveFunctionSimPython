@@ -9,7 +9,7 @@
 [simulation]
 method = "fourier"
 order_of_approximation = 10
-delta_time_h_bar_per_hartree = 0.01
+delta_time_h_bar_per_hartree = 0.05
 total_iteration_count = 6000
 is_dynamic_potential_mode = true
 enable_wave_function_saving = false
@@ -23,10 +23,10 @@ initial_wp_velocity_bohr_radii_hartree_per_h_bar_3 = [2.0, 0.0, 0.0]
 initial_wp_width_bohr_radii = 2.0
 
 [volume]
-simulated_volume_dimensions_bohr_radii_3 = [200.0, 200.0, 200.0] #Including absorbing potential regions
-number_of_voxels_3 = [1024, 128, 128]         #Including absorbing potential regions
-observation_box_bottom_corner_bohr_radii_3 = [-60.0, -60.0, -60.0]   # Same as the inner boundary of the draining potential
-observation_box_top_corner_bohr_radii_3 = [60.0, 60.0, 60.0]   # Same as the inner boundary of the draining potential
+simulated_volume_dimensions_bohr_radii_3 = [120.0, 60.0, 60.0] #Including absorbing potential regions
+number_of_voxels_3 = [1024, 64, 64]         #Including absorbing potential regions
+observation_box_bottom_corner_bohr_radii_3 = [-45.0, -20.0, -20.0]   # Same as the inner boundary of the draining potential
+observation_box_top_corner_bohr_radii_3 = [45.0, 20.0, 20.0]   # Same as the inner boundary of the draining potential
 
 [absorbing_boundary_condition]
 outer_potential_in_positive_xyz_direction_hartree_3 = [-100.0, -100.0, -100.0]
@@ -92,7 +92,7 @@ animation_frame_rate = 25
 animation_frame_capture_iteration_interval = 50
 image_capture_iteration_interval = 500
 enable_animation = false
-enable_image = true
+enable_image = false
 
 [measurement.per_axis_plot]
 title = "Per-axis plot"
@@ -108,23 +108,26 @@ image_capture_iteration_interval = 100
 enable_animation = false
 enable_image = false
 
+[measurement.expected_location]
+enable_image = true
+
 [[measurement.volume_probabilities]]
 name = "First half"
-bottom_corner_bohr_radii_3 = [-45.0, -45.0, -45.0]
-top_corner_bohr_radii_3 = [0.0, 45.0, 45.0]
+bottom_corner_bohr_radii_3 = [-45.0, -20.0, -20.0]
+top_corner_bohr_radii_3 = [0.0, 20.0, 20.0]
 enable_image = true
 
 [[measurement.volume_probabilities]]
 name = "Second half"
-bottom_corner_bohr_radii_3 = [0.0, -45.0, -45.0]
-top_corner_bohr_radii_3 = [45.0, 45.0, 45.0]
+bottom_corner_bohr_radii_3 = [0.0, -20.0, -20.0]
+top_corner_bohr_radii_3 = [45.0, 20.0, 20.0]
 enable_image = true
 
 [[measurement.plane_probability_currents]]
 name = "First plane"
 center_bohr_radii_3 = [0.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
-size_bohr_radii_2 = [120.0, 120.0]
+size_bohr_radii_2 = [90.0, 90.0]
 resolution_2 = [512, 512]
 enable_image = true
 

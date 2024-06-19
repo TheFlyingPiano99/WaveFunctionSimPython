@@ -25,6 +25,8 @@ class SimState:
     __observation_box_top_corner_voxel_3: np.array
     __observation_box_bottom_corner_bohr_radii_3: np.array
     __observation_box_top_corner_bohr_radii_3: np.array
+    __observation_box_dimensions_bohr_radii_3: np.array
+    __observation_box_dimensions_voxel_3: np.array
     __de_broglie_wave_length_bohr_radii: float
     __simulated_volume_dimensions_bohr_radii_3: np.array([120.0, 120.0, 120.0])
     __delta_x_bohr_radii_3: np.array([0.0, 0.0, 0.0])
@@ -155,8 +157,13 @@ class SimState:
         for i in range(3):
             if (self.__observation_box_bottom_corner_voxel_3[i] < 0):
                 self.__observation_box_bottom_corner_voxel_3[i] = 0
+        self.__observation_box_dimensions_bohr_radii_3 = self.__observation_box_top_corner_bohr_radii_3 - self.__observation_box_bottom_corner_bohr_radii_3
+        self.__observation_box_dimensions_voxel_3 = self.__observation_box_top_corner_voxel_3 - self.__observation_box_bottom_corner_voxel_3
+
         print(f"Observation box bottom corner voxel: ({self.__observation_box_bottom_corner_voxel_3[0]}, {self.__observation_box_bottom_corner_voxel_3[1]}, {self.__observation_box_bottom_corner_voxel_3[2]})")
         print(f"Observation box top corner voxel: ({self.__observation_box_top_corner_voxel_3[0]}, {self.__observation_box_top_corner_voxel_3[1]}, {self.__observation_box_top_corner_voxel_3[2]})")
+
+        print(f"Observation box voxel dimensions: ({self.__observation_box_dimensions_voxel_3[0]}, {self.__observation_box_dimensions_voxel_3[1]}, {self.__observation_box_dimensions_voxel_3[2]})")
 
         # Load potential descriptions:
         # Set pre initialized potential path (can be empty string):
@@ -366,13 +373,13 @@ class SimState:
     def is_double_precision_calculation(self):
         return self.__double_precision_calculation
 
-    def _transform_physical_coordinate_to_voxel_3(self, pos_bohr_radii_3: np.array):
-        return math_utils.transform_center_origin_to_corner_origin_system(
+    def transform_physical_coordinate_to_voxel_3(self, pos_bohr_radii_3: np.array):
+        return (math_utils.transform_center_origin_to_corner_origin_system(
             pos_bohr_radii_3,
             self.__simulated_volume_dimensions_bohr_radii_3
-        ) / self.__delta_x_bohr_radii_3
+        ) / self.__delta_x_bohr_radii_3).astype(np.uint)
 
-    def _transform_voxel_to_physical_coordinate_3(self, voxel_3: np.array):
+    def transform_voxel_to_physical_coordinate_3(self, voxel_3: np.array):
         return math_utils.transform_corner_origin_to_center_origin_system(
             voxel_3,
             self.__number_of_voxels_3
@@ -384,8 +391,8 @@ class SimState:
             top_corner_bohr_radii: np.array = None
     ):
         if not (bottom_corner_bohr_radii is None) and not (top_corner_bohr_radii is None):
-            bottom_voxel_3 = self._transform_physical_coordinate_to_voxel_3(bottom_corner_bohr_radii)
-            top_voxel_3 = self._transform_physical_coordinate_to_voxel_3(top_corner_bohr_radii)
+            bottom_voxel_3 = self.transform_physical_coordinate_to_voxel_3(bottom_corner_bohr_radii)
+            top_voxel_3 = self.transform_physical_coordinate_to_voxel_3(top_corner_bohr_radii)
             return math_utils.cut_bounding_box(
                 arr=self.__probability_density,
                 bottom=bottom_voxel_3,
@@ -428,6 +435,34 @@ class SimState:
         self.__probability_density = math_utils.square_of_abs(
             self.__wave_tensor
         )
+
+    def get_position_operator(self):
+        x = cp.linspace(
+            start=self.__observation_box_bottom_corner_bohr_radii_3[0],
+            stop=self.__observation_box_top_corner_bohr_radii_3[0],
+            num=self.__observation_box_dimensions_voxel_3[0],
+            endpoint=False,
+            dtype=cp.float32
+        )
+        y = cp.linspace(
+            start=self.__observation_box_bottom_corner_bohr_radii_3[1],
+            stop=self.__observation_box_top_corner_bohr_radii_3[1],
+            num=self.__observation_box_dimensions_voxel_3[1],
+            endpoint=False,
+            dtype = cp.float32
+        )
+        z = cp.linspace(
+            start=self.__observation_box_bottom_corner_bohr_radii_3[2],
+            stop=self.__observation_box_top_corner_bohr_radii_3[2],
+            num=self.__observation_box_dimensions_voxel_3[2],
+            endpoint=False,
+            dtype=cp.float32
+        )
+        X, Y, Z = cp.meshgrid(x, y, z, indexing='ij')
+        return cp.stack((X, Y, Z), axis=-1)
+
+    def get_dxdydz(self):
+        return self.__delta_x_bohr_radii_3[0] * self.__delta_x_bohr_radii_3[1] * self.__delta_x_bohr_radii_3[2]
 
     def update_potential(self):
         if not self.__is_dynamic_potential_mode:

@@ -124,6 +124,12 @@ def get_grid_size(shape: np.shape):
     if (grid_size[0] > 0):  # Cached size
         return tuple(grid_size)
     grid_size = [64, 64, 64]
+    if shape[0] < 64:
+        grid_size[0] = shape[0]
+    if shape[1] < 64:
+        grid_size[1] = shape[1]
+    if shape[2] < 64:
+        grid_size[2] = shape[2]
     for i in range(3):
         while True:
             if (shape[i] // grid_size[i]) * grid_size[i] == shape[i]:
