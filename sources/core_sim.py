@@ -16,24 +16,9 @@ from tqdm import tqdm
 import sources.snapshot_io as snapshot_io
 
 
-def write_wave_function_to_file(sim_state: SimState, iter_data: IterData):
-    if iter_data.i % sim_state.get_wave_function_save_interval() == 0:
-        if not os.path.exists(os.path.join(sim_state.get_output_dir(), f"wave_function")):
-            os.makedirs(os.path.join(sim_state.get_output_dir(), f"wave_function"), exist_ok=True)
-        """
-        try:
-            cp.save(arr=sim_state.get_view_into_wave_function(), file=os.path.join(sim_state.get_output_dir(), f"wave_function/wave_function_{iter_data.i:04d}.npy"))
-        except IOError:
-            print(Fore.RED + "\nERROR: Failed writing file: "+ os.path.join(sim_state.get_output_dir(), f"wave_function/wave_function_{iter_data.i:04d}.npy") + Style.RESET_ALL)
-        """
-
-
 def time_step(sim_state: SimState,
               measurement_tools: MeasurementTools,
               iter_data: IterData):
-    sim_state.update_probability_density()
-    if sim_state.is_wave_function_saving():
-        write_wave_function_to_file(sim_state=sim_state, iter_data=iter_data)
     measurement_tools.measure_and_render(sim_state, iter_data)
     sim_state.evolve_state()
     sim_state.update_potential()

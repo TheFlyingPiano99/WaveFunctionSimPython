@@ -13,6 +13,8 @@ from colorama import Fore, Style
 import cupy as cp
 import sources.plot as plot
 from pathlib import Path
+import sources.math_utils as math_utils
+
 
 class MeasurementPlane:
     def __init__(
@@ -66,6 +68,11 @@ class VolumeProbability:
     __top_corner_bohr_radii_3: np.array
     __enable_image: bool
     __probability_evolution: np.array = np.empty(shape=0, dtype=np.float64)
+    __volume_probability_kernel: cp.RawKernel = None
+    __probability_buffer: cp.array
+    __kernel_grid_size: np.array
+    __kernel_block_size: np.array
+    __bottom_voxel: np.array
 
     def __init__(
         self,
@@ -85,12 +92,27 @@ class VolumeProbability:
                 self.__bottom_corner_bohr_radii_3[i] = self.__top_corner_bohr_radii_3[i]
                 self.__top_corner_bohr_radii_3[i] = temp
         self.__enable_image = try_read_param(config, "enable_image", True, "measurement.volume_probabilities")
+
+        self.__bottom_voxel = sim_state.transform_physical_coordinate_to_voxel_3(self.__bottom_corner_bohr_radii_3)
+        top_voxel = sim_state.transform_physical_coordinate_to_voxel_3(self.__top_corner_bohr_radii_3)
         if self.__enable_image:
-            bottom_voxel = sim_state.transform_physical_coordinate_to_voxel_3(self.__bottom_corner_bohr_radii_3)
-            top_voxel = sim_state.transform_physical_coordinate_to_voxel_3(self.__top_corner_bohr_radii_3)
-            print(f"{self.__name} bottom voxel (included in calc.): ({bottom_voxel[0]}, {bottom_voxel[1]}, {bottom_voxel[2]})")
+            print(f"{self.__name} bottom voxel (included in calc.): ({self.__bottom_voxel[0]}, {self.__bottom_voxel[1]}, {self.__bottom_voxel[2]})")
             print(f"{self.__name} top voxel (not included in calc.): ({top_voxel[0]}, {top_voxel[1]}, {top_voxel[2]})")
 
+        volume_probability_kernel_source = (Path("sources/cuda_kernels/volume_probability.cu")
+                                              .read_text().replace("PATH_TO_SOURCES", os.path.abspath("sources"))
+                                              .replace("T_WF_FLOAT",
+                                                       "double" if sim_state.is_double_precision_calculation() else "float"))
+
+        shape = top_voxel - self.__bottom_voxel
+        self.__kernel_grid_size = math_utils.get_grid_size(shape)
+        self.__kernel_block_size = (shape[0] // self.__kernel_grid_size[0], shape[1] // self.__kernel_grid_size[1], shape[2] // self.__kernel_grid_size[2])
+        self.__volume_probability_kernel = cp.RawKernel(
+            volume_probability_kernel_source,
+            "volume_probability_kernel",
+        )
+        self.__probability_buffer = cp.array([0.0], dtype=cp.float32)
+        
     def get_name(self):
         return self.__name
 
@@ -100,19 +122,33 @@ class VolumeProbability:
     def is_enable_image(self):
         return self.__enable_image
 
-    def integrate_probability_density(self, sim_state: SimState):
-        probability_density = sim_state.get_view_into_probability_density(
-            bottom_corner_bohr_radii=self.__bottom_corner_bohr_radii_3,
-            top_corner_bohr_radii=self.__top_corner_bohr_radii_3
+    def calculate(self, sim_state: SimState):
+        wave_function = sim_state.get_wave_function()
+        delta_r = sim_state.get_delta_x_bohr_radii_3()
+        N = sim_state.get_number_of_voxels_3()
+        self.__probability_buffer[0] = 0.0
+        self.__volume_probability_kernel(
+            self.__kernel_grid_size,
+            self.__kernel_block_size,
+            (
+                wave_function,
+                self.__probability_buffer,
+
+                cp.float32(delta_r[0]),
+                cp.float32(delta_r[1]),
+                cp.float32(delta_r[2]),
+
+                cp.uint32(self.__bottom_voxel[0]),
+                cp.uint32(self.__bottom_voxel[1]),
+                cp.uint32(self.__bottom_voxel[2]),
+
+                cp.uint32(N[0]),
+                cp.uint32(N[1]),
+                cp.uint32(N[2])
+            )
         )
-        dxdydz = (sim_state.get_delta_x_bohr_radii_3()[0]
-                  * sim_state.get_delta_x_bohr_radii_3()[1]
-                  * sim_state.get_delta_x_bohr_radii_3()[2])
-        probability = min(cp.sum(
-            probability_density
-        ) * dxdydz, 10.0)    # Min is to prevent inf value if the simulation diverges
         self.__probability_evolution = np.append(
-            arr=self.__probability_evolution, values=probability
+            arr=self.__probability_evolution, values=self.__probability_buffer[0]
         )
 
     def get_probability_evolution_with_name(self):
@@ -225,22 +261,64 @@ class PlaneProbabilityCurrent:
 
 class ExpectedLocation:
     __enable_image: bool
+    __expected_location_buffer: cp.array
     __expected_location_evolution: np.array = np.zeros(shape=(0, 3), dtype=np.float64)
+    __kernel: cp.RawKernel
+    __kernel_grid_size: np.array
+    __kernel_block_size: np.array
+    __bottom_voxel: np.array
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: Dict, sim_state: SimState):
         self.__enable_image = try_read_param(config, "measurement.expected_location.enable_image", False)
+        self.__bottom_voxel = sim_state.get_observation_box_bottom_corner_voxel_3()
+        top_voxel = sim_state.get_observation_box_top_corner_voxel_3()
+        shape = top_voxel - self.__bottom_voxel
+        self.__kernel_grid_size = math_utils.get_grid_size(shape)
+        self.__kernel_block_size = (shape[0] // self.__kernel_grid_size[0], shape[1] // self.__kernel_grid_size[1], shape[2] // self.__kernel_grid_size[2])
+        kernel_source = (Path("sources/cuda_kernels/expected_location.cu").read_text()
+            .replace("PATH_TO_SOURCES", os.path.abspath("sources"))
+            .replace("T_WF_FLOAT", "double" if sim_state.is_double_precision_calculation() else "float"))
+
+        self.__kernel = cp.RawKernel(
+            kernel_source,
+            "expected_location_kernel",
+        )
+        self.__expected_location_buffer = cp.array([0.0, 0.0, 0.0], dtype=cp.float64 if sim_state.is_double_precision_calculation() else cp.float32)
 
     def is_enable_image(self):
         return self.__enable_image
 
     def calculate(self, sim_state: SimState):
+        self.__expected_location_buffer[0] = 0.0
+        self.__expected_location_buffer[1] = 0.0
+        self.__expected_location_buffer[2] = 0.0
 
-        expected_location = cp.asnumpy(cp.sum(
-            sim_state.get_position_operator() * sim_state.get_view_into_probability_density()[..., cp.newaxis],
-            axis=[0, 1, 2]
-        )) * sim_state.get_dxdydz()
+        wave_function = sim_state.get_wave_function()
+        delta_r = sim_state.get_delta_x_bohr_radii_3()
+        N = sim_state.get_number_of_voxels_3()
+        self.__kernel(
+            self.__kernel_grid_size,
+            self.__kernel_block_size,
+            (
+                wave_function,
+                self.__expected_location_buffer,
+
+                cp.float32(delta_r[0]),
+                cp.float32(delta_r[1]),
+                cp.float32(delta_r[2]),
+
+                cp.int32(self.__bottom_voxel[0]),
+                cp.int32(self.__bottom_voxel[1]),
+                cp.int32(self.__bottom_voxel[2]),
+
+                cp.int32(N[0]),
+                cp.int32(N[1]),
+                cp.int32(N[2])
+            )
+        )
+
         self.__expected_location_evolution = np.concatenate(
-            (self.__expected_location_evolution, expected_location.reshape((1, 3))),
+            (self.__expected_location_evolution, cp.asnumpy(self.__expected_location_buffer).reshape((1, 3))),
             axis=0
         )
 
@@ -450,10 +528,22 @@ class MeasurementTools:
 
         # Expected location:
         if try_read_param(config, "measurement.expected_location.enable_image", False):
-            self.__expected_location = ExpectedLocation(config)
+            self.__expected_location = ExpectedLocation(config, sim_state)
 
+    def write_wave_function_to_file(self, sim_state: SimState, iter_data: IterData):
+        if iter_data.i % sim_state.get_wave_function_save_interval() == 0:
+            if not os.path.exists(os.path.join(sim_state.get_output_dir(), f"wave_function")):
+                os.makedirs(os.path.join(sim_state.get_output_dir(), f"wave_function"), exist_ok=True)
+            try:
+                cp.save(arr=sim_state.get_view_into_wave_function(), file=os.path.join(sim_state.get_output_dir(), f"wave_function/wave_function_{iter_data.i:04d}.npy"))
+            except IOError:
+                print(Fore.RED + "\nERROR: Failed writing file: "+ os.path.join(sim_state.get_output_dir(), f"wave_function/wave_function_{iter_data.i:04d}.npy") + Style.RESET_ALL)
 
     def measure_and_render(self, sim_state: SimState, iter_data: IterData):
+        # Save wave function:
+        if sim_state.is_wave_function_saving():
+            self.write_wave_function_to_file(sim_state=sim_state, iter_data=iter_data)
+
         # Update the volumetric visualization if needed:
         if (
                 (
@@ -489,7 +579,7 @@ class MeasurementTools:
 
         for volume in self.__volume_probabilities:
             if volume.is_enable_image():
-                volume.integrate_probability_density(sim_state)
+                volume.calculate(sim_state)
 
         for plane in self.__plane_probability_currents:
             if plane.is_enable_image():

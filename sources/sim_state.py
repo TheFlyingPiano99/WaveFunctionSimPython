@@ -363,13 +363,6 @@ class SimState:
     def get_observation_box_top_corner_bohr_radii_3(self):
         return self.__observation_box_top_corner_bohr_radii_3
 
-    def get_view_into_wave_function(self):
-        return math_utils.cut_bounding_box(
-            arr=self.__wave_tensor,
-            bottom=self.__observation_box_bottom_corner_voxel_3,
-            top=self.__observation_box_top_corner_voxel_3,
-        )
-
     def is_double_precision_calculation(self):
         return self.__double_precision_calculation
 
@@ -384,6 +377,25 @@ class SimState:
             voxel_3,
             self.__number_of_voxels_3
         ) * self.__delta_x_bohr_radii_3
+
+    def get_view_into_wave_function(
+        self,
+        bottom_corner_bohr_radii: np.array = None,
+        top_corner_bohr_radii: np.array = None
+    ):
+        if not (bottom_corner_bohr_radii is None) and not (top_corner_bohr_radii is None):
+            bottom_voxel_3 = self.transform_physical_coordinate_to_voxel_3(bottom_corner_bohr_radii)
+            top_voxel_3 = self.transform_physical_coordinate_to_voxel_3(top_corner_bohr_radii)
+            return math_utils.cut_bounding_box(
+                arr=self.__probability_density,
+                bottom=bottom_voxel_3,
+                top=top_voxel_3
+            )
+        return math_utils.cut_bounding_box(
+            arr=self.__wave_tensor,
+            bottom=self.__observation_box_bottom_corner_voxel_3,
+            top=self.__observation_box_top_corner_voxel_3,
+        )
 
     def get_view_into_probability_density(
             self,
@@ -436,7 +448,11 @@ class SimState:
             self.__wave_tensor
         )
 
+    __position_operator: cp.ndarray = None
+
     def get_position_operator(self):
+        if self.__position_operator is not None:
+            return self.__position_operator
         x = cp.linspace(
             start=self.__observation_box_bottom_corner_bohr_radii_3[0],
             stop=self.__observation_box_top_corner_bohr_radii_3[0],
@@ -459,7 +475,8 @@ class SimState:
             dtype=cp.float32
         )
         X, Y, Z = cp.meshgrid(x, y, z, indexing='ij')
-        return cp.stack((X, Y, Z), axis=-1)
+        self.__position_operator = cp.stack((X, Y, Z), axis=-1)
+        return self.__position_operator
 
     def get_dxdydz(self):
         return self.__delta_x_bohr_radii_3[0] * self.__delta_x_bohr_radii_3[1] * self.__delta_x_bohr_radii_3[2]

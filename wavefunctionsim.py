@@ -70,6 +70,8 @@ def sim():
         vdisplay.start()
         print("Created virtual display.\n")
 
+    os.environ["CUPY_ACCELERATORS"] = "cub.docs.cupy.dev/en/stable/reference/environment.html"
+
     # Initialization:
     sim_state, measurement_tools, iter_data = init.initialize(use_cache)
 

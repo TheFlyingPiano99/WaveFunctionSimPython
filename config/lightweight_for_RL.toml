@@ -24,7 +24,7 @@ initial_wp_width_bohr_radii = 2.0
 
 [volume]
 simulated_volume_dimensions_bohr_radii_3 = [120.0, 60.0, 60.0] #Including absorbing potential regions
-number_of_voxels_3 = [1024, 64, 64]         #Including absorbing potential regions
+number_of_voxels_3 = [1024, 128, 128]         #Including absorbing potential regions
 observation_box_bottom_corner_bohr_radii_3 = [-45.0, -20.0, -20.0]   # Same as the inner boundary of the draining potential
 observation_box_top_corner_bohr_radii_3 = [45.0, 20.0, 20.0]   # Same as the inner boundary of the draining potential
 

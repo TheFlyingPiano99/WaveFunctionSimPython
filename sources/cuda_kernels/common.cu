@@ -21,12 +21,12 @@ __device__ constexpr float3 scalarVectorMul(const float s, const float3& v)
     return {s * v.x, s * v.y, s * v.z};
 }
 
-__device__ constexpr float3 operator*(const float s, const float3& v)
+__device__ constexpr float3 operator*(float s, const float3& v)
 {
     return {s * v.x, s * v.y, s * v.z};
 }
 
-__device__ constexpr float3 operator*(const float3& v, const float s)
+__device__ constexpr float3 operator*(const float3& v, float s)
 {
     return {s * v.x, s * v.y, s * v.z};
 }
@@ -69,6 +69,12 @@ __device__ constexpr float3 add(const float3& a, const float3& b)
 __device__ constexpr float3 operator+(const float3& a, const float3& b)
 {
     return {a.x + b.x, a.y + b.y, a.z + b.z};
+}
+
+__device__ float3& operator+=(float3& a, const float3& b)
+{
+    a.x += b.x; a.y += b.y; a.z += b.z;
+    return a;
 }
 
 __device__ constexpr float3 diff(const float3& a, const float3& b)
@@ -221,6 +227,59 @@ __device__ float3 rotate_vector(const float3& v, const float3& axis, float rad)
 __device__ float mix(const float3& xyz, float u, float v)
 {
     return xyz.z * v + (1.0f - v) * (xyz.y * u + xyz.x * (1.0f - u));
+}
+
+__device__ void warpReduce(volatile int * sdata, unsigned int tid, unsigned int blockSize) {
+    if (blockSize >= 64) sdata[tid] += sdata[tid + 32];
+    if (blockSize >= 32) sdata[tid] += sdata[tid + 16];
+    if (blockSize >= 16) sdata[tid] += sdata[tid + 8];
+    if (blockSize >= 8) sdata[tid] += sdata[tid + 4];
+    if (blockSize >= 4) sdata[tid] += sdata[tid + 2];
+    if (blockSize >= 2) sdata[tid] += sdata[tid + 1];
+}
+
+template <unsigned int blockSize>
+__global__ void reduce6( int* g_idata, int* g_odata, unsigned int n) {
+    extern __shared__ int sdata[];
+    unsigned int tid = threadIdx.x;
+    unsigned int i = blockIdx.x * (blockSize * 2) + tid;
+    unsigned int gridSize = blockSize * 2 * gridDim.x;
+    sdata[tid] = 0;
+
+    while (i < n) {
+        sdata[tid] += g_idata[i] + g_idata[i+blockSize];
+        i += gridSize;
+    }
+    __syncthreads();
+    if (blockSize >= 512) {
+        if (tid < 256) {
+            sdata[tid] += sdata[tid + 256];
+        }
+        __syncthreads();
+    }
+    if (blockSize >= 256) {
+        if (tid < 128) {
+            sdata[tid] += sdata[tid + 128];
+        }
+        __syncthreads();
+    }
+    if (blockSize >= 128) {
+        if (tid < 64) {
+            sdata[tid] += sdata[tid + 64];
+        }
+        __syncthreads();
+    }
+    if (tid < 32)
+        warpReduce(sdata, tid, blockSize);
+    if (tid == 0)
+        g_odata[blockIdx.x] = sdata[0];
+}
+
+__device__ unsigned int get_block_local_idx()
+{
+    return threadIdx.x * blockDim.y * blockDim.z
+            + threadIdx.y * blockDim.z
+            + threadIdx.z;
 }
 
 #endif  // CUDA_COMMON
