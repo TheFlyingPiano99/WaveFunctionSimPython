@@ -208,16 +208,7 @@ class SimState:
                     self.__double_precision_calculation
                 )
             )
-            #cp.save(file=os.path.join(self.__cache_dir, "gaussian_wave_packet.npy"), arr=self.__wave_tensor)
-        # Normalize:
-        self.__probability_density = math_utils.square_of_abs(self.__wave_tensor)
-        dxdydz = self.__delta_x_bohr_radii_3[0] * self.__delta_x_bohr_radii_3[1] * self.__delta_x_bohr_radii_3[2]
-        sum_probability = cp.sum(self.__probability_density) * dxdydz
-        print(f"Sum of probabilities = {sum_probability:.8f}")
-        self.__wave_tensor = self.__wave_tensor / (sum_probability ** 0.5)
-        self.__probability_density = math_utils.square_of_abs(self.__wave_tensor)
-        sum_probability = cp.sum(self.__probability_density) * dxdydz
-        print(f"Sum of probabilities after normalization = {sum_probability:.8f}")
+            cp.save(file=os.path.join(self.__cache_dir, "gaussian_wave_packet.npy"), arr=self.__wave_tensor)
 
         full_init = True
         if self.__use_cache:

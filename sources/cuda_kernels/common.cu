@@ -125,12 +125,20 @@ __device__ constexpr float3 transform_corner_origin_to_center_origin_system(cons
     );
 }
 
-__device__ uint3 get_voxel_count()
+__device__ constexpr uint3 get_voxel_count_3d()
 {
     return {
         gridDim.x * blockDim.x,
         gridDim.y * blockDim.y,
         gridDim.z * blockDim.z
+    };
+}
+
+__device__ constexpr uint2 get_voxel_count_2d()
+{
+    return {
+        gridDim.x * blockDim.x,
+        gridDim.y * blockDim.y
     };
 }
 
@@ -275,11 +283,66 @@ __global__ void reduce6( int* g_idata, int* g_odata, unsigned int n) {
         g_odata[blockIdx.x] = sdata[0];
 }
 
-__device__ unsigned int get_block_local_idx()
+__device__ unsigned int get_block_local_idx_3d()
 {
     return threadIdx.x * blockDim.y * blockDim.z
             + threadIdx.y * blockDim.z
             + threadIdx.z;
+}
+
+__device__ unsigned int get_block_local_idx_2d()
+{
+    return threadIdx.x * blockDim.y
+            + threadIdx.y;
+}
+
+template<typename T>
+__device__ T get_simpson_coefficient_3d(const uint3& voxel)
+{
+    uint3 n = get_voxel_count_3d();    // In the integrated volume
+    float sX = 1.0;
+    if (voxel.x > 0 && voxel.x < n.x - 1) {
+        if (voxel.x % 2 == 0)
+            sX = 2.0;
+        else
+            sX = 4.0;
+    }
+    float sY = 1.0;
+    if (voxel.y > 0 && voxel.y < n.y - 1) {
+        if (voxel.y % 2 == 0)
+            sY = 2.0;
+        else
+            sY = 4.0;
+    }
+    float sZ = 1.0;
+    if (voxel.z > 0 && voxel.z < n.z - 1) {
+        if (voxel.z % 2 == 0)
+            sZ = 2.0;
+        else
+            sZ = 4.0;
+    }
+    return sX * sY * sZ / 27.0;    // ... / 3^3
+}
+
+template<typename T>
+__device__ T get_simpson_coefficient_2d(const uint2& voxel)
+{
+    uint2 n = get_voxel_count_2d();    // In the integrated volume
+    T sX = 1.0f;
+    if (voxel.x > 0 && voxel.x < n.x - 1) {
+        if (voxel.x % 2 == 0)
+            sX = 2.0;
+        else
+            sX = 4.0;
+    }
+    T sY = 1.0f;
+    if (voxel.y > 0 && voxel.y < n.y - 1) {
+        if (voxel.y % 2 == 0)
+            sY = 2.0;
+        else
+            sY = 4.0;
+    }
+    return sX * sY / 9.0;    // ... / 3^2
 }
 
 #endif  // CUDA_COMMON

@@ -86,33 +86,41 @@ class VolumeProbability:
         self.__top_corner_bohr_radii_3 = np.array(
             try_read_param(config, "top_corner_bohr_radii_3", [10.0, 10.0, 10.0], "measurement.volume_probabilities")
         )
-        for i in range(3):  # flip coordinates between bottom and top if in wrong order
+        for i in range(3):
+            # flip coordinates between bottom and top if in wrong order
             if self.__bottom_corner_bohr_radii_3[i] > self.__top_corner_bohr_radii_3[i]:
                 temp = self.__bottom_corner_bohr_radii_3[i]
                 self.__bottom_corner_bohr_radii_3[i] = self.__top_corner_bohr_radii_3[i]
                 self.__top_corner_bohr_radii_3[i] = temp
+
         self.__enable_image = try_read_param(config, "enable_image", True, "measurement.volume_probabilities")
 
         self.__bottom_voxel = sim_state.transform_physical_coordinate_to_voxel_3(self.__bottom_corner_bohr_radii_3)
         top_voxel = sim_state.transform_physical_coordinate_to_voxel_3(self.__top_corner_bohr_radii_3)
-        if self.__enable_image:
-            print(f"{self.__name} bottom voxel (included in calc.): ({self.__bottom_voxel[0]}, {self.__bottom_voxel[1]}, {self.__bottom_voxel[2]})")
-            print(f"{self.__name} top voxel (not included in calc.): ({top_voxel[0]}, {top_voxel[1]}, {top_voxel[2]})")
-
         volume_probability_kernel_source = (Path("sources/cuda_kernels/volume_probability.cu")
                                               .read_text().replace("PATH_TO_SOURCES", os.path.abspath("sources"))
                                               .replace("T_WF_FLOAT",
                                                        "double" if sim_state.is_double_precision_calculation() else "float"))
 
         shape = top_voxel - self.__bottom_voxel
+        for i in range(3):
+            # Offset boundary if odd voxels are included. (Because of the Simpson integration scheme.)
+            if (shape[i] % 2 == 1):
+                shape[i] -= 1
+                top_voxel[i] -= 1
+
         self.__kernel_grid_size = math_utils.get_grid_size(shape)
         self.__kernel_block_size = (shape[0] // self.__kernel_grid_size[0], shape[1] // self.__kernel_grid_size[1], shape[2] // self.__kernel_grid_size[2])
+        print(f"Integral voxel count: {self.__kernel_grid_size[0] * self.__kernel_block_size[0]}, {self.__kernel_grid_size[1] * self.__kernel_block_size[1]}, {self.__kernel_grid_size[2] * self.__kernel_block_size[2]}")
         self.__volume_probability_kernel = cp.RawKernel(
             volume_probability_kernel_source,
             "volume_probability_kernel",
         )
         self.__probability_buffer = cp.array([0.0], dtype=cp.float32)
-        
+        if self.__enable_image:
+            print(f"{self.__name} bottom voxel (included in calc.): ({self.__bottom_voxel[0]}, {self.__bottom_voxel[1]}, {self.__bottom_voxel[2]})")
+            print(f"{self.__name} top voxel (not included in calc.): ({top_voxel[0]}, {top_voxel[1]}, {top_voxel[2]})")
+
     def get_name(self):
         return self.__name
 
@@ -167,8 +175,12 @@ class PlaneProbabilityCurrent:
     __size_bohr_radii_2: np.array
     __resolution_2: np.array
     __probability_current_density: cp.ndarray
-    __probability_current_evolution: np.array = np.empty(shape=0, dtype=np.float32)
+    __probability_current_buffer: cp.array
+    __probability_current_evolution: np.array
     __integrated_probability_current_evolution: np.array = np.empty(shape=0, dtype=np.float32)
+    __grid_size: np.array
+    __block_size: np.array
+    __shared_memory_bytes: int
 
     def __init__(self, config: Dict, sim_state: SimState):
         self.__name = try_read_param(config, "name", "Probability current", "measurement.plane_probability_currents")
@@ -181,6 +193,10 @@ class PlaneProbabilityCurrent:
         self.__enable_image = try_read_param(config, "enable_image", "measurement.plane_probability_currents")
         self.__size_bohr_radii_2 = np.array(try_read_param(config, "size_bohr_radii_2", [60.0, 60.0], "measurement.plane_probability_currents"))
         self.__resolution_2 = np.array(try_read_param(config, "resolution_2", [512, 512], "measurement.plane_probability_currents"))
+        # Correct odd voxel count to even. (Because of the Simpson integration scheme)
+        for i in range(2):
+            if self.__resolution_2[i] % 2 == 1:
+                self.__resolution_2[i] -= 1
 
         probability_current_density_kernel = (
             Path("sources/cuda_kernels/probability_current_density.cu").read_text().replace("PATH_TO_SOURCES",
@@ -191,7 +207,14 @@ class PlaneProbabilityCurrent:
             probability_current_density_kernel,
             "probability_current_density_kernel"
         )
-        self.__probability_current_density = cp.zeros(shape=[self.__resolution_2[0], self.__resolution_2[1]], dtype=cp.float32)
+        float_type = (cp.float64 if sim_state.is_double_precision_calculation() else cp.float32)
+        self.__probability_current_density = cp.zeros(shape=[self.__resolution_2[0], self.__resolution_2[1]], dtype=float_type)
+        self.__probability_current_buffer = cp.array([1], dtype=float_type)
+        self.__probability_current_evolution = np.empty(shape=0, dtype=float_type)
+        self.__grid_size = (self.__resolution_2[0] // 32, self.__resolution_2[1] // 32)
+        self.__block_size = (self.__resolution_2[0] // self.__grid_size[0], self.__resolution_2[1] // self.__grid_size[1])
+        print(f"Block size = {self.__block_size[0] * self.__block_size[1]}")
+        self.__shared_memory_bytes = self.__block_size[0] * self.__block_size[1] * (8 if sim_state.is_double_precision_calculation() else 4)
 
     def get_name(self):
         return self.__name
@@ -203,14 +226,14 @@ class PlaneProbabilityCurrent:
         return self.__enable_image
 
     def calculate(self, sim_state: SimState):
-        grid_size = (self.__resolution_2[0] // 32, self.__resolution_2[1] // 32, 1)
-        block_size = (self.__resolution_2[0] // grid_size[0], self.__resolution_2[1] // grid_size[1], 1)
+        self.__probability_current_buffer[0] = 0.0  # Clear buffer
         self.__kernel(
-            grid_size,
-            block_size,
+            self.__grid_size,
+            self.__block_size,
             (
                 sim_state.get_wave_function(),
                 self.__probability_current_density,
+                self.__probability_current_buffer,
 
                 cp.float32(sim_state.get_particle_mass()),
 
@@ -240,14 +263,12 @@ class PlaneProbabilityCurrent:
                 cp.float32(sim_state.get_observation_box_top_corner_bohr_radii_3()[0]),
                 cp.float32(sim_state.get_observation_box_top_corner_bohr_radii_3()[1]),
                 cp.float32(sim_state.get_observation_box_top_corner_bohr_radii_3()[2])
-            )
+            ),
+            shared_mem=self.__shared_memory_bytes
         )
-        dwdh = (self.__size_bohr_radii_2[0] / self.__resolution_2[0]
-                * self.__size_bohr_radii_2[1] / self.__resolution_2[1])
-        probability_current = cp.sum(self.__probability_current_density) * dwdh
 
         self.__probability_current_evolution = (
-            np.append(arr=self.__probability_current_evolution, values=probability_current))
+            np.append(arr=self.__probability_current_evolution, values=self.__probability_current_buffer[0]))
         self.__integrated_probability_current_evolution = np.append(
             arr=self.__integrated_probability_current_evolution,
             values=np.sum(self.__probability_current_evolution) * sim_state.get_delta_time_h_bar_per_hartree()
@@ -273,6 +294,10 @@ class ExpectedLocation:
         self.__bottom_voxel = sim_state.get_observation_box_bottom_corner_voxel_3()
         top_voxel = sim_state.get_observation_box_top_corner_voxel_3()
         shape = top_voxel - self.__bottom_voxel
+        for i in range(3):
+            if shape[i] % 2 == 1:
+                shape[i] -= 1
+                top_voxel[i] -= 1
         self.__kernel_grid_size = math_utils.get_grid_size(shape)
         self.__kernel_block_size = (shape[0] // self.__kernel_grid_size[0], shape[1] // self.__kernel_grid_size[1], shape[2] // self.__kernel_grid_size[2])
         kernel_source = (Path("sources/cuda_kernels/expected_location.cu").read_text()

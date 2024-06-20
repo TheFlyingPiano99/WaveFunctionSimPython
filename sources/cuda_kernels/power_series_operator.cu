@@ -17,7 +17,7 @@ void next_s(
 )
 {
     uint3 voxel = get_voxel_coords();
-    uint3 N = get_voxel_count();
+    uint3 N = get_voxel_count_3d();
     int idx = get_array_index();
 
     int idx_n00 = idx;

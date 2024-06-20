@@ -3,8 +3,9 @@
 
 extern "C" __global__
 void probability_current_density_kernel(
-    complex<T_WF_FLOAT>* wave_function,
-    float* __restrict__ probability_current_density,
+    complex<T_WF_FLOAT>* __restrict__ wave_function,
+    T_WF_FLOAT* __restrict__ probability_current_density,
+    T_WF_FLOAT* probabilityCurrentOut,
 
     float mass,
 
@@ -36,6 +37,7 @@ void probability_current_density_kernel(
     float bounding_top_z
 )
 {
+
     float3 delta_r = {delta_x, delta_y, delta_z};
     float3 center = {center_x, center_y, center_z};
     float3 normal = {normal_x, normal_y, normal_z};
@@ -183,9 +185,34 @@ void probability_current_density_kernel(
 
     complex<T_WF_FLOAT> iUnit = complex<T_WF_FLOAT>(0.0f, 1.0f);
     float hBar = 1.0f;
-    probability_current_density[planeIdx] = ((T_WF_FLOAT)(-hBar / 2.0f / mass) * iUnit
+    T_WF_FLOAT pcDensity = ((T_WF_FLOAT)(-hBar / 2.0f / mass) * iUnit
         * (
             conj(psi) * dPsi - psi * conj(dPsi)
         )
     ).real();
+    probability_current_density[planeIdx] = pcDensity;
+
+    // Integrate:
+    unsigned int threadId = get_block_local_idx_2d();
+    T_WF_FLOAT dW = width / (T_WF_FLOAT)(gridDim.x * blockDim.x);
+    T_WF_FLOAT dH = height / (T_WF_FLOAT)(gridDim.y * blockDim.y);
+    uint2 planePos = {blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y};
+
+    // Reduction in shared memory
+    extern __shared__ T_WF_FLOAT sdata[];
+    sdata[threadId] = pcDensity * get_simpson_coefficient_2d<T_WF_FLOAT>(planePos) * dW * dH;
+    __syncthreads();
+    unsigned int blockSize = blockDim.x * blockDim.y;
+    for (unsigned int s = 1; s < blockSize; s *= 2) {
+        if (threadId % (2 * s) == 0 && (threadId + s) < blockSize) {
+            sdata[threadId] += sdata[threadId + s];
+        }
+        __syncthreads();
+    }
+
+    // Add the values calculated by the blocks and write the result into probabilityCurrentOut
+    if (threadIdx.x == 0 && threadIdx.y == 0)
+        atomicAdd(probabilityCurrentOut, sdata[0]);
+
+
 }
