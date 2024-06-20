@@ -213,8 +213,10 @@ class PlaneProbabilityCurrent:
         self.__probability_current_evolution = np.empty(shape=0, dtype=float_type)
         self.__grid_size = (self.__resolution_2[0] // 32, self.__resolution_2[1] // 32)
         self.__block_size = (self.__resolution_2[0] // self.__grid_size[0], self.__resolution_2[1] // self.__grid_size[1])
-        print(f"Block size = {self.__block_size[0] * self.__block_size[1]}")
-        self.__shared_memory_bytes = self.__block_size[0] * self.__block_size[1] * (8 if sim_state.is_double_precision_calculation() else 4)
+        self.__shared_memory_bytes = self.__block_size[0] * self.__block_size[1] * cp.dtype(float_type).itemsize
+        print(f"Shared mem size = {self.__shared_memory_bytes} bytes")
+        print(f"Block count = {self.__grid_size}")
+        print(f"Thread count = {self.__block_size}")
 
     def get_name(self):
         return self.__name

@@ -57,150 +57,151 @@ void probability_current_density_kernel(
 
     float3 r = center + right * (width * (u - 0.5f)) + up * (height * (v - 0.5f));
     int planeIdx = get_array_index();
+    T_WF_FLOAT pcDensity;
     if (r.x < bounding_bottom_x || r.x > bounding_top_x
     || r.y < bounding_bottom_y || r.y > bounding_top_y
     || r.z < bounding_bottom_z || r.z > bounding_top_z) // Terminate if outside the bounding box
     {
-        probability_current_density[planeIdx] = 0.0f;
-        return;
+        pcDensity = 0.0f;
     }
+    else {
+        float3 fVoxel = r / delta_r + 0.5f * float3{(float)N.x, (float)N.y, (float)N.z};
+        uint3 voxel = {(unsigned int)fVoxel.x, (unsigned int)fVoxel.y, (unsigned int)fVoxel.z};
 
-    float3 fVoxel = r / delta_r + 0.5f * float3{(float)N.x, (float)N.y, (float)N.z};
-    uint3 voxel = {(unsigned int)fVoxel.x, (unsigned int)fVoxel.y, (unsigned int)fVoxel.z};
+        // Calculate array indices:
 
-    // Calculate array indices:
+        int idx = get_array_index(voxel, N);
 
-    int idx = get_array_index(voxel, N);
+        // 1th step:
+        int idx_n00 = idx;
+        if (voxel.x > 0) {
+            idx_n00 = get_array_index({voxel.x - 1, voxel.y, voxel.z}, N);
+        }
+        int idx_p00 = idx;
+        if (voxel.x < N.x - 1) {
+            idx_p00 = get_array_index({voxel.x + 1, voxel.y, voxel.z}, N);
+        }
+        int idx_0n0 = idx;
+        if (voxel.y > 0) {
+            idx_0n0 = get_array_index({voxel.x, voxel.y - 1, voxel.z}, N);
+        }
+        int idx_0p0 = idx;
+        if (voxel.y < N.y - 1) {
+            idx_0p0 = get_array_index({voxel.x, voxel.y + 1, voxel.z}, N);
+        }
+        int idx_00n = idx;
+        if (voxel.z > 0) {
+            idx_00n = get_array_index({voxel.x, voxel.y, voxel.z - 1}, N);
+        }
+        int idx_00p = idx;
+        if (voxel.z < N.z - 1) {
+            idx_00p = get_array_index({voxel.x, voxel.y, voxel.z + 1}, N);
+        }
 
-    // 1th step:
-    int idx_n00 = idx;
-    if (voxel.x > 0) {
-        idx_n00 = get_array_index({voxel.x - 1, voxel.y, voxel.z}, N);
-    }
-    int idx_p00 = idx;
-    if (voxel.x < N.x - 1) {
-        idx_p00 = get_array_index({voxel.x + 1, voxel.y, voxel.z}, N);
-    }
-    int idx_0n0 = idx;
-    if (voxel.y > 0) {
-        idx_0n0 = get_array_index({voxel.x, voxel.y - 1, voxel.z}, N);
-    }
-    int idx_0p0 = idx;
-    if (voxel.y < N.y - 1) {
-        idx_0p0 = get_array_index({voxel.x, voxel.y + 1, voxel.z}, N);
-    }
-    int idx_00n = idx;
-    if (voxel.z > 0) {
-        idx_00n = get_array_index({voxel.x, voxel.y, voxel.z - 1}, N);
-    }
-    int idx_00p = idx;
-    if (voxel.z < N.z - 1) {
-        idx_00p = get_array_index({voxel.x, voxel.y, voxel.z + 1}, N);
-    }
+        // 2nd step:
+        int idx_2_n00 = idx;
+        if (voxel.x > 1) {
+            idx_2_n00 = get_array_index({voxel.x - 2, voxel.y, voxel.z}, N);
+        }
+        int idx_2_p00 = idx;
+        if (voxel.x < N.x - 2) {
+            idx_2_p00 = get_array_index({voxel.x + 2, voxel.y, voxel.z}, N);
+        }
+        int idx_2_0n0 = idx;
+        if (voxel.y > 1) {
+            idx_2_0n0 = get_array_index({voxel.x, voxel.y - 2, voxel.z}, N);
+        }
+        int idx_2_0p0 = idx;
+        if (voxel.y < N.y - 2) {
+            idx_2_0p0 = get_array_index({voxel.x, voxel.y + 2, voxel.z}, N);
+        }
+        int idx_2_00n = idx;
+        if (voxel.z > 1) {
+            idx_2_00n = get_array_index({voxel.x, voxel.y, voxel.z - 2}, N);
+        }
+        int idx_2_00p = idx;
+        if (voxel.z < N.z - 2) {
+            idx_2_00p = get_array_index({voxel.x, voxel.y, voxel.z + 2}, N);
+        }
 
-    // 2nd step:
-    int idx_2_n00 = idx;
-    if (voxel.x > 1) {
-        idx_2_n00 = get_array_index({voxel.x - 2, voxel.y, voxel.z}, N);
-    }
-    int idx_2_p00 = idx;
-    if (voxel.x < N.x - 2) {
-        idx_2_p00 = get_array_index({voxel.x + 2, voxel.y, voxel.z}, N);
-    }
-    int idx_2_0n0 = idx;
-    if (voxel.y > 1) {
-        idx_2_0n0 = get_array_index({voxel.x, voxel.y - 2, voxel.z}, N);
-    }
-    int idx_2_0p0 = idx;
-    if (voxel.y < N.y - 2) {
-        idx_2_0p0 = get_array_index({voxel.x, voxel.y + 2, voxel.z}, N);
-    }
-    int idx_2_00n = idx;
-    if (voxel.z > 1) {
-        idx_2_00n = get_array_index({voxel.x, voxel.y, voxel.z - 2}, N);
-    }
-    int idx_2_00p = idx;
-    if (voxel.z < N.z - 2) {
-        idx_2_00p = get_array_index({voxel.x, voxel.y, voxel.z + 2}, N);
-    }
+        // 3nd step:
+        int idx_3_n00 = idx;
+        if (voxel.x > 2) {
+            idx_3_n00 = get_array_index({voxel.x - 3, voxel.y, voxel.z}, N);
+        }
+        int idx_3_p00 = idx;
+        if (voxel.x < N.x - 3) {
+            idx_3_p00 = get_array_index({voxel.x + 3, voxel.y, voxel.z}, N);
+        }
+        int idx_3_0n0 = idx;
+        if (voxel.y > 2) {
+            idx_3_0n0 = get_array_index({voxel.x, voxel.y - 3, voxel.z}, N);
+        }
+        int idx_3_0p0 = idx;
+        if (voxel.y < N.y - 3) {
+            idx_3_0p0 = get_array_index({voxel.x, voxel.y + 3, voxel.z}, N);
+        }
+        int idx_3_00n = idx;
+        if (voxel.z > 2) {
+            idx_3_00n = get_array_index({voxel.x, voxel.y, voxel.z - 3}, N);
+        }
+        int idx_3_00p = idx;
+        if (voxel.z < N.z - 3) {
+            idx_3_00p = get_array_index({voxel.x, voxel.y, voxel.z + 3}, N);
+        }
 
-    // 3nd step:
-    int idx_3_n00 = idx;
-    if (voxel.x > 2) {
-        idx_3_n00 = get_array_index({voxel.x - 3, voxel.y, voxel.z}, N);
-    }
-    int idx_3_p00 = idx;
-    if (voxel.x < N.x - 3) {
-        idx_3_p00 = get_array_index({voxel.x + 3, voxel.y, voxel.z}, N);
-    }
-    int idx_3_0n0 = idx;
-    if (voxel.y > 2) {
-        idx_3_0n0 = get_array_index({voxel.x, voxel.y - 3, voxel.z}, N);
-    }
-    int idx_3_0p0 = idx;
-    if (voxel.y < N.y - 3) {
-        idx_3_0p0 = get_array_index({voxel.x, voxel.y + 3, voxel.z}, N);
-    }
-    int idx_3_00n = idx;
-    if (voxel.z > 2) {
-        idx_3_00n = get_array_index({voxel.x, voxel.y, voxel.z - 3}, N);
-    }
-    int idx_3_00p = idx;
-    if (voxel.z < N.z - 3) {
-        idx_3_00p = get_array_index({voxel.x, voxel.y, voxel.z + 3}, N);
-    }
+        // Sample:
 
-    // Sample:
+        // 1th step:
+        complex<T_WF_FLOAT> psi = wave_function[idx];
+        complex<T_WF_FLOAT> wf_n00 = wave_function[idx_n00];
+        complex<T_WF_FLOAT> wf_p00 = wave_function[idx_p00];
+        complex<T_WF_FLOAT> wf_0n0 = wave_function[idx_0n0];
+        complex<T_WF_FLOAT> wf_0p0 = wave_function[idx_0p0];
+        complex<T_WF_FLOAT> wf_00n = wave_function[idx_00n];
+        complex<T_WF_FLOAT> wf_00p = wave_function[idx_00p];
 
-    // 1th step:
-    complex<T_WF_FLOAT> psi = wave_function[idx];
-    complex<T_WF_FLOAT> wf_n00 = wave_function[idx_n00];
-    complex<T_WF_FLOAT> wf_p00 = wave_function[idx_p00];
-    complex<T_WF_FLOAT> wf_0n0 = wave_function[idx_0n0];
-    complex<T_WF_FLOAT> wf_0p0 = wave_function[idx_0p0];
-    complex<T_WF_FLOAT> wf_00n = wave_function[idx_00n];
-    complex<T_WF_FLOAT> wf_00p = wave_function[idx_00p];
+        // 2th step:
+        complex<T_WF_FLOAT> wf_2_n00 = wave_function[idx_2_n00];
+        complex<T_WF_FLOAT> wf_2_p00 = wave_function[idx_2_p00];
+        complex<T_WF_FLOAT> wf_2_0n0 = wave_function[idx_2_0n0];
+        complex<T_WF_FLOAT> wf_2_0p0 = wave_function[idx_2_0p0];
+        complex<T_WF_FLOAT> wf_2_00n = wave_function[idx_2_00n];
+        complex<T_WF_FLOAT> wf_2_00p = wave_function[idx_2_00p];
 
-    // 2th step:
-    complex<T_WF_FLOAT> wf_2_n00 = wave_function[idx_2_n00];
-    complex<T_WF_FLOAT> wf_2_p00 = wave_function[idx_2_p00];
-    complex<T_WF_FLOAT> wf_2_0n0 = wave_function[idx_2_0n0];
-    complex<T_WF_FLOAT> wf_2_0p0 = wave_function[idx_2_0p0];
-    complex<T_WF_FLOAT> wf_2_00n = wave_function[idx_2_00n];
-    complex<T_WF_FLOAT> wf_2_00p = wave_function[idx_2_00p];
+        // 3th step:
+        complex<T_WF_FLOAT> wf_3_n00 = wave_function[idx_3_n00];
+        complex<T_WF_FLOAT> wf_3_p00 = wave_function[idx_3_p00];
+        complex<T_WF_FLOAT> wf_3_0n0 = wave_function[idx_3_0n0];
+        complex<T_WF_FLOAT> wf_3_0p0 = wave_function[idx_3_0p0];
+        complex<T_WF_FLOAT> wf_3_00n = wave_function[idx_3_00n];
+        complex<T_WF_FLOAT> wf_3_00p = wave_function[idx_3_00p];
 
-    // 3th step:
-    complex<T_WF_FLOAT> wf_3_n00 = wave_function[idx_3_n00];
-    complex<T_WF_FLOAT> wf_3_p00 = wave_function[idx_3_p00];
-    complex<T_WF_FLOAT> wf_3_0n0 = wave_function[idx_3_0n0];
-    complex<T_WF_FLOAT> wf_3_0p0 = wave_function[idx_3_0p0];
-    complex<T_WF_FLOAT> wf_3_00n = wave_function[idx_3_00n];
-    complex<T_WF_FLOAT> wf_3_00p = wave_function[idx_3_00p];
+        // Gradient:
+        complex<T_WF_FLOAT> dX = -(-wf_3_p00 + (T_WF_FLOAT)9.0 * wf_2_p00 - (T_WF_FLOAT)45.0 * wf_p00 + (T_WF_FLOAT)45.0 * wf_n00 - (T_WF_FLOAT)9.0 * wf_2_n00 + wf_3_n00) / (T_WF_FLOAT)60.0 / (T_WF_FLOAT)delta_x;
+        complex<T_WF_FLOAT> dY = -(-wf_3_0p0 + (T_WF_FLOAT)9.0 * wf_2_0p0 - (T_WF_FLOAT)45.0 * wf_0p0 + (T_WF_FLOAT)45.0 * wf_0n0 - (T_WF_FLOAT)9.0 * wf_2_0n0 + wf_3_0n0) / (T_WF_FLOAT)60.0 / (T_WF_FLOAT)delta_y;
+        complex<T_WF_FLOAT> dZ = -(-wf_3_00p + (T_WF_FLOAT)9.0 * wf_2_00p - (T_WF_FLOAT)45.0 * wf_00p + (T_WF_FLOAT)45.0 * wf_00n - (T_WF_FLOAT)9.0 * wf_2_00n + wf_3_00n) / (T_WF_FLOAT)60.0 / (T_WF_FLOAT)delta_z;
+        complex<T_WF_FLOAT> dPsi = (T_WF_FLOAT)normal.x * dX + (T_WF_FLOAT)normal.y * dY + (T_WF_FLOAT)normal.z * dZ;
 
-    // Gradient:
-    complex<T_WF_FLOAT> dX = -(-wf_3_p00 + (T_WF_FLOAT)9.0 * wf_2_p00 - (T_WF_FLOAT)45.0 * wf_p00 + (T_WF_FLOAT)45.0 * wf_n00 - (T_WF_FLOAT)9.0 * wf_2_n00 + wf_3_n00) / (T_WF_FLOAT)60.0 / (T_WF_FLOAT)delta_x;
-    complex<T_WF_FLOAT> dY = -(-wf_3_0p0 + (T_WF_FLOAT)9.0 * wf_2_0p0 - (T_WF_FLOAT)45.0 * wf_0p0 + (T_WF_FLOAT)45.0 * wf_0n0 - (T_WF_FLOAT)9.0 * wf_2_0n0 + wf_3_0n0) / (T_WF_FLOAT)60.0 / (T_WF_FLOAT)delta_y;
-    complex<T_WF_FLOAT> dZ = -(-wf_3_00p + (T_WF_FLOAT)9.0 * wf_2_00p - (T_WF_FLOAT)45.0 * wf_00p + (T_WF_FLOAT)45.0 * wf_00n - (T_WF_FLOAT)9.0 * wf_2_00n + wf_3_00n) / (T_WF_FLOAT)60.0 / (T_WF_FLOAT)delta_z;
-    complex<T_WF_FLOAT> dPsi = (T_WF_FLOAT)normal.x * dX + (T_WF_FLOAT)normal.y * dY + (T_WF_FLOAT)normal.z * dZ;
-
-    complex<T_WF_FLOAT> iUnit = complex<T_WF_FLOAT>(0.0f, 1.0f);
-    float hBar = 1.0f;
-    T_WF_FLOAT pcDensity = ((T_WF_FLOAT)(-hBar / 2.0f / mass) * iUnit
-        * (
-            conj(psi) * dPsi - psi * conj(dPsi)
-        )
-    ).real();
+        complex<T_WF_FLOAT> iUnit = complex<T_WF_FLOAT>(0.0f, 1.0f);
+        float hBar = 1.0f;
+        pcDensity = ((T_WF_FLOAT)(-hBar / 2.0f / mass) * iUnit
+            * (
+                conj(psi) * dPsi - psi * conj(dPsi)
+            )
+        ).real();
+    }
     probability_current_density[planeIdx] = pcDensity;
 
     // Integrate:
     unsigned int threadId = get_block_local_idx_2d();
     T_WF_FLOAT dW = width / (T_WF_FLOAT)(gridDim.x * blockDim.x);
     T_WF_FLOAT dH = height / (T_WF_FLOAT)(gridDim.y * blockDim.y);
-    uint2 planePos = {blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y};
+    uint2 pixel = {blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y};
 
     // Reduction in shared memory
     extern __shared__ T_WF_FLOAT sdata[];
-    sdata[threadId] = pcDensity * get_simpson_coefficient_2d<T_WF_FLOAT>(planePos) * dW * dH;
+    sdata[threadId] = pcDensity * get_simpson_coefficient_2d<T_WF_FLOAT>(pixel) * dW * dH;
     __syncthreads();
     unsigned int blockSize = blockDim.x * blockDim.y;
     for (unsigned int s = 1; s < blockSize; s *= 2) {
@@ -211,8 +212,6 @@ void probability_current_density_kernel(
     }
 
     // Add the values calculated by the blocks and write the result into probabilityCurrentOut
-    if (threadIdx.x == 0 && threadIdx.y == 0)
+    if (threadId == 0)
         atomicAdd(probabilityCurrentOut, sdata[0]);
-
-
 }

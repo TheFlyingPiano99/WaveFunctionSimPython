@@ -325,19 +325,19 @@ __device__ T get_simpson_coefficient_3d(const uint3& voxel)
 }
 
 template<typename T>
-__device__ T get_simpson_coefficient_2d(const uint2& voxel)
+__device__ T get_simpson_coefficient_2d(const uint2& pixel)
 {
     uint2 n = get_voxel_count_2d();    // In the integrated volume
     T sX = 1.0f;
-    if (voxel.x > 0 && voxel.x < n.x - 1) {
-        if (voxel.x % 2 == 0)
+    if (pixel.x > 0 && pixel.x < n.x - 1) {
+        if (pixel.x % 2 == 0)
             sX = 2.0;
         else
             sX = 4.0;
     }
     T sY = 1.0f;
-    if (voxel.y > 0 && voxel.y < n.y - 1) {
-        if (voxel.y % 2 == 0)
+    if (pixel.y > 0 && pixel.y < n.y - 1) {
+        if (pixel.y % 2 == 0)
             sY = 2.0;
         else
             sY = 4.0;

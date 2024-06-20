@@ -50,7 +50,7 @@ void expected_location_kernel(
     }
 
     // Add the values calculated by the blocks and write the result into output buffer:
-    if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
+    if (threadId == 0)
         atomicAdd(&expected_location[0], sdata[0].x);
         atomicAdd(&expected_location[1], sdata[0].y);
         atomicAdd(&expected_location[2], sdata[0].z);

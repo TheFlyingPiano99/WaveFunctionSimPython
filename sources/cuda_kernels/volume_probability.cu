@@ -45,6 +45,6 @@ void volume_probability_kernel(
     }
 
     // Add the values calculated by the blocks and write the result into probability
-    if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
+    if (threadId == 0)
         atomicAdd(probability, sdata[0]);
 }
