@@ -177,10 +177,12 @@ class PlaneProbabilityCurrent:
     __probability_current_density: cp.ndarray
     __probability_current_buffer: cp.array
     __probability_current_evolution: np.array
-    __integrated_probability_current_evolution: np.array = np.empty(shape=0, dtype=np.float32)
+    __integrated_probability_current_evolution: np.array
     __grid_size: np.array
     __block_size: np.array
     __shared_memory_bytes: int
+    __integrated_probability_current: float = 0.0
+    __iteration: int = 0
 
     def __init__(self, config: Dict, sim_state: SimState):
         self.__name = try_read_param(config, "name", "Probability current", "measurement.plane_probability_currents")
@@ -209,8 +211,9 @@ class PlaneProbabilityCurrent:
         )
         float_type = (cp.float64 if sim_state.is_double_precision_calculation() else cp.float32)
         self.__probability_current_density = cp.zeros(shape=[self.__resolution_2[0], self.__resolution_2[1]], dtype=float_type)
-        self.__probability_current_buffer = cp.array([1], dtype=float_type)
+        self.__probability_current_buffer = cp.array([0.0], dtype=float_type)
         self.__probability_current_evolution = np.empty(shape=0, dtype=float_type)
+        self.__integrated_probability_current_evolution = np.empty(shape=0, dtype=np.float64)
         self.__grid_size = (self.__resolution_2[0] // 32, self.__resolution_2[1] // 32)
         self.__block_size = (self.__resolution_2[0] // self.__grid_size[0], self.__resolution_2[1] // self.__grid_size[1])
         self.__shared_memory_bytes = self.__block_size[0] * self.__block_size[1] * cp.dtype(float_type).itemsize
@@ -271,10 +274,19 @@ class PlaneProbabilityCurrent:
 
         self.__probability_current_evolution = (
             np.append(arr=self.__probability_current_evolution, values=self.__probability_current_buffer[0]))
-        self.__integrated_probability_current_evolution = np.append(
-            arr=self.__integrated_probability_current_evolution,
-            values=np.sum(self.__probability_current_evolution) * sim_state.get_delta_time_h_bar_per_hartree()
-        )
+
+        if self.__iteration % 2 == 0 and self.__iteration >= 2:
+            self.__integrated_probability_current += (
+                    self.__probability_current_evolution[self.__iteration - 2] +
+                    4.0 * self.__probability_current_evolution[self.__iteration - 1] +
+                    self.__probability_current_evolution[self.__iteration]
+                                                     ) / 3.0 * sim_state.get_delta_time_h_bar_per_hartree()
+        if self.__iteration % 2 == 0:
+            self.__integrated_probability_current_evolution = np.append(
+                arr=self.__integrated_probability_current_evolution,
+                values=self.__integrated_probability_current
+            )
+        self.__iteration += 1
 
     def get_probability_current_evolution_with_name(self):
         return self.__probability_current_evolution, self.__name
@@ -688,7 +700,7 @@ class MeasurementTools:
                 title="Integrated probability current evolution",
                 y_label="Probability",
                 probability_evolutions=integrated_probability_current_evolutions,
-                delta_t=sim_state.get_delta_time_h_bar_per_hartree(),
+                delta_t=2.0 * sim_state.get_delta_time_h_bar_per_hartree(),
                 show_fig=self.__show_figures,
                 y_min=-1.1,
                 y_max=1.1
