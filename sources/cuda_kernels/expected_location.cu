@@ -5,9 +5,9 @@ void expected_location_kernel(
     complex<T_WF_FLOAT>* wave_function,
     T_WF_FLOAT* expected_location,
 
-    float delta_x,
-    float delta_y,
-    float delta_z,
+    T_WF_FLOAT delta_x,
+    T_WF_FLOAT delta_y,
+    T_WF_FLOAT delta_z,
 
     int bottom_voxel_x,
     int bottom_voxel_y,
@@ -25,9 +25,9 @@ void expected_location_kernel(
 
     // Position operator:
     T_WF_FLOAT3 r = {
-        delta_x * (T_WF_FLOAT)((int)voxel.x + bottom_voxel_x - voxel_count_x / 2),
-        delta_y * (T_WF_FLOAT)((int)voxel.y + bottom_voxel_y - voxel_count_y / 2),
-        delta_z * (T_WF_FLOAT)((int)voxel.z + bottom_voxel_z - voxel_count_z / 2)
+        delta_r.x * (T_WF_FLOAT)((int)voxel.x + bottom_voxel_x - voxel_count_x / 2),
+        delta_r.y * (T_WF_FLOAT)((int)voxel.y + bottom_voxel_y - voxel_count_y / 2),
+        delta_r.z * (T_WF_FLOAT)((int)voxel.z + bottom_voxel_z - voxel_count_z / 2)
     };
 
     unsigned int wf_idx = get_array_index(

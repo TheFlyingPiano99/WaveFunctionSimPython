@@ -94,12 +94,12 @@ class GaussianWavePacket(WavePacket):
             self,
             delta_x_bohr_radii_3: np.array,
             shape: np.shape,
-            double_precision_calculation: bool = False
+            double_precision: bool = False
     ):
         wave_packet_kernel_source = (Path("sources/cuda_kernels/gaussian_wave_packet.cu").read_text().replace(
             "PATH_TO_SOURCES", os.path.abspath("sources"))
-                 .replace("T_WF_FLOAT",
-                          "double" if double_precision_calculation else "float"))
+                                     .replace("T_WF_FLOAT",
+                          "double" if double_precision else "float"))
 
         wave_packet_kernel = cp.RawKernel(wave_packet_kernel_source,
                                           'wave_packet_kernel',
@@ -107,26 +107,34 @@ class GaussianWavePacket(WavePacket):
         grid_size = math_utils.get_grid_size(shape)
 
         block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
-        wave_tensor = cp.zeros(shape=shape, dtype=(cp.complex128 if double_precision_calculation else cp.complex64))   # Prepare an empty tensor
+        # Prepare an empty tensor:
+        wave_tensor = cp.zeros(shape=shape, dtype=(cp.complex128 if double_precision else cp.complex64))
         wave_packet_kernel(
             grid_size,
             block_size,
             (
                 wave_tensor,
 
-                cp.float32(delta_x_bohr_radii_3[0]),
-                cp.float32(delta_x_bohr_radii_3[1]),
-                cp.float32(delta_x_bohr_radii_3[2]),
+                (cp.float64(delta_x_bohr_radii_3[0]) if double_precision else cp.float32(delta_x_bohr_radii_3[0])),
+                (cp.float64(delta_x_bohr_radii_3[1]) if double_precision else cp.float32(delta_x_bohr_radii_3[1])),
+                (cp.float64(delta_x_bohr_radii_3[2]) if double_precision else cp.float32(delta_x_bohr_radii_3[2])),
 
-                cp.float32(self.__initial_wp_width_bohr_radii * 2.0),
+                (cp.float64(self.__initial_wp_width_bohr_radii * 2.0) if double_precision
+                    else cp.float32(self.__initial_wp_width_bohr_radii * 2.0)),
 
-                cp.float32(self._initial_wp_position_bohr_radii_3[0]),
-                cp.float32(self._initial_wp_position_bohr_radii_3[1]),
-                cp.float32(self._initial_wp_position_bohr_radii_3[2]),
+                (cp.float64(self._initial_wp_position_bohr_radii_3[0]) if double_precision
+                    else cp.float32(self._initial_wp_position_bohr_radii_3[0])),
+                (cp.float64(self._initial_wp_position_bohr_radii_3[1]) if double_precision
+                    else cp.float32(self._initial_wp_position_bohr_radii_3[1])),
+                (cp.float64(self._initial_wp_position_bohr_radii_3[2]) if double_precision
+                    else cp.float32(self._initial_wp_position_bohr_radii_3[2])),
 
-                cp.float32(self._initial_wp_momentum_h_per_bohr_radii_3[0]),
-                cp.float32(self._initial_wp_momentum_h_per_bohr_radii_3[1]),
-                cp.float32(self._initial_wp_momentum_h_per_bohr_radii_3[2])
+                (cp.float64(self._initial_wp_momentum_h_per_bohr_radii_3[0]) if double_precision
+                    else cp.float32(self._initial_wp_momentum_h_per_bohr_radii_3[0])),
+                (cp.float64(self._initial_wp_momentum_h_per_bohr_radii_3[1]) if double_precision
+                    else cp.float32(self._initial_wp_momentum_h_per_bohr_radii_3[1])),
+                (cp.float64(self._initial_wp_momentum_h_per_bohr_radii_3[2]) if double_precision
+                    else cp.float32(self._initial_wp_momentum_h_per_bohr_radii_3[2]))
             )
         )
         return wave_tensor

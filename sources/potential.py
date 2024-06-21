@@ -481,7 +481,7 @@ def generate_potential_from_walls_and_drain(V: cp.ndarray, V_vis: cp.ndarray, de
             V=V,
             delta_x_3=delta_x_3,
         )
-    V_vis = V.copy()
+    #V_vis = V.copy()
     absorbing_pontetial.add_potential(
         V,
         delta_x_3=delta_x_3,

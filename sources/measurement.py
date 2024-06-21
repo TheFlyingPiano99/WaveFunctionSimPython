@@ -98,14 +98,15 @@ class VolumeProbability:
         self.__bottom_voxel = sim_state.transform_physical_coordinate_to_voxel_3(self.__bottom_corner_bohr_radii_3)
         top_voxel = sim_state.transform_physical_coordinate_to_voxel_3(self.__top_corner_bohr_radii_3)
         volume_probability_kernel_source = (Path("sources/cuda_kernels/volume_probability.cu")
-                                              .read_text().replace("PATH_TO_SOURCES", os.path.abspath("sources"))
-                                              .replace("T_WF_FLOAT",
-                                                       "double" if sim_state.is_double_precision_calculation() else "float"))
+                                            .read_text().replace("PATH_TO_SOURCES", os.path.abspath("sources"))
+                                            .replace("T_WF_FLOAT",
+                                                       "double" if sim_state.is_double_precision() else "float"))
 
         shape = top_voxel - self.__bottom_voxel
         for i in range(3):
             # Offset boundary if odd voxels are included. (Because of the Simpson integration scheme.)
             if (shape[i] % 2 == 1):
+                print(Fore.RED + f"Truncating volume probability area along {i}. axis!" + Style.RESET_ALL)
                 shape[i] -= 1
                 top_voxel[i] -= 1
 
@@ -116,7 +117,8 @@ class VolumeProbability:
             volume_probability_kernel_source,
             "volume_probability_kernel",
         )
-        self.__probability_buffer = cp.array([0.0], dtype=cp.float32)
+        dtype = cp.float64 if sim_state.is_double_precision() else cp.float32
+        self.__probability_buffer = cp.array([0.0], dtype=dtype)
         if self.__enable_image:
             print(f"{self.__name} bottom voxel (included in calc.): ({self.__bottom_voxel[0]}, {self.__bottom_voxel[1]}, {self.__bottom_voxel[2]})")
             print(f"{self.__name} top voxel (not included in calc.): ({top_voxel[0]}, {top_voxel[1]}, {top_voxel[2]})")
@@ -134,6 +136,7 @@ class VolumeProbability:
         wave_function = sim_state.get_wave_function()
         delta_r = sim_state.get_delta_x_bohr_radii_3()
         N = sim_state.get_number_of_voxels_3()
+        dp = sim_state.is_double_precision()
         self.__probability_buffer[0] = 0.0
         self.__volume_probability_kernel(
             self.__kernel_grid_size,
@@ -142,9 +145,9 @@ class VolumeProbability:
                 wave_function,
                 self.__probability_buffer,
 
-                cp.float32(delta_r[0]),
-                cp.float32(delta_r[1]),
-                cp.float32(delta_r[2]),
+                cp.float64(delta_r[0]) if dp else cp.float32(delta_r[0]),
+                cp.float64(delta_r[1]) if dp else cp.float32(delta_r[1]),
+                cp.float64(delta_r[2]) if dp else cp.float32(delta_r[2]),
 
                 cp.uint32(self.__bottom_voxel[0]),
                 cp.uint32(self.__bottom_voxel[1]),
@@ -204,12 +207,12 @@ class PlaneProbabilityCurrent:
             Path("sources/cuda_kernels/probability_current_density.cu").read_text().replace("PATH_TO_SOURCES",
                                                                                             os.path.abspath("sources"))
             .replace("T_WF_FLOAT",
-                     "double" if sim_state.is_double_precision_calculation() else "float"))
+                     "double" if sim_state.is_double_precision() else "float"))
         self.__kernel = cp.RawKernel(
             probability_current_density_kernel,
             "probability_current_density_kernel"
         )
-        float_type = (cp.float64 if sim_state.is_double_precision_calculation() else cp.float32)
+        float_type = (cp.float64 if sim_state.is_double_precision() else cp.float32)
         self.__probability_current_density = cp.zeros(shape=[self.__resolution_2[0], self.__resolution_2[1]], dtype=float_type)
         self.__probability_current_buffer = cp.array([0.0], dtype=float_type)
         self.__probability_current_evolution = np.empty(shape=0, dtype=float_type)
@@ -315,14 +318,14 @@ class ExpectedLocation:
         self.__kernel_grid_size = math_utils.get_grid_size(shape)
         self.__kernel_block_size = (shape[0] // self.__kernel_grid_size[0], shape[1] // self.__kernel_grid_size[1], shape[2] // self.__kernel_grid_size[2])
         kernel_source = (Path("sources/cuda_kernels/expected_location.cu").read_text()
-            .replace("PATH_TO_SOURCES", os.path.abspath("sources"))
-            .replace("T_WF_FLOAT", "double" if sim_state.is_double_precision_calculation() else "float"))
+                         .replace("PATH_TO_SOURCES", os.path.abspath("sources"))
+                         .replace("T_WF_FLOAT", "double" if sim_state.is_double_precision() else "float"))
 
         self.__kernel = cp.RawKernel(
             kernel_source,
             "expected_location_kernel",
         )
-        self.__expected_location_buffer = cp.array([0.0, 0.0, 0.0], dtype=cp.float64 if sim_state.is_double_precision_calculation() else cp.float32)
+        self.__expected_location_buffer = cp.array([0.0, 0.0, 0.0], dtype=cp.float64 if sim_state.is_double_precision() else cp.float32)
 
     def is_enable_image(self):
         return self.__enable_image
@@ -335,6 +338,7 @@ class ExpectedLocation:
         wave_function = sim_state.get_wave_function()
         delta_r = sim_state.get_delta_x_bohr_radii_3()
         N = sim_state.get_number_of_voxels_3()
+        dp = sim_state.is_double_precision()
         self.__kernel(
             self.__kernel_grid_size,
             self.__kernel_block_size,
@@ -342,9 +346,9 @@ class ExpectedLocation:
                 wave_function,
                 self.__expected_location_buffer,
 
-                cp.float32(delta_r[0]),
-                cp.float32(delta_r[1]),
-                cp.float32(delta_r[2]),
+                (cp.float64(delta_r[0]) if dp else cp.float32(delta_r[0])),
+                (cp.float64(delta_r[1]) if dp else cp.float32(delta_r[1])),
+                (cp.float64(delta_r[2]) if dp else cp.float32(delta_r[2])),
 
                 cp.int32(self.__bottom_voxel[0]),
                 cp.int32(self.__bottom_voxel[1]),
@@ -656,6 +660,12 @@ class MeasurementTools:
             if v.is_enable_image():
                 volume_probability_evolutions.append(v.get_probability_evolution_with_name())
         if len(volume_probability_evolutions) > 0:
+            sum = np.array(
+                np.zeros(shape=volume_probability_evolutions[0][0].shape, dtype=volume_probability_evolutions[0][0].dtype).tolist()
+            )
+            for evolution in volume_probability_evolutions:
+                sum = np.add(sum, np.array(evolution[0].tolist()))
+            volume_probability_evolutions.append([sum, "Sum"])
             plot.plot_probability_evolution(
                 out_dir=sim_state.get_output_dir(),
                 file_name="volume_probability_evolution.png",

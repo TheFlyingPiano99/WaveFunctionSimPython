@@ -6,9 +6,9 @@ void volume_probability_kernel(
     complex<T_WF_FLOAT>* wave_function,
     T_WF_FLOAT* probability,
 
-    float delta_x,
-    float delta_y,
-    float delta_z,
+    T_WF_FLOAT delta_x,
+    T_WF_FLOAT delta_y,
+    T_WF_FLOAT delta_z,
 
     unsigned int bottom_voxel_x,
     unsigned int bottom_voxel_y,
@@ -21,7 +21,7 @@ void volume_probability_kernel(
 {
     extern __shared__ T_WF_FLOAT sdata[];
 
-    float3 delta_r = {delta_x, delta_y, delta_z};
+    T_WF_FLOAT3 delta_r = {delta_x, delta_y, delta_z};
     uint3 voxel = get_voxel_coords();   // In the integrated volume
     uint3 n = get_voxel_count_3d();    // In the integrated volume
     unsigned int wf_idx = get_array_index(

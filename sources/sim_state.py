@@ -43,7 +43,7 @@ class SimState:
     __cache_dir: str = ""
     __use_cache: bool = True
     __enable_visual_output: bool = True
-    __double_precision_calculation: bool = False
+    __double_precision: bool = False
     __enable_wave_function_saving: bool = True
     __wave_function_save_iteration_interval: int = 1
     __absorbing_boundary_condition: potential.AbsorbingBoundaryCondition = None
@@ -80,7 +80,7 @@ class SimState:
         self.__is_dynamic_potential_mode = try_read_param(config, "simulation.is_dynamic_potential_mode", True)
         self.__enable_wave_function_saving = try_read_param(config, "simulation.enable_wave_function_saving", False)
         self.__wave_function_save_iteration_interval = try_read_param(config, "simulation.wave_function_save_iteration_interval", 1)
-        self.__double_precision_calculation = try_read_param(config, "simulation.double_precision_calculation", False)
+        self.__double_precision = try_read_param(config, "simulation.double_precision_calculation", False)
 
         # Wave packet:
         self.__wave_packet = wave_packet.GaussianWavePacket(config)
@@ -205,7 +205,7 @@ class SimState:
                 self.__wave_packet.init_wave_packet(
                     self.__delta_x_bohr_radii_3,
                     self.__number_of_voxels_3,
-                    self.__double_precision_calculation
+                    self.__double_precision
                 )
             )
             cp.save(file=os.path.join(self.__cache_dir, "gaussian_wave_packet.npy"), arr=self.__wave_tensor)
@@ -273,7 +273,7 @@ class SimState:
             kinetic_operator_kernel_source = (Path("sources/cuda_kernels/kinetic_operator.cu")
                                               .read_text().replace("PATH_TO_SOURCES", os.path.abspath("sources"))
                                               .replace("T_WF_FLOAT",
-                                                       "double" if self.__double_precision_calculation else "float"))
+                                                       "double" if self.__double_precision else "float"))
 
             self.__kinetic_operator_kernel = cp.RawKernel(kinetic_operator_kernel_source,
                                                    'kinetic_operator_kernel',
@@ -281,21 +281,21 @@ class SimState:
             potential_operator_kernel_source = (Path("sources/cuda_kernels/potential_operator.cu")
                                                 .read_text().replace("PATH_TO_SOURCES", os.path.abspath("sources"))
                                                 .replace("T_WF_FLOAT",
-                                                         "double" if self.__double_precision_calculation else "float"))
+                                                         "double" if self.__double_precision else "float"))
             self.__potential_operator_kernel = cp.RawKernel(potential_operator_kernel_source,
                                                    'potential_operator_kernel',
                                                    enable_cooperative_groups=False)
             self.__wave_numbers = []
-            self.__wave_numbers.append(cp.fft.fftfreq(n=shape[0], d=self.__delta_x_bohr_radii_3[0]))
-            self.__wave_numbers.append(cp.fft.fftfreq(n=shape[1], d=self.__delta_x_bohr_radii_3[1]))
-            self.__wave_numbers.append(cp.fft.fftfreq(n=shape[2], d=self.__delta_x_bohr_radii_3[2]))
+            self.__wave_numbers.append(2.0 * cp.pi * cp.fft.fftfreq(n=shape[0], d=self.__delta_x_bohr_radii_3[0]))
+            self.__wave_numbers.append(2.0 * cp.pi * cp.fft.fftfreq(n=shape[1], d=self.__delta_x_bohr_radii_3[1]))
+            self.__wave_numbers.append(2.0 * cp.pi * cp.fft.fftfreq(n=shape[2], d=self.__delta_x_bohr_radii_3[2]))
 
         elif self.__simulation_method == SimulationMethod.POWER_SERIES:
             # Define the kernel for the power series method
             next_s_kernel_source = (Path("sources/cuda_kernels/power_series_operator.cu").read_text().replace(
                 "PATH_TO_SOURCES", os.path.abspath("sources"))
-                .replace("T_WF_FLOAT",
-                         "double" if self.__double_precision_calculation else "float"))
+                                    .replace("T_WF_FLOAT",
+                         "double" if self.__double_precision else "float"))
             self.__next_s_kernel = cp.RawKernel(
                 next_s_kernel_source,
                 "next_s",
@@ -354,8 +354,8 @@ class SimState:
     def get_observation_box_top_corner_bohr_radii_3(self):
         return self.__observation_box_top_corner_bohr_radii_3
 
-    def is_double_precision_calculation(self):
-        return self.__double_precision_calculation
+    def is_double_precision(self):
+        return self.__double_precision
 
     def transform_physical_coordinate_to_voxel_3(self, pos_bohr_radii_3: np.array):
         return (math_utils.transform_center_origin_to_corner_origin_system(
@@ -427,9 +427,6 @@ class SimState:
             bottom=self.__observation_box_bottom_corner_voxel_3,
             top=self.__observation_box_top_corner_voxel_3,
         )
-
-    def get_copy_of_wave_function(self):
-        return cp.copy(self.__wave_tensor)
 
     def get_particle_mass(self):
         return self.__wave_packet.get_particle_mass_electron_rest_mass()
@@ -657,12 +654,10 @@ class SimState:
             (
                 moment_space_wave_tensor,
 
-                cp.float32(self.__delta_x_bohr_radii_3[0]),
-                cp.float32(self.__delta_x_bohr_radii_3[1]),
-                cp.float32(self.__delta_x_bohr_radii_3[2]),
-
-                cp.float32(self.__delta_time_h_bar_per_hartree),
-                cp.float32(self.__wave_packet.get_particle_mass_electron_rest_mass()),
+                (cp.float64(self.__delta_time_h_bar_per_hartree) if self.__double_precision
+                 else cp.float32(self.__delta_time_h_bar_per_hartree)),
+                (cp.float64(self.__wave_packet.get_particle_mass_electron_rest_mass()) if self.__double_precision
+                 else cp.float32(self.__wave_packet.get_particle_mass_electron_rest_mass())),
 
                 self.__wave_numbers[0],
                 self.__wave_numbers[1],
@@ -678,7 +673,7 @@ class SimState:
             (
                 self.__wave_tensor,
                 self.__localised_potential_hartree,
-                cp.float32(self.__delta_time_h_bar_per_hartree)
+                (cp.float64(self.__delta_time_h_bar_per_hartree) if self.__double_precision else cp.float32(self.__delta_time_h_bar_per_hartree))
             )
         )
 
@@ -690,12 +685,10 @@ class SimState:
             (
                 moment_space_wave_tensor,
 
-                cp.float32(self.__delta_x_bohr_radii_3[0]),
-                cp.float32(self.__delta_x_bohr_radii_3[1]),
-                cp.float32(self.__delta_x_bohr_radii_3[2]),
-
-                cp.float32(self.__delta_time_h_bar_per_hartree),
-                cp.float32(self.__wave_packet.get_particle_mass_electron_rest_mass()),
+                (cp.float64(self.__delta_time_h_bar_per_hartree) if self.__double_precision
+                 else cp.float32(self.__delta_time_h_bar_per_hartree)),
+                (cp.float64(self.__wave_packet.get_particle_mass_electron_rest_mass()) if self.__double_precision
+                 else cp.float32(self.__wave_packet.get_particle_mass_electron_rest_mass())),
 
                 self.__wave_numbers[0],
                 self.__wave_numbers[1],

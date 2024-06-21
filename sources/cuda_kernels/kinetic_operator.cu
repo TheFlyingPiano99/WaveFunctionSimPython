@@ -5,24 +5,20 @@ extern "C" __global__
 void kinetic_operator_kernel(
     complex<T_WF_FLOAT>* __restrict__ k_space_wave_function,
 
-    float delta_x,
-    float delta_y,
-    float delta_z,
+    T_WF_FLOAT delta_t,
+    T_WF_FLOAT mass,
 
-    float delta_t,
-    float mass,
-
-    double* frequencies_x,
-    double* frequencies_y,
-    double* frequencies_z
+    double* wave_number_x,
+    double* wave_number_y,
+    double* wave_number_z
 )
 {
     uint3 voxel = get_voxel_coords();
-    int idx = get_array_index();
+    unsigned int idx = get_array_index();
 
     // Calculate wavenumber:
-    float3 k = 2.0f * M_PI * float3{frequencies_x[voxel.x], frequencies_y[voxel.y], frequencies_z[voxel.z]};
-    float hBar = 1.0f;
-    float angle = -dot(k, k) * hBar * delta_t / 4.0f / mass;
+    T_WF_FLOAT3 k = T_WF_FLOAT3{wave_number_x[voxel.x], wave_number_y[voxel.y], wave_number_z[voxel.z]};
+    T_WF_FLOAT hBar = 1.0;
+    T_WF_FLOAT angle = -dot(k, k) * hBar * delta_t / 4.0f / mass;
     k_space_wave_function[idx] *= exp_i(angle);
 }

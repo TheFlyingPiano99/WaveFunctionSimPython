@@ -70,82 +70,82 @@ void probability_current_density_kernel(
 
         // Calculate array indices:
 
-        int idx = get_array_index(voxel, N);
+        unsigned int idx = get_array_index(voxel, N);
 
         // 1th step:
-        int idx_n00 = idx;
+        unsigned int idx_n00 = idx;
         if (voxel.x > 0) {
             idx_n00 = get_array_index({voxel.x - 1, voxel.y, voxel.z}, N);
         }
-        int idx_p00 = idx;
+        unsigned int idx_p00 = idx;
         if (voxel.x < N.x - 1) {
             idx_p00 = get_array_index({voxel.x + 1, voxel.y, voxel.z}, N);
         }
-        int idx_0n0 = idx;
+        unsigned int idx_0n0 = idx;
         if (voxel.y > 0) {
             idx_0n0 = get_array_index({voxel.x, voxel.y - 1, voxel.z}, N);
         }
-        int idx_0p0 = idx;
+        unsigned int idx_0p0 = idx;
         if (voxel.y < N.y - 1) {
             idx_0p0 = get_array_index({voxel.x, voxel.y + 1, voxel.z}, N);
         }
-        int idx_00n = idx;
+        unsigned int idx_00n = idx;
         if (voxel.z > 0) {
             idx_00n = get_array_index({voxel.x, voxel.y, voxel.z - 1}, N);
         }
-        int idx_00p = idx;
+        unsigned int idx_00p = idx;
         if (voxel.z < N.z - 1) {
             idx_00p = get_array_index({voxel.x, voxel.y, voxel.z + 1}, N);
         }
 
         // 2nd step:
-        int idx_2_n00 = idx;
+        unsigned int idx_2_n00 = idx;
         if (voxel.x > 1) {
             idx_2_n00 = get_array_index({voxel.x - 2, voxel.y, voxel.z}, N);
         }
-        int idx_2_p00 = idx;
+        unsigned int idx_2_p00 = idx;
         if (voxel.x < N.x - 2) {
             idx_2_p00 = get_array_index({voxel.x + 2, voxel.y, voxel.z}, N);
         }
-        int idx_2_0n0 = idx;
+        unsigned int idx_2_0n0 = idx;
         if (voxel.y > 1) {
             idx_2_0n0 = get_array_index({voxel.x, voxel.y - 2, voxel.z}, N);
         }
-        int idx_2_0p0 = idx;
+        unsigned int idx_2_0p0 = idx;
         if (voxel.y < N.y - 2) {
             idx_2_0p0 = get_array_index({voxel.x, voxel.y + 2, voxel.z}, N);
         }
-        int idx_2_00n = idx;
+        unsigned int idx_2_00n = idx;
         if (voxel.z > 1) {
             idx_2_00n = get_array_index({voxel.x, voxel.y, voxel.z - 2}, N);
         }
-        int idx_2_00p = idx;
+        unsigned int idx_2_00p = idx;
         if (voxel.z < N.z - 2) {
             idx_2_00p = get_array_index({voxel.x, voxel.y, voxel.z + 2}, N);
         }
 
         // 3nd step:
-        int idx_3_n00 = idx;
+        unsigned int idx_3_n00 = idx;
         if (voxel.x > 2) {
             idx_3_n00 = get_array_index({voxel.x - 3, voxel.y, voxel.z}, N);
         }
-        int idx_3_p00 = idx;
+        unsigned int idx_3_p00 = idx;
         if (voxel.x < N.x - 3) {
             idx_3_p00 = get_array_index({voxel.x + 3, voxel.y, voxel.z}, N);
         }
-        int idx_3_0n0 = idx;
+        unsigned int idx_3_0n0 = idx;
         if (voxel.y > 2) {
             idx_3_0n0 = get_array_index({voxel.x, voxel.y - 3, voxel.z}, N);
         }
-        int idx_3_0p0 = idx;
+        unsigned int idx_3_0p0 = idx;
         if (voxel.y < N.y - 3) {
             idx_3_0p0 = get_array_index({voxel.x, voxel.y + 3, voxel.z}, N);
         }
-        int idx_3_00n = idx;
+        unsigned int idx_3_00n = idx;
         if (voxel.z > 2) {
             idx_3_00n = get_array_index({voxel.x, voxel.y, voxel.z - 3}, N);
         }
-        int idx_3_00p = idx;
+        unsigned int idx_3_00p = idx;
         if (voxel.z < N.z - 3) {
             idx_3_00p = get_array_index({voxel.x, voxel.y, voxel.z + 3}, N);
         }
