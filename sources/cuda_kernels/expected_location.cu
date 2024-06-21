@@ -2,8 +2,8 @@
 
 extern "C" __global__
 void expected_location_kernel(
-    complex<T_WF_FLOAT>* wave_function,
-    T_WF_FLOAT* expected_location,
+    complex<T_WF_FLOAT>* waveFunction,
+    T_WF_FLOAT* expectedLocationOut,
 
     T_WF_FLOAT delta_x,
     T_WF_FLOAT delta_y,
@@ -35,7 +35,7 @@ void expected_location_kernel(
         {(unsigned int)voxel_count_x, (unsigned int)voxel_count_y, (unsigned int)voxel_count_z}
     );  // Have to account for the offset and the size of the measured sub-volume
     unsigned int threadId = get_block_local_idx_3d();
-    sdata[threadId] = r * (conj(wave_function[wf_idx]) * wave_function[wf_idx]).real()
+    sdata[threadId] = r * (conj(waveFunction[wf_idx]) * waveFunction[wf_idx]).real()
         * get_simpson_coefficient_3d<T_WF_FLOAT>(voxel) * delta_r.x * delta_r.y * delta_r.z;
 
     __syncthreads();
@@ -51,7 +51,7 @@ void expected_location_kernel(
 
     // Add the values calculated by the blocks and write the result into output buffer:
     if (threadId == 0)
-        atomicAdd(&expected_location[0], sdata[0].x);
-        atomicAdd(&expected_location[1], sdata[0].y);
-        atomicAdd(&expected_location[2], sdata[0].z);
+        atomicAdd(&expectedLocationOut[0], sdata[0].x);
+        atomicAdd(&expectedLocationOut[1], sdata[0].y);
+        atomicAdd(&expectedLocationOut[2], sdata[0].z);
 }

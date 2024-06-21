@@ -7,11 +7,11 @@ void probability_current_density_kernel(
     T_WF_FLOAT* __restrict__ probability_current_density,
     T_WF_FLOAT* probabilityCurrentOut,
 
-    float mass,
+    T_WF_FLOAT mass,
 
-    float delta_x,
-    float delta_y,
-    float delta_z,
+    T_WF_FLOAT delta_x,
+    T_WF_FLOAT delta_y,
+    T_WF_FLOAT delta_z,
 
     float center_x,
     float center_y,
@@ -38,10 +38,10 @@ void probability_current_density_kernel(
 )
 {
 
-    float3 delta_r = {delta_x, delta_y, delta_z};
+    T_WF_FLOAT3 delta_r = {delta_x, delta_y, delta_z};
     float3 center = {center_x, center_y, center_z};
     float3 normal = {normal_x, normal_y, normal_z};
-    uint3 N = {volume_dim_x, volume_dim_y, volume_dim_z};
+    uint3 N = {volume_dim_x, volume_dim_y, volume_dim_z};   // For the whole simulated volume
     float3 prefUp = {0.0f, 1.0f, 0.0f};
     if (fabsf(dot(normal, prefUp)) > 0.99)  // Change prefered up vector
     {
@@ -52,20 +52,22 @@ void probability_current_density_kernel(
     float3 right = cross(normal, prefUp);
     float3 up = cross(right, normal);
 
-    float u = (blockIdx.x * blockDim.x + threadIdx.x) / (float)(gridDim.x * blockDim.x - 1);
-    float v = (blockIdx.y * blockDim.y + threadIdx.y) / (float)(gridDim.y * blockDim.y - 1);
+    T_WF_FLOAT dW = width / (T_WF_FLOAT)(gridDim.x * blockDim.x);
+    T_WF_FLOAT dH = height / (T_WF_FLOAT)(gridDim.y * blockDim.y);
 
-    float3 r = center + right * (width * (u - 0.5f)) + up * (height * (v - 0.5f));
+    float3 f_r = center + right * (float)dW * (float)((int)(blockIdx.x * blockDim.x + threadIdx.x) - (int)(gridDim.x * blockDim.x / 2))
+        + up * (float)dH * (float)((int)(blockIdx.y * blockDim.y + threadIdx.y) - (int)(gridDim.y * blockDim.y / 2));
+    double3 r = {f_r.x, f_r.y, f_r.z};
     int planeIdx = get_array_index();
     T_WF_FLOAT pcDensity;
     if (r.x < bounding_bottom_x || r.x > bounding_top_x
     || r.y < bounding_bottom_y || r.y > bounding_top_y
     || r.z < bounding_bottom_z || r.z > bounding_top_z) // Terminate if outside the bounding box
     {
-        pcDensity = 0.0f;
+        pcDensity = 0.0;
     }
     else {
-        float3 fVoxel = r / delta_r + 0.5f * float3{(float)N.x, (float)N.y, (float)N.z};
+        T_WF_FLOAT3 fVoxel = r / delta_r + 0.5f * T_WF_FLOAT3{(T_WF_FLOAT)N.x, (T_WF_FLOAT)N.y, (T_WF_FLOAT)N.z};
         uint3 voxel = {(unsigned int)fVoxel.x, (unsigned int)fVoxel.y, (unsigned int)fVoxel.z};
 
         // Calculate array indices:
@@ -183,9 +185,9 @@ void probability_current_density_kernel(
         complex<T_WF_FLOAT> dZ = -(-wf_3_00p + (T_WF_FLOAT)9.0 * wf_2_00p - (T_WF_FLOAT)45.0 * wf_00p + (T_WF_FLOAT)45.0 * wf_00n - (T_WF_FLOAT)9.0 * wf_2_00n + wf_3_00n) / (T_WF_FLOAT)60.0 / (T_WF_FLOAT)delta_z;
         complex<T_WF_FLOAT> dPsi = (T_WF_FLOAT)normal.x * dX + (T_WF_FLOAT)normal.y * dY + (T_WF_FLOAT)normal.z * dZ;
 
-        complex<T_WF_FLOAT> iUnit = complex<T_WF_FLOAT>(0.0f, 1.0f);
-        float hBar = 1.0f;
-        pcDensity = ((T_WF_FLOAT)(-hBar / 2.0f / mass) * iUnit
+        complex<T_WF_FLOAT> iUnit = complex<T_WF_FLOAT>(0.0, 1.0);
+        T_WF_FLOAT hBar = 1.0;
+        pcDensity = ((T_WF_FLOAT)(-hBar / 2.0 / mass) * iUnit
             * (
                 conj(psi) * dPsi - psi * conj(dPsi)
             )
@@ -195,8 +197,6 @@ void probability_current_density_kernel(
 
     // Integrate:
     unsigned int threadId = get_block_local_idx_2d();
-    T_WF_FLOAT dW = width / (T_WF_FLOAT)(gridDim.x * blockDim.x);
-    T_WF_FLOAT dH = height / (T_WF_FLOAT)(gridDim.y * blockDim.y);
     uint2 pixel = {blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y};
 
     // Reduction in shared memory

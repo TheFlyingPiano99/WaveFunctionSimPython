@@ -21,6 +21,7 @@ def exp_i(cangle: np.complex_):
 def square_of_abs(wave_tensor: cp.ndarray):
     return cp.square(cp.abs(wave_tensor))
 
+
 def vector_length(vec: np.array):
     return np.sqrt(np.dot(vec, vec))
 
@@ -34,7 +35,7 @@ def clamp(t: float, val0: float, val1: float):
 
 
 def interpolate(val0: float, val1: float, t: float, exponent: float = 1.0):
-    return (1.0 - t**exponent) * val0 + t**exponent * val1
+    return (1.0 - t ** exponent) * val0 + t ** exponent * val1
 
 
 def transform_center_origin_to_corner_origin_system(pos: np.array, box_dimensions: np.array):
@@ -54,7 +55,7 @@ def angstrom_to_bohr_radii(value):
 
 
 def kinectic_energy(mass: float, velocity):
-    return 0.5 * mass * velocity**2
+    return 0.5 * mass * velocity ** 2
 
 
 def get_de_broglie_wave_length_bohr_radii(momentum_h_bar_per_bohr_radius: float):
@@ -63,12 +64,12 @@ def get_de_broglie_wave_length_bohr_radii(momentum_h_bar_per_bohr_radius: float)
     return planck_constant / momentum_h_bar_per_bohr_radius
 
 
-def classical_momentum(mass: float, velocity : np.array):
+def classical_momentum(mass: float, velocity: np.array):
     return mass * velocity
 
 
 def relativistic_momentum(rest_mass: float, velocity):
-    return rest_mass * velocity / (1.0 - velocity**2 / speed_of_light**2) ** 0.5
+    return rest_mass * velocity / (1.0 - velocity ** 2 / speed_of_light ** 2) ** 0.5
 
 
 def relativistic_energy(momentum, rest_mass: float):
@@ -78,22 +79,26 @@ def relativistic_energy(momentum, rest_mass: float):
 def h_bar_per_hartree_to_ns(t: float):
     return t * 2.4188843265857 * 10 ** (-8)
 
+
 def h_bar_per_hartree_to_fs(t: float):
-    return h_bar_per_hartree_to_ns(t) * 10**6
+    return h_bar_per_hartree_to_ns(t) * 10 ** 6
 
 
 def cut_bounding_box(arr: np.ndarray, bottom: np.array, top: np.array):
-    return arr[bottom[0] : top[0], bottom[1] : top[1], bottom[2] : top[2]]
+    return arr[bottom[0]: top[0], bottom[1]: top[1], bottom[2]: top[2]]
 
 
 def get_momentum_for_harmonic_oscillator(V_max: float, x_max: float):
-    return math.sqrt(2.0 * V_max / (4 * electron_rest_mass * speed_of_light**2 * x_max**2))
+    return math.sqrt(2.0 * V_max / (4 * electron_rest_mass * speed_of_light ** 2 * x_max ** 2))
+
 
 def normalize(v: np.array):
     return v / vector_length(v)
 
+
 def prefered_up():
-    return np.array([0.0, 1.0, 0.0], dtype=np.float_)   # +Y
+    return np.array([0.0, 1.0, 0.0], dtype=np.float_)  # +Y
+
 
 def rotate(vec: np.array, axis: np.array, radians: float):
     r = R.from_rotvec(radians * normalize(axis))
@@ -141,12 +146,31 @@ def get_grid_size(shape: np.shape):
                 break
             grid_size[i] = grid_size[i] + 1
     grid_size = tuple(grid_size)
-    grid_sizes[key] = grid_size    # Cache
+    grid_sizes[key] = grid_size  # Cache
     return grid_size
 
 
 simpson_coefficients = {}
 
+
 def indefinite_simpson_integral(array: np.array, dt: float):
-    integral = 0.0
-    return integral
+    n = array.size
+    if n < 3:
+        raise "Too few samples to integrate"
+    even = n % 2 == 0
+    odd_section = n
+    if even:
+        odd_section -= 1
+
+    integral = np.array(np.zeros(shape=array.size, dtype=array.dtype).tolist())
+    integral[0] = 0.0
+    integral[1] = (array[0] + array[1]) / 2.0
+    integral[2] = 3.0 * integral[1]
+
+    for l in range(2, odd_section, 2):
+        integral[l] = integral[l - 2] + array[l - 2] + 4.0 * array[l - 1] + array[l]
+
+    for l in range(3, odd_section - 1 + (2 if even else 0), 2):
+        integral[l] = integral[l - 2] + array[l - 2] + 4.0 * array[l - 1] + array[l]
+
+    return integral * dt / 3.0

@@ -190,12 +190,10 @@ class PlaneProbabilityCurrent:
     __probability_current_density: cp.ndarray
     __probability_current_buffer: cp.array
     __probability_current_evolution: np.array
-    __integrated_probability_current_evolution: np.array
     __grid_size: np.array
     __block_size: np.array
     __shared_memory_bytes: int
-    __integrated_probability_current: float = 0.0
-    __iteration: int = 0
+    __delta_t: float
 
     def __init__(self, config: Dict, sim_state: SimState):
         self.__name = try_read_param(config, "name", "Probability current", "measurement.plane_probability_currents")
@@ -228,7 +226,7 @@ class PlaneProbabilityCurrent:
         self.__probability_current_density = cp.zeros(shape=[self.__resolution_2[0], self.__resolution_2[1]], dtype=float_type)
         self.__probability_current_buffer = cp.array([0.0], dtype=float_type)
         self.__probability_current_evolution = np.empty(shape=0, dtype=float_type)
-        self.__integrated_probability_current_evolution = np.empty(shape=0, dtype=np.float64)
+        self.__delta_t = sim_state.get_delta_time_h_bar_per_hartree()
         self.__grid_size = math_utils.get_grid_size(self.__resolution_2)
         self.__block_size = (self.__resolution_2[0] // self.__grid_size[0], self.__resolution_2[1] // self.__grid_size[1])
         self.__shared_memory_bytes = self.__block_size[0] * self.__block_size[1] * cp.dtype(float_type).itemsize
@@ -247,6 +245,7 @@ class PlaneProbabilityCurrent:
 
     def calculate(self, sim_state: SimState):
         self.__probability_current_buffer[0] = 0.0  # Clear buffer
+        dp = sim_state.is_double_precision()
         self.__kernel(
             self.__grid_size,
             self.__block_size,
@@ -255,11 +254,11 @@ class PlaneProbabilityCurrent:
                 self.__probability_current_density,
                 self.__probability_current_buffer,
 
-                cp.float32(sim_state.get_particle_mass()),
+                cp.float64(sim_state.get_particle_mass()) if dp else cp.float32(sim_state.get_particle_mass()),
 
-                cp.float32(sim_state.get_delta_x_bohr_radii_3()[0]),
-                cp.float32(sim_state.get_delta_x_bohr_radii_3()[1]),
-                cp.float32(sim_state.get_delta_x_bohr_radii_3()[2]),
+                cp.float64(sim_state.get_delta_x_bohr_radii_3()[0]) if dp else cp.float32(sim_state.get_delta_x_bohr_radii_3()[0]),
+                cp.float64(sim_state.get_delta_x_bohr_radii_3()[1]) if dp else cp.float32(sim_state.get_delta_x_bohr_radii_3()[1]),
+                cp.float64(sim_state.get_delta_x_bohr_radii_3()[2]) if dp else cp.float32(sim_state.get_delta_x_bohr_radii_3()[2]),
 
                 cp.float32(self.__center_bohr_radii_3[0]),
                 cp.float32(self.__center_bohr_radii_3[1]),
@@ -290,24 +289,13 @@ class PlaneProbabilityCurrent:
         self.__probability_current_evolution = (
             np.append(arr=self.__probability_current_evolution, values=self.__probability_current_buffer[0]))
 
-        if self.__iteration % 2 == 0 and self.__iteration >= 2:
-            self.__integrated_probability_current += (
-                                                             self.__probability_current_evolution[self.__iteration - 2] +
-                                                             4.0 * self.__probability_current_evolution[self.__iteration - 1] +
-                                                             self.__probability_current_evolution[self.__iteration]
-                                                     ) / 3.0 * sim_state.get_delta_time_h_bar_per_hartree()
-        if self.__iteration % 2 == 0:
-            self.__integrated_probability_current_evolution = np.append(
-                arr=self.__integrated_probability_current_evolution,
-                values=self.__integrated_probability_current
-            )
-        self.__iteration += 1
-
     def get_probability_current_evolution_with_name(self):
         return self.__probability_current_evolution, self.__name
 
     def get_integrated_probability_current_evolution_with_name(self):
-        return self.__integrated_probability_current_evolution, self.__name
+        return math_utils.indefinite_simpson_integral(
+            self.__probability_current_evolution, self.__delta_t
+        ), self.__name
 
 
 class ExpectedLocation:
@@ -328,7 +316,7 @@ class ExpectedLocation:
         for i in range(3):
             # Offset boundary if even voxels are included. (Because of the Simpson integration scheme.)
             if shape[i] % 2 == 0:
-                print(Fore.RED + f"Expected location: truncating volume probability area along {i}. axis!" + Style.RESET_ALL)
+                print(Fore.RED + f"Expected location: truncating integration area along {i}. axis!" + Style.RESET_ALL)
                 shape[i] -= 1
                 top_voxel[i] -= 1
         self.__kernel_grid_size = math_utils.get_grid_size(shape)
