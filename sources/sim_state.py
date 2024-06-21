@@ -89,7 +89,7 @@ class SimState:
         self.__simulated_volume_dimensions_bohr_radii_3 = np.array(
             try_read_param(config, "volume.simulated_volume_dimensions_bohr_radii_3", [100.0, 100.0, 100.0])
         )
-        self.__number_of_voxels_3 = try_read_param(config, "volume.number_of_voxels_3", [256, 256, 256])
+        self.__number_of_voxels_3 = np.array(try_read_param(config, "volume.number_of_voxels_3", [256, 256, 256]))
         self.__coulomb_potential = cp.zeros(shape=self.__number_of_voxels_3)    # Unused in current version.
         self.__delta_x_bohr_radii_3 = self.__simulated_volume_dimensions_bohr_radii_3 / self.__number_of_voxels_3
         self.__upper_limit_on_delta_time_h_per_hartree = (
@@ -646,13 +646,13 @@ class SimState:
 
     def _fft_time_evolution(self):
 
-        moment_space_wave_tensor = cp.fft.fftn(self.__wave_tensor, norm="ortho")
+        self.__wave_tensor = cp.fft.fftn(self.__wave_tensor, norm="ortho")
 
         self.__kinetic_operator_kernel(
             self.__kernel_grid_size,
             self.__kernel_block_size,
             (
-                moment_space_wave_tensor,
+                self.__wave_tensor,
 
                 (cp.float64(self.__delta_time_h_bar_per_hartree) if self.__double_precision
                  else cp.float32(self.__delta_time_h_bar_per_hartree)),
@@ -665,7 +665,7 @@ class SimState:
             )
         )
 
-        self.__wave_tensor = cp.fft.ifftn(moment_space_wave_tensor, norm="ortho")
+        self.__wave_tensor = cp.fft.ifftn(self.__wave_tensor, norm="ortho")
 
         self.__potential_operator_kernel(
             self.__kernel_grid_size,
@@ -677,13 +677,13 @@ class SimState:
             )
         )
 
-        moment_space_wave_tensor = cp.fft.fftn(self.__wave_tensor, norm="ortho")
+        self.__wave_tensor = cp.fft.fftn(self.__wave_tensor, norm="ortho")
 
         self.__kinetic_operator_kernel(
             self.__kernel_grid_size,
             self.__kernel_block_size,
             (
-                moment_space_wave_tensor,
+                self.__wave_tensor,
 
                 (cp.float64(self.__delta_time_h_bar_per_hartree) if self.__double_precision
                  else cp.float32(self.__delta_time_h_bar_per_hartree)),
@@ -696,7 +696,7 @@ class SimState:
             )
         )
 
-        self.__wave_tensor = cp.fft.ifftn(moment_space_wave_tensor, norm="ortho")
+        self.__wave_tensor = cp.fft.ifftn(self.__wave_tensor, norm="ortho")
 
     """
     def _merged_fft_time_evolution(

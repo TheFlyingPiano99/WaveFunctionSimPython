@@ -18,12 +18,12 @@ import sources.math_utils as math_utils
 
 class MeasurementPlane:
     def __init__(
-        self,
-        delta_x_3: np.array,
-        location_bohr_radii: float,
-        simulated_box_dimensions_3: float,
-        viewing_window_bottom_voxel_3: np.array,
-        viewing_window_top_voxel_3: np.array,
+            self,
+            delta_x_3: np.array,
+            location_bohr_radii: float,
+            simulated_box_dimensions_3: float,
+            viewing_window_bottom_voxel_3: np.array,
+            viewing_window_top_voxel_3: np.array,
     ):
         self.plane_dwell_time_density = np.zeros(
             shape=(
@@ -48,10 +48,10 @@ class MeasurementPlane:
 
     def integrate(self, probability_density, delta_time):
         self.plane_probability_density = probability_density[
-            self.voxel_x,
-            self.viewing_window_bottom_voxel[1] : self.viewing_window_top_voxel[1],
-            self.viewing_window_bottom_voxel[2] : self.viewing_window_top_voxel[2],
-        ]
+                                         self.voxel_x,
+                                         self.viewing_window_bottom_voxel[1]: self.viewing_window_top_voxel[1],
+                                         self.viewing_window_bottom_voxel[2]: self.viewing_window_top_voxel[2],
+                                         ]
         self.plane_dwell_time_density += self.plane_probability_density * delta_time
         self.cumulated_time += delta_time
 
@@ -75,9 +75,9 @@ class VolumeProbability:
     __bottom_voxel: np.array
 
     def __init__(
-        self,
-        config: Dict,
-        sim_state: SimState
+            self,
+            config: Dict,
+            sim_state: SimState
     ):
         self.__name = try_read_param(config, "name", "Volume probability", "measurement.volume_probabilities")
         self.__bottom_corner_bohr_radii_3 = np.array(
@@ -97,22 +97,24 @@ class VolumeProbability:
 
         self.__bottom_voxel = sim_state.transform_physical_coordinate_to_voxel_3(self.__bottom_corner_bohr_radii_3)
         top_voxel = sim_state.transform_physical_coordinate_to_voxel_3(self.__top_corner_bohr_radii_3)
+        top_voxel += np.array([1, 1, 1], dtype=top_voxel.dtype)  # Add because of the inclusive boundary requirement of the Simpson scheme
         volume_probability_kernel_source = (Path("sources/cuda_kernels/volume_probability.cu")
                                             .read_text().replace("PATH_TO_SOURCES", os.path.abspath("sources"))
                                             .replace("T_WF_FLOAT",
-                                                       "double" if sim_state.is_double_precision() else "float"))
+                                                     "double" if sim_state.is_double_precision() else "float"))
 
         shape = top_voxel - self.__bottom_voxel
         for i in range(3):
-            # Offset boundary if odd voxels are included. (Because of the Simpson integration scheme.)
-            if (shape[i] % 2 == 1):
-                print(Fore.RED + f"Truncating volume probability area along {i}. axis!" + Style.RESET_ALL)
+            # Offset boundary if even voxels are included. (Because of the Simpson integration scheme.)
+            if (shape[i] % 2 == 0):
+                print(
+                    Fore.RED + f"Volume probability \"{self.__name}\": truncating volume probability area along {i}. axis!" + Style.RESET_ALL)
                 shape[i] -= 1
                 top_voxel[i] -= 1
 
         self.__kernel_grid_size = math_utils.get_grid_size(shape)
-        self.__kernel_block_size = (shape[0] // self.__kernel_grid_size[0], shape[1] // self.__kernel_grid_size[1], shape[2] // self.__kernel_grid_size[2])
-        print(f"Integral voxel count: {self.__kernel_grid_size[0] * self.__kernel_block_size[0]}, {self.__kernel_grid_size[1] * self.__kernel_block_size[1]}, {self.__kernel_grid_size[2] * self.__kernel_block_size[2]}")
+        self.__kernel_block_size = (
+        shape[0] // self.__kernel_grid_size[0], shape[1] // self.__kernel_grid_size[1], shape[2] // self.__kernel_grid_size[2])
         self.__volume_probability_kernel = cp.RawKernel(
             volume_probability_kernel_source,
             "volume_probability_kernel",
@@ -120,8 +122,16 @@ class VolumeProbability:
         dtype = cp.float64 if sim_state.is_double_precision() else cp.float32
         self.__probability_buffer = cp.array([0.0], dtype=dtype)
         if self.__enable_image:
-            print(f"{self.__name} bottom voxel (included in calc.): ({self.__bottom_voxel[0]}, {self.__bottom_voxel[1]}, {self.__bottom_voxel[2]})")
-            print(f"{self.__name} top voxel (not included in calc.): ({top_voxel[0]}, {top_voxel[1]}, {top_voxel[2]})")
+            print(
+                f"{self.__name} bottom voxel (included in calc.): ({self.__bottom_voxel[0]}, {self.__bottom_voxel[1]}, {self.__bottom_voxel[2]})")
+            print(f"{self.__name} top voxel (included in calc.): ({top_voxel[0] - 1}, {top_voxel[1] - 1}, {top_voxel[2] - 1})")
+            print(
+                f"{self.__name} integral voxel count: {self.__kernel_grid_size[0] * self.__kernel_block_size[0]}, {self.__kernel_grid_size[1] * self.__kernel_block_size[1]}, {self.__kernel_grid_size[2] * self.__kernel_block_size[2]}"
+            )
+            bottom_r = sim_state.transform_voxel_to_physical_coordinate_3(self.__bottom_voxel)
+            top_r = sim_state.transform_voxel_to_physical_coordinate_3(top_voxel)
+            print(f"{self.__name} integral bottom pos: ({bottom_r[0]}, {bottom_r[1]}, {bottom_r[2]}) Bohr radii")
+            print(f"{self.__name} integral top pos: ({top_r[0]}, {top_r[1]}, {top_r[2]}) Bohr radii")
 
     def get_name(self):
         return self.__name
@@ -196,11 +206,13 @@ class PlaneProbabilityCurrent:
             try_read_param(config, "normal_vector_3", "measurement.plane_probability_currents")
         )
         self.__enable_image = try_read_param(config, "enable_image", "measurement.plane_probability_currents")
-        self.__size_bohr_radii_2 = np.array(try_read_param(config, "size_bohr_radii_2", [60.0, 60.0], "measurement.plane_probability_currents"))
+        self.__size_bohr_radii_2 = np.array(
+            try_read_param(config, "size_bohr_radii_2", [60.0, 60.0], "measurement.plane_probability_currents"))
         self.__resolution_2 = np.array(try_read_param(config, "resolution_2", [512, 512], "measurement.plane_probability_currents"))
-        # Correct odd voxel count to even. (Because of the Simpson integration scheme)
+        self.__resolution_2 += np.array([1, 1], dtype=self.__resolution_2.dtype)  # Add one because of the inclusive requirement of Simpson
         for i in range(2):
-            if self.__resolution_2[i] % 2 == 1:
+            # Correct even voxel count to odd. (Because of the Simpson integration scheme)
+            if self.__resolution_2[i] % 2 == 0:
                 self.__resolution_2[i] -= 1
 
         probability_current_density_kernel = (
@@ -217,7 +229,7 @@ class PlaneProbabilityCurrent:
         self.__probability_current_buffer = cp.array([0.0], dtype=float_type)
         self.__probability_current_evolution = np.empty(shape=0, dtype=float_type)
         self.__integrated_probability_current_evolution = np.empty(shape=0, dtype=np.float64)
-        self.__grid_size = (self.__resolution_2[0] // 32, self.__resolution_2[1] // 32)
+        self.__grid_size = math_utils.get_grid_size(self.__resolution_2)
         self.__block_size = (self.__resolution_2[0] // self.__grid_size[0], self.__resolution_2[1] // self.__grid_size[1])
         self.__shared_memory_bytes = self.__block_size[0] * self.__block_size[1] * cp.dtype(float_type).itemsize
         print(f"Shared mem size = {self.__shared_memory_bytes} bytes")
@@ -280,9 +292,9 @@ class PlaneProbabilityCurrent:
 
         if self.__iteration % 2 == 0 and self.__iteration >= 2:
             self.__integrated_probability_current += (
-                    self.__probability_current_evolution[self.__iteration - 2] +
-                    4.0 * self.__probability_current_evolution[self.__iteration - 1] +
-                    self.__probability_current_evolution[self.__iteration]
+                                                             self.__probability_current_evolution[self.__iteration - 2] +
+                                                             4.0 * self.__probability_current_evolution[self.__iteration - 1] +
+                                                             self.__probability_current_evolution[self.__iteration]
                                                      ) / 3.0 * sim_state.get_delta_time_h_bar_per_hartree()
         if self.__iteration % 2 == 0:
             self.__integrated_probability_current_evolution = np.append(
@@ -297,6 +309,7 @@ class PlaneProbabilityCurrent:
     def get_integrated_probability_current_evolution_with_name(self):
         return self.__integrated_probability_current_evolution, self.__name
 
+
 class ExpectedLocation:
     __enable_image: bool
     __expected_location_buffer: cp.array
@@ -310,13 +323,17 @@ class ExpectedLocation:
         self.__enable_image = try_read_param(config, "measurement.expected_location.enable_image", False)
         self.__bottom_voxel = sim_state.get_observation_box_bottom_corner_voxel_3()
         top_voxel = sim_state.get_observation_box_top_corner_voxel_3()
+        top_voxel += np.array([1, 1, 1], dtype=top_voxel.dtype)  # Add because of the inclusive boundary requirement of the Simpson scheme
         shape = top_voxel - self.__bottom_voxel
         for i in range(3):
-            if shape[i] % 2 == 1:
+            # Offset boundary if even voxels are included. (Because of the Simpson integration scheme.)
+            if shape[i] % 2 == 0:
+                print(Fore.RED + f"Expected location: truncating volume probability area along {i}. axis!" + Style.RESET_ALL)
                 shape[i] -= 1
                 top_voxel[i] -= 1
         self.__kernel_grid_size = math_utils.get_grid_size(shape)
-        self.__kernel_block_size = (shape[0] // self.__kernel_grid_size[0], shape[1] // self.__kernel_grid_size[1], shape[2] // self.__kernel_grid_size[2])
+        self.__kernel_block_size = (
+        shape[0] // self.__kernel_grid_size[0], shape[1] // self.__kernel_grid_size[1], shape[2] // self.__kernel_grid_size[2])
         kernel_source = (Path("sources/cuda_kernels/expected_location.cu").read_text()
                          .replace("PATH_TO_SOURCES", os.path.abspath("sources"))
                          .replace("T_WF_FLOAT", "double" if sim_state.is_double_precision() else "float"))
@@ -368,12 +385,13 @@ class ExpectedLocation:
     def get_expected_location_evolution(self):
         return self.__expected_location_evolution
 
+
 class ProjectedMeasurement:
     probability_density: np.array
     min_voxel: int
     max_voxel: int
-    near_voxel: int     # in directions of summing axes
-    far_voxel: int      # in directions of summing axes
+    near_voxel: int  # in directions of summing axes
+    far_voxel: int  # in directions of summing axes
     left_edge_bohr_radii: float
     right_edge_boh_radii: float
     sum_axis: tuple
@@ -382,14 +400,14 @@ class ProjectedMeasurement:
     offset: float = 0.0
 
     def __init__(self,
-                 min_voxel : int,
-                 max_voxel : int,
-                 left_edge : float,
-                 right_edge : float,
-                 sum_axis : tuple,
-                 label : str,
-                 near_voxel : int = None,
-                 far_voxel : int = None,
+                 min_voxel: int,
+                 max_voxel: int,
+                 left_edge: float,
+                 right_edge: float,
+                 sum_axis: tuple,
+                 label: str,
+                 near_voxel: int = None,
+                 far_voxel: int = None,
                  ):
         self.min_voxel = min_voxel
         self.max_voxel = max_voxel
@@ -408,11 +426,11 @@ class ProjectedMeasurement:
         self.sum_axis = sum_axis
 
         if near_voxel is None:
-            self.near_voxel = self.min_voxel     # let's assume cube shaped viewing window
+            self.near_voxel = self.min_voxel  # let's assume cube shaped viewing window
         else:
             self.near_voxel = near_voxel
         if far_voxel is None:
-            self.far_voxel = self.max_voxel     # let's assume cube shaped viewing window
+            self.far_voxel = self.max_voxel  # let's assume cube shaped viewing window
         else:
             self.far_voxel = far_voxel
 
@@ -426,9 +444,9 @@ class ProjectedMeasurement:
 
         self.probability_density = np.sum(
             a=probability_density_tensor[
-                near_far[0][0]: near_far[0][1],
-                near_far[1][0]: near_far[1][1],
-                near_far[2][0]: near_far[2][1],
+              near_far[0][0]: near_far[0][1],
+              near_far[1][0]: near_far[1][1],
+              near_far[2][0]: near_far[2][1],
               ], axis=self.sum_axis)
 
     def get_probability_density_with_label(self):
@@ -479,13 +497,14 @@ class MeasurementTools:
                 print(Fore.RED + f"Renamed one to \"{new_item.get_name()}\"." + Style.RESET_ALL)
                 break
 
-
     def __init__(self, config: Dict, sim_state: SimState):
         # Volumetric visualization:
         self.__enable_volumetric_animation = try_read_param(config, "measurement.volumetric.enable_animation", False)
         self.__enable_volumetric_image = try_read_param(config, "measurement.volumetric.enable_image", False)
         self.__volumetric_image_capture_interval = try_read_param(config, "measurement.volumetric.image_capture_iteration_interval", 100)
-        self.__volumetric_animation_capture_interval = try_read_param(config, "measurement.volumetric.animation_frame_capture_iteration_interval", 5)
+        self.__volumetric_animation_capture_interval = try_read_param(config,
+                                                                      "measurement.volumetric.animation_frame_capture_iteration_interval",
+                                                                      5)
         if self.__enable_volumetric_image or self.__enable_volumetric_animation:
             self.__volumetric = VolumetricVisualization(
                 wave_function=sim_state.get_view_into_wave_function(),
@@ -578,9 +597,11 @@ class MeasurementTools:
             if not os.path.exists(os.path.join(sim_state.get_output_dir(), f"wave_function")):
                 os.makedirs(os.path.join(sim_state.get_output_dir(), f"wave_function"), exist_ok=True)
             try:
-                cp.save(arr=sim_state.get_view_into_wave_function(), file=os.path.join(sim_state.get_output_dir(), f"wave_function/wave_function_{iter_data.i:04d}.npy"))
+                cp.save(arr=sim_state.get_view_into_wave_function(),
+                        file=os.path.join(sim_state.get_output_dir(), f"wave_function/wave_function_{iter_data.i:04d}.npy"))
             except IOError:
-                print(Fore.RED + "\nERROR: Failed writing file: "+ os.path.join(sim_state.get_output_dir(), f"wave_function/wave_function_{iter_data.i:04d}.npy") + Style.RESET_ALL)
+                print(Fore.RED + "\nERROR: Failed writing file: " + os.path.join(sim_state.get_output_dir(),
+                                                                                 f"wave_function/wave_function_{iter_data.i:04d}.npy") + Style.RESET_ALL)
 
     def measure_and_render(self, sim_state: SimState, iter_data: IterData):
         # Save wave function:
@@ -666,6 +687,7 @@ class MeasurementTools:
             for evolution in volume_probability_evolutions:
                 sum = np.add(sum, np.array(evolution[0].tolist()))
             volume_probability_evolutions.append([sum, "Sum"])
+            print(f"Number of volume probability data points = {volume_probability_evolutions[0][0].size}")
             plot.plot_probability_evolution(
                 out_dir=sim_state.get_output_dir(),
                 file_name="volume_probability_evolution.png",
@@ -692,8 +714,8 @@ class MeasurementTools:
                 probability_evolutions=probability_current_evolutions,
                 delta_t=sim_state.get_delta_time_h_bar_per_hartree(),
                 show_fig=self.__show_figures,
-                y_min = -1.1,
-                y_max = 1.1
+                y_min=-1.1,
+                y_max=1.1
             )
 
         # Integrated probability current:

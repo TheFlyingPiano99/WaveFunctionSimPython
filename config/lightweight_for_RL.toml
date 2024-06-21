@@ -24,7 +24,7 @@ initial_wp_width_bohr_radii = 2.0
 
 [volume]
 simulated_volume_dimensions_bohr_radii_3 = [120.0, 120.0, 120.0] #Including absorbing potential regions
-number_of_voxels_3 = [256, 256, 256]         #Including absorbing potential regions
+number_of_voxels_3 = [512, 128, 128]         #Including absorbing potential regions
 observation_box_bottom_corner_bohr_radii_3 = [-45.0, -45.0, -45.0]   # Same as the inner boundary of the draining potential
 observation_box_top_corner_bohr_radii_3 = [45.0, 45.0, 45.0]   # Same as the inner boundary of the draining potential
 
@@ -114,14 +114,14 @@ enable_image = false
 [[measurement.volume_probabilities]]
 name = "First half"
 bottom_corner_bohr_radii_3 = [-45.0, -45.0, -45.0]
-top_corner_bohr_radii_3 = [0.47, 45.0, 45.0]
-enable_image = true
+top_corner_bohr_radii_3 = [0.0, 45.0, 45.0]
+enable_image = false
 
 [[measurement.volume_probabilities]]
 name = "Second half"
-bottom_corner_bohr_radii_3 = [-0.47, -45.0, -45.0]
+bottom_corner_bohr_radii_3 = [0.0, -45.0, -45.0]
 top_corner_bohr_radii_3 = [45.0, 45.0, 45.0]
-enable_image = true
+enable_image = false
 
 [[measurement.plane_probability_currents]]
 name = "First plane"
@@ -129,7 +129,7 @@ center_bohr_radii_3 = [0.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
 size_bohr_radii_2 = [90.0, 90.0]
 resolution_2 = [512, 512]
-enable_image = false
+enable_image = true
 
 [paths]
 cache_dir = "./cache"

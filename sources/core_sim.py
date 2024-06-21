@@ -40,11 +40,6 @@ def run_iteration(sim_state: SimState, measurement_tools: MeasurementTools, iter
     """
     with tqdm(total=iter_data.total_iteration_count) as progress_bar:
         for iter_data.i in range(start_index, iter_data.total_iteration_count):
-            if iter_data.is_quit:   # Quit simulation
-                snapshot_io.write_snapshot(sim_state, iter_data)
-                measurement_tools.finish(sim_state)
-                sys.exit(0)
-
             iter_start_time_s = time.time()
 
             # Do simulation step:
@@ -54,6 +49,10 @@ def run_iteration(sim_state: SimState, measurement_tools: MeasurementTools, iter
             iter_data.elapsed_system_time_s += time.time() - iter_start_time_s
             progress_bar.n = iter_data.i
             progress_bar.refresh()
+            if iter_data.is_quit:   # Quit simulation
+                snapshot_io.write_snapshot(sim_state, iter_data)
+                measurement_tools.finish(sim_state)
+                sys.exit(0)
 
     # Calculate resulting time statistics after the iteration:
     iter_data.total_simulated_time = (

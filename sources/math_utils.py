@@ -119,19 +119,23 @@ def rotation_matrix(axis, theta):
 
 grid_sizes = {}
 
+
 def get_grid_size(shape: np.shape):
     global grid_sizes
-    key = (shape[0], shape[1], shape[2])
-    if (key in grid_sizes):  # Cached size
+    key = ()
+    if len(shape) == 3:
+        key = (shape[0], shape[1], shape[2])
+    elif len(shape) == 2:
+        key = (shape[0], shape[1])
+    elif len(shape) == 1:
+        key = (shape[0])
+    if key in grid_sizes:  # Use cached value
         return grid_sizes[key]
-    grid_size = [64, 64, 64]
-    if shape[0] < 64:
-        grid_size[0] = shape[0]
-    if shape[1] < 64:
-        grid_size[1] = shape[1]
-    if shape[2] < 64:
-        grid_size[2] = shape[2]
-    for i in range(3):
+    grid_size = []
+    for i in range(len(shape)):
+        grid_size.append(64)
+        if shape[i] < 64:
+            grid_size[i] = shape[i]
         while True:
             if (shape[i] // grid_size[i]) * grid_size[i] == shape[i]:
                 break
@@ -143,15 +147,6 @@ def get_grid_size(shape: np.shape):
 
 simpson_coefficients = {}
 
-"""
-def simpson_integral_coefficients(shape: cp.shape, delta: np.array):
-    global simpson_coefficients
-    if (shape, delta) in simpson_coefficients:
-        print("Using cacheed coefficients.")
-        return simpson_coefficients[(shape, delta)]
-
-    coefficients = cp.zeros(shape=shape, dtype=cp.float32)
-
-    simpson_coefficients[(shape, delta)] = coefficients
-    return coefficients
-"""
+def indefinite_simpson_integral(array: np.array, dt: float):
+    integral = 0.0
+    return integral
