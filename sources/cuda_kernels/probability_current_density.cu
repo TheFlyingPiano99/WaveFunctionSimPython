@@ -52,14 +52,15 @@ void probability_current_density_kernel(
     float3 right = cross(normal, prefUp);
     float3 up = cross(right, normal);
 
-    T_WF_FLOAT dW = width / (T_WF_FLOAT)(gridDim.x * blockDim.x);
-    T_WF_FLOAT dH = height / (T_WF_FLOAT)(gridDim.y * blockDim.y);
+    T_WF_FLOAT dW = width / (T_WF_FLOAT)(gridDim.x * blockDim.x - 1);
+    T_WF_FLOAT dH = height / (T_WF_FLOAT)(gridDim.y * blockDim.y - 1);
 
     float3 f_r = center + right * (float)dW * (float)((int)(blockIdx.x * blockDim.x + threadIdx.x) - (int)(gridDim.x * blockDim.x / 2))
         + up * (float)dH * (float)((int)(blockIdx.y * blockDim.y + threadIdx.y) - (int)(gridDim.y * blockDim.y / 2));
     double3 r = {f_r.x, f_r.y, f_r.z};
     int planeIdx = get_array_index();
     T_WF_FLOAT pcDensity;
+    /*
     if (r.x < bounding_bottom_x || r.x > bounding_top_x
     || r.y < bounding_bottom_y || r.y > bounding_top_y
     || r.z < bounding_bottom_z || r.z > bounding_top_z) // Terminate if outside the bounding box
@@ -67,6 +68,7 @@ void probability_current_density_kernel(
         pcDensity = 0.0;
     }
     else {
+    */
         T_WF_FLOAT3 fVoxel = r / delta_r + 0.5f * T_WF_FLOAT3{(T_WF_FLOAT)N.x, (T_WF_FLOAT)N.y, (T_WF_FLOAT)N.z};
         uint3 voxel = {(unsigned int)fVoxel.x, (unsigned int)fVoxel.y, (unsigned int)fVoxel.z};
 
@@ -192,7 +194,7 @@ void probability_current_density_kernel(
                 conj(psi) * dPsi - psi * conj(dPsi)
             )
         ).real();
-    }
+    //}
     probability_current_density[planeIdx] = pcDensity;
 
     // Integrate:
