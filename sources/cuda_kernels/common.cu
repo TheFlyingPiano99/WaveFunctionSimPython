@@ -587,4 +587,23 @@ __device__ complex<double> gaussian_wave_packet<double, double3>(double a, const
         );
 }
 
+/*
+Parallel Reduction with Sequential Addressing
+Based on the "Reduction #3: Sequential Addressing" code published in Mark Harris's Optimizing Parallel Reduction in CUDA presentation slides
+URL: https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+*/
+template<typename T>
+__device__ void parallel_reduction_sequential(unsigned int threadId, T sdata[])
+{
+    __syncthreads();
+    unsigned int blockSize = blockDim.x * blockDim.y * blockDim.z;
+    for (unsigned int s=1; s < blockSize; s *= 2) { // Reduction #3: Sequential Addressing from Optimizing Parallel Reduction in CUDA by Mark Harris NVIDIA
+        int index = 2 * s * threadId;
+        if (index + s < blockSize) {
+            sdata[index] += sdata[index + s];
+        }
+        __syncthreads();
+    }
+}
+
 #endif  // CUDA_COMMON

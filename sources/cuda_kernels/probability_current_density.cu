@@ -204,14 +204,8 @@ void probability_current_density_kernel(
     // Reduction in shared memory
     extern __shared__ T_WF_FLOAT sdata[];
     sdata[threadId] = pcDensity * get_simpson_coefficient_2d<T_WF_FLOAT>(pixel) * dW * dH;
-    __syncthreads();
-    unsigned int blockSize = blockDim.x * blockDim.y;
-    for (unsigned int s = 1; s < blockSize; s *= 2) {
-        if (threadId % (2 * s) == 0 && (threadId + s) < blockSize) {
-            sdata[threadId] += sdata[threadId + s];
-        }
-        __syncthreads();
-    }
+
+    parallel_reduction_sequential(threadId, sdata);
 
     // Add the values calculated by the blocks and write the result into probabilityCurrentOut
     if (threadId == 0)

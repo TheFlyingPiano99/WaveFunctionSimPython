@@ -651,6 +651,7 @@ class MeasurementTools:
         if self.__expected_location is not None:
             expected_location_evolution = self.__expected_location.get_expected_location_evolution()
             expected_location_evolution_with_label = list(zip(expected_location_evolution.T, ["X axis", "Y axis", "Z axis"]))
+            np.save(os.path.join(sim_state.get_output_dir(), f"expected_location_evolution.npy"), expected_location_evolution)
             plot.plot_probability_evolution(
                 out_dir=sim_state.get_output_dir(),
                 file_name="expected_location_evolution.png",
@@ -667,7 +668,9 @@ class MeasurementTools:
         volume_probability_evolutions = []
         for v in self.__volume_probabilities:
             if v.is_enable_image():
-                volume_probability_evolutions.append(v.get_probability_evolution_with_name())
+                prob_with_name = v.get_probability_evolution_with_name()
+                volume_probability_evolutions.append(prob_with_name)
+                np.save(os.path.join(sim_state.get_output_dir(), f"volume_probability_evolution_{prob_with_name[1]}.npy"), prob_with_name[0])
         if len(volume_probability_evolutions) > 0:
             sum = np.array(
                 np.zeros(shape=volume_probability_evolutions[0][0].shape, dtype=volume_probability_evolutions[0][0].dtype).tolist()
@@ -675,7 +678,6 @@ class MeasurementTools:
             for evolution in volume_probability_evolutions:
                 sum = np.add(sum, np.array(evolution[0].tolist()))
             volume_probability_evolutions.append([sum, "Sum"])
-            print(f"Number of volume probability data points = {volume_probability_evolutions[0][0].size}")
             plot.plot_probability_evolution(
                 out_dir=sim_state.get_output_dir(),
                 file_name="volume_probability_evolution.png",
@@ -690,9 +692,11 @@ class MeasurementTools:
 
         # Plane probability currents:
         probability_current_evolutions = []
-        for p in self.__plane_probability_currents:
-            if p.is_enable_image():
-                probability_current_evolutions.append(p.get_probability_current_evolution_with_name())
+        for pc in self.__plane_probability_currents:
+            if pc.is_enable_image():
+                pc_with_name = pc.get_probability_current_evolution_with_name()
+                probability_current_evolutions.append(pc_with_name)
+                np.save(os.path.join(sim_state.get_output_dir(), f"probability_current_evolution_{pc_with_name[1]}.npy"), pc_with_name[0])
         if len(probability_current_evolutions) > 0:
             plot.plot_probability_evolution(
                 out_dir=sim_state.get_output_dir(),
@@ -708,11 +712,11 @@ class MeasurementTools:
 
         # Integrated probability current:
         integrated_probability_current_evolutions = []
-        for p in self.__plane_probability_currents:
-            if p.is_enable_image():
-                integrated_probability_current_evolutions.append(
-                    p.get_integrated_probability_current_evolution_with_name()
-                )
+        for pc in self.__plane_probability_currents:
+            if pc.is_enable_image():
+                ipc_with_name = pc.get_integrated_probability_current_evolution_with_name()
+                integrated_probability_current_evolutions.append(ipc_with_name)
+                np.save(os.path.join(sim_state.get_output_dir(), f"integrated_probability_current_{ipc_with_name[1]}.npy"), ipc_with_name[0])
         if len(integrated_probability_current_evolutions) > 0:
             plot.plot_probability_evolution(
                 out_dir=sim_state.get_output_dir(),

@@ -38,16 +38,7 @@ void expected_location_kernel(
     sdata[threadId] = r * (conj(waveFunction[wf_idx]) * waveFunction[wf_idx]).real()
         * get_simpson_coefficient_3d<T_WF_FLOAT>(voxel) * delta_r.x * delta_r.y * delta_r.z;
 
-    __syncthreads();
-
-    // Reduction in shared memory:
-    unsigned int blockSize = blockDim.x * blockDim.y * blockDim.z;
-    for (unsigned int s = 1; s < blockSize; s *= 2) {
-        if (threadId % (2 * s) == 0 && (threadId + s) < blockSize) {
-            sdata[threadId] += sdata[threadId + s];
-        }
-        __syncthreads();
-    }
+    parallel_reduction_sequential(threadId, sdata);
 
     // Add the values calculated by the blocks and write the result into output buffer:
     if (threadId == 0)
