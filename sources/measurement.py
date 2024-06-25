@@ -699,6 +699,8 @@ class MeasurementTools:
                 prob_with_name = v.get_probability_evolution_with_name()
                 volume_probability_evolutions.append(prob_with_name)
                 np.save(os.path.join(sim_state.get_output_dir(), f"volume_probability_evolution_{prob_with_name[1]}.npy"), prob_with_name[0])
+                dwell_time = math_utils.indefinite_simpson_integral(prob_with_name[0], sim_state.get_delta_time_h_bar_per_hartree())
+                print(f"Dwell time in {prob_with_name[1]}: {dwell_time[-1]:.5f} ħ/Hartree")
         if len(volume_probability_evolutions) > 0:
             sum = np.array(
                 np.zeros(shape=volume_probability_evolutions[0][0].shape, dtype=volume_probability_evolutions[0][0].dtype).tolist()
@@ -745,7 +747,7 @@ class MeasurementTools:
                 ipc_with_name = pc.get_integrated_probability_current_evolution_with_name()
                 integrated_probability_current_evolutions.append(ipc_with_name)
                 np.save(os.path.join(sim_state.get_output_dir(), f"integrated_probability_current_{ipc_with_name[1]}.npy"), ipc_with_name[0])
-                print(f"Transfer probability on {ipc_with_name[1]}: {ipc_with_name[0][-1]}")    # Print last element
+                print(f"Transfer probability on {ipc_with_name[1]}: {ipc_with_name[0][-1]:.5f}")    # Print last element
         if len(integrated_probability_current_evolutions) > 0:
             plot.plot_probability_evolution(
                 out_dir=sim_state.get_output_dir(),
