@@ -21,7 +21,7 @@ double_precision_calculation = true
 particle_mass_electron_rest_mass = 1.0
 initial_position_bohr_radii_3 = [-34.015067794, 0.0, 0.0]
 initial_velocity_bohr_radii_hartree_per_h_bar_3 = [0.60621943221906042757, 0.0, 0.0]
-initial_standard_deviation_bohr_radii = 9.4486299429
+initial_standard_deviation_bohr_radii_3 = [9.4486299429, 6.4486299429, 4.4486299429]
 
 [volume]
 simulated_volume_dimensions_bohr_radii_3 = [145.13095592, 145.13095592, 145.13095592] #Including absorbing potential regions
@@ -116,13 +116,13 @@ enable_image = true
 name = "First half"
 bottom_corner_bohr_radii_3 = [-45.0, -45.0, -45.0]
 top_corner_bohr_radii_3 = [0.0, 45.0, 45.0]
-enable_image = false
+enable_image = true
 
 [[measurement.volume_probabilities]]
 name = "Second half"
 bottom_corner_bohr_radii_3 = [0.0, -45.0, -45.0]
 top_corner_bohr_radii_3 = [45.0, 45.0, 45.0]
-enable_image = false
+enable_image = true
 
 [[measurement.plane_probability_currents]]
 name = "First plane"

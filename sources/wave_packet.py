@@ -37,20 +37,21 @@ def wave_packet(x, y):
 
 
 class WavePacket:
-    _initial_wp_position_bohr_radii_3: np.array = np.array([0.0, 0.0, 0.0])
+    _initial_position_bohr_radii_3: np.array = np.array([0.0, 0.0, 0.0])
     _initial_wp_velocity_bohr_radii_hartree_per_h_bar_3: np.array = np.array([0.0, 0.0, 0.0])
-    _initial_wp_momentum_h_per_bohr_radii_3: np.array = np.array([0.0, 0.0, 0.0])
+    _initial_momentum_h_per_bohr_radii_3: np.array = np.array([0.0, 0.0, 0.0])
     _particle_mass_electron_rest_mass: float = 1.0
     _de_broglie_wave_length_bohr_radii: float
 
+
     def get_initial_wp_position_bohr_radii_3(self):
-        return self._initial_wp_position_bohr_radii_3
+        return self._initial_position_bohr_radii_3
 
     def get_initial_wp_velocity_bohr_radii_hartree_per_h_bar_3(self):
         return self._initial_wp_velocity_bohr_radii_hartree_per_h_bar_3
 
     def get_initial_wp_momentum_h_per_bohr_radii_3(self):
-        return self._initial_wp_momentum_h_per_bohr_radii_3
+        return self._initial_momentum_h_per_bohr_radii_3
 
     def get_particle_mass_electron_rest_mass(self):
         return self._particle_mass_electron_rest_mass
@@ -59,36 +60,38 @@ class WavePacket:
         return self._de_broglie_wave_length_bohr_radii
 
 class GaussianWavePacket(WavePacket):
-    __initial_wp_width_bohr_radii: float = 2.0
+    __initial_standard_deviation_bohr_radii_3: np.array
 
     def __init__(self, config: Dict):
         super().__init__()
         self._particle_mass_electron_rest_mass = try_read_param(config, "wave_packet.particle_mass_electron_rest_mass",
                                                                 1.0)
-        self._initial_wp_position_bohr_radii_3 = np.array(
+        self._initial_position_bohr_radii_3 = np.array(
             try_read_param(config, "wave_packet.initial_position_bohr_radii_3", [0.0, 0.0, 0.0])
         )
         self._initial_wp_velocity_bohr_radii_hartree_per_h_bar_3 = np.array(
             try_read_param(config, "wave_packet.initial_velocity_bohr_radii_hartree_per_h_bar_3", [0.0, 0.0, 0.0])
         )
-        self._initial_wp_momentum_h_per_bohr_radii_3 = math_utils.classical_momentum(
+        self._initial_momentum_h_per_bohr_radii_3 = math_utils.classical_momentum(
             mass=self._particle_mass_electron_rest_mass,
             velocity=self._initial_wp_velocity_bohr_radii_hartree_per_h_bar_3,
         )
         momentum_magnitude = (
                 np.dot(
-                    self._initial_wp_momentum_h_per_bohr_radii_3,
-                    self._initial_wp_momentum_h_per_bohr_radii_3,
+                    self._initial_momentum_h_per_bohr_radii_3,
+                    self._initial_momentum_h_per_bohr_radii_3,
                 )
                 ** 0.5
         )
         self._de_broglie_wave_length_bohr_radii = (
             math_utils.get_de_broglie_wave_length_bohr_radii(momentum_magnitude)
         )
-        self.__initial_wp_width_bohr_radii = try_read_param(config, "wave_packet.initial_standard_deviation_bohr_radii", 2.0)
+        self.__initial_standard_deviation_bohr_radii_3 = np.array(
+            try_read_param(config, "wave_packet.initial_standard_deviation_bohr_radii_3", [5.0, 5.0, 5.0])
+        )
 
-    def get_initial_wp_width_bohr_radii(self):
-        return self.__initial_wp_width_bohr_radii
+    def get_initial_standard_deviation_bohr_radii(self):
+        return self.__initial_standard_deviation_bohr_radii_3
 
     def init_wave_packet(
             self,
@@ -119,22 +122,26 @@ class GaussianWavePacket(WavePacket):
                 (cp.float64(delta_x_bohr_radii_3[1]) if double_precision else cp.float32(delta_x_bohr_radii_3[1])),
                 (cp.float64(delta_x_bohr_radii_3[2]) if double_precision else cp.float32(delta_x_bohr_radii_3[2])),
 
-                (cp.float64(self.__initial_wp_width_bohr_radii * 2.0) if double_precision
-                    else cp.float32(self.__initial_wp_width_bohr_radii * 2.0)),
+                (cp.float64(self.__initial_standard_deviation_bohr_radii_3[0]) if double_precision
+                    else cp.float32(self.__initial_standard_deviation_bohr_radii_3[0])),
+                (cp.float64(self.__initial_standard_deviation_bohr_radii_3[1]) if double_precision
+                    else cp.float32(self.__initial_standard_deviation_bohr_radii_3[1])),
+                (cp.float64(self.__initial_standard_deviation_bohr_radii_3[2]) if double_precision
+                    else cp.float32(self.__initial_standard_deviation_bohr_radii_3[2])),
 
-                (cp.float64(self._initial_wp_position_bohr_radii_3[0]) if double_precision
-                    else cp.float32(self._initial_wp_position_bohr_radii_3[0])),
-                (cp.float64(self._initial_wp_position_bohr_radii_3[1]) if double_precision
-                    else cp.float32(self._initial_wp_position_bohr_radii_3[1])),
-                (cp.float64(self._initial_wp_position_bohr_radii_3[2]) if double_precision
-                    else cp.float32(self._initial_wp_position_bohr_radii_3[2])),
+                (cp.float64(self._initial_position_bohr_radii_3[0]) if double_precision
+                    else cp.float32(self._initial_position_bohr_radii_3[0])),
+                (cp.float64(self._initial_position_bohr_radii_3[1]) if double_precision
+                    else cp.float32(self._initial_position_bohr_radii_3[1])),
+                (cp.float64(self._initial_position_bohr_radii_3[2]) if double_precision
+                    else cp.float32(self._initial_position_bohr_radii_3[2])),
 
-                (cp.float64(self._initial_wp_momentum_h_per_bohr_radii_3[0]) if double_precision
-                    else cp.float32(self._initial_wp_momentum_h_per_bohr_radii_3[0])),
-                (cp.float64(self._initial_wp_momentum_h_per_bohr_radii_3[1]) if double_precision
-                    else cp.float32(self._initial_wp_momentum_h_per_bohr_radii_3[1])),
-                (cp.float64(self._initial_wp_momentum_h_per_bohr_radii_3[2]) if double_precision
-                    else cp.float32(self._initial_wp_momentum_h_per_bohr_radii_3[2]))
+                (cp.float64(self._initial_momentum_h_per_bohr_radii_3[0]) if double_precision
+                    else cp.float32(self._initial_momentum_h_per_bohr_radii_3[0])),
+                (cp.float64(self._initial_momentum_h_per_bohr_radii_3[1]) if double_precision
+                    else cp.float32(self._initial_momentum_h_per_bohr_radii_3[1])),
+                (cp.float64(self._initial_momentum_h_per_bohr_radii_3[2]) if double_precision
+                    else cp.float32(self._initial_momentum_h_per_bohr_radii_3[2]))
             )
         )
         return wave_tensor

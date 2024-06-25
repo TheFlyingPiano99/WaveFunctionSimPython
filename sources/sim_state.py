@@ -201,12 +201,10 @@ class SimState:
                 print("No cached gaussian_wave_packet.npy found.")
 
         if full_init:
-            self.__wave_tensor = cp.asarray(
-                self.__wave_packet.init_wave_packet(
+            self.__wave_tensor = self.__wave_packet.init_wave_packet(
                     self.__delta_x_bohr_radii_3,
                     self.__number_of_voxels_3,
                     self.__double_precision
-                )
             )
             cp.save(file=os.path.join(self.__cache_dir, "gaussian_wave_packet.npy"), arr=self.__wave_tensor)
 

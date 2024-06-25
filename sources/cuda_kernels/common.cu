@@ -565,26 +565,45 @@ __device__ double get_simpson_coefficient_2d<double>(const uint2& pixel)
 }
 
 template<typename T, typename T3>
-__device__ complex<T> gaussian_wave_packet(T a, const T3& r, const T3& r_0, const T3& k_0);
+__device__ complex<T> gaussian_wave_packet(const T3& sigma, const T3& r, const T3& r_0, const T3& k_0);
+
 
 template<>
-__device__ complex<float> gaussian_wave_packet<float, float3>(float a, const float3& r, const float3& r_0, const float3& k_0)
+__device__ complex<float> gaussian_wave_packet<float, float3>(const float3& sigma, const float3& r, const float3& r_0, const float3& k_0)
 {
-        return powf(2.0f / M_PI_f / a / a, 3.0f / 4.0f)
-        * exp_i(dot(k_0, r))
+    float3 a = 2.0f * sigma;
+    float g_x = powf(2.0f / M_PI_f / a.x / a.x, 1.0f / 4.0f)
         * expf(
-            -dot((r - r_0), (r - r_0)) / a / a
+            -(r.x - r_0.x) * (r.x - r_0.x) / a.x / a.x
         );
+    float g_y = powf(2.0f / M_PI_f / a.y / a.y, 1.0f / 4.0f)
+        * expf(
+            -(r.y - r_0.y) * (r.y - r_0.y) / a.y / a.y
+        );
+    float g_z = powf(2.0f / M_PI_f / a.z / a.z, 1.0f / 4.0f)
+        * expf(
+            -(r.z - r_0.z) * (r.z - r_0.z) / a.z / a.z
+        );
+    return g_x * g_y * g_z * exp_i(dot(k_0, r));
 }
 
 template<>
-__device__ complex<double> gaussian_wave_packet<double, double3>(double a, const double3& r, const double3& r_0, const double3& k_0)
+__device__ complex<double> gaussian_wave_packet<double, double3>(const double3& sigma, const double3& r, const double3& r_0, const double3& k_0)
 {
-        return pow(2.0 / M_PI_d / a / a, 3.0 / 4.0)
-        * exp_i(dot(k_0, r))
+    double3 a = 2.0 * sigma;
+    double g_x = pow(2.0 / M_PI_d / a.x / a.x, 1.0 / 4.0)
         * exp(
-            -dot((r - r_0), (r - r_0)) / a / a
+            -(r.x - r_0.x) * (r.x - r_0.x) / a.x / a.x
         );
+    double g_y = pow(2.0 / M_PI_d / a.y / a.y, 1.0 / 4.0)
+        * exp(
+            -(r.y - r_0.y) * (r.y - r_0.y) / a.y / a.y
+        );
+    double g_z = pow(2.0 / M_PI_d / a.z / a.z, 1.0 / 4.0)
+        * exp(
+            -(r.z - r_0.z) * (r.z - r_0.z) / a.z / a.z
+        );
+    return g_x * g_y * g_z * exp_i(dot(k_0, r));
 }
 
 /*
