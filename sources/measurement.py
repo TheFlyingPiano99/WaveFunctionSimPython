@@ -200,9 +200,9 @@ class PlaneProbabilityCurrent:
         self.__center_bohr_radii_3 = np.array(
             try_read_param(config, "center_bohr_radii_3", "measurement.plane_probability_currents")
         )
-        self.__normal_vector_3 = np.array(
+        self.__normal_vector_3 = math_utils.normalize(np.array(
             try_read_param(config, "normal_vector_3", "measurement.plane_probability_currents")
-        )
+        ))
         self.__enable_image = try_read_param(config, "enable_image", "measurement.plane_probability_currents")
         self.__size_bohr_radii_2 = np.array(
             try_read_param(config, "size_bohr_radii_2", [60.0, 60.0], "measurement.plane_probability_currents"))
@@ -274,14 +274,6 @@ class PlaneProbabilityCurrent:
                 cp.uint32(sim_state.get_number_of_voxels_3()[0]),
                 cp.uint32(sim_state.get_number_of_voxels_3()[1]),
                 cp.uint32(sim_state.get_number_of_voxels_3()[2]),
-
-                cp.float32(sim_state.get_observation_box_bottom_corner_bohr_radii_3()[0]),
-                cp.float32(sim_state.get_observation_box_bottom_corner_bohr_radii_3()[1]),
-                cp.float32(sim_state.get_observation_box_bottom_corner_bohr_radii_3()[2]),
-
-                cp.float32(sim_state.get_observation_box_top_corner_bohr_radii_3()[0]),
-                cp.float32(sim_state.get_observation_box_top_corner_bohr_radii_3()[1]),
-                cp.float32(sim_state.get_observation_box_top_corner_bohr_radii_3()[2])
             ),
             shared_mem=self.__shared_memory_bytes
         )
@@ -301,7 +293,9 @@ class PlaneProbabilityCurrent:
 class ExpectedLocation:
     __enable_image: bool
     __expected_location_buffer: cp.array
+    __expected_location_squared_buffer: cp.array
     __expected_location_evolution: np.array = np.zeros(shape=(0, 3), dtype=np.float64)
+    __standard_deviation_evolution: np.array = np.zeros(shape=(0, 3), dtype=np.float64)
     __kernel: cp.RawKernel
     __kernel_grid_size: np.array
     __kernel_block_size: np.array
@@ -331,6 +325,7 @@ class ExpectedLocation:
             "expected_location_kernel",
         )
         self.__expected_location_buffer = cp.array([0.0, 0.0, 0.0], dtype=cp.float64 if sim_state.is_double_precision() else cp.float32)
+        self.__expected_location_squared_buffer = cp.array([0.0, 0.0, 0.0], dtype=cp.float64 if sim_state.is_double_precision() else cp.float32)
 
     def is_enable_image(self):
         return self.__enable_image
@@ -339,6 +334,10 @@ class ExpectedLocation:
         self.__expected_location_buffer[0] = 0.0
         self.__expected_location_buffer[1] = 0.0
         self.__expected_location_buffer[2] = 0.0
+
+        self.__expected_location_squared_buffer[0] = 0.0
+        self.__expected_location_squared_buffer[1] = 0.0
+        self.__expected_location_squared_buffer[2] = 0.0
 
         wave_function = sim_state.get_wave_function()
         delta_r = sim_state.get_delta_x_bohr_radii_3()
@@ -350,6 +349,7 @@ class ExpectedLocation:
             (
                 wave_function,
                 self.__expected_location_buffer,
+                self.__expected_location_squared_buffer,
 
                 (cp.float64(delta_r[0]) if dp else cp.float32(delta_r[0])),
                 (cp.float64(delta_r[1]) if dp else cp.float32(delta_r[1])),
@@ -365,14 +365,25 @@ class ExpectedLocation:
             )
         )
 
+        e_r = cp.asnumpy(self.__expected_location_buffer).reshape((1, 3))
+        e_r_2 = cp.asnumpy(self.__expected_location_squared_buffer).reshape((1, 3))
         self.__expected_location_evolution = np.concatenate(
-            (self.__expected_location_evolution, cp.asnumpy(self.__expected_location_buffer).reshape((1, 3))),
+            (self.__expected_location_evolution, e_r),
+            axis=0
+        )
+        self.__standard_deviation_evolution = np.concatenate(
+            (
+                self.__standard_deviation_evolution,
+                np.sqrt(e_r_2 - np.power(e_r, 2))
+            ),
             axis=0
         )
 
     def get_expected_location_evolution(self):
         return self.__expected_location_evolution
 
+    def get_standard_deviation_evolution(self):
+        return self.__standard_deviation_evolution
 
 class ProjectedMeasurement:
     probability_density: np.array
@@ -664,6 +675,23 @@ class MeasurementTools:
                 y_max=np.max(sim_state.get_observation_box_top_corner_bohr_radii_3()),
             )
 
+        # Standard deviation:
+        if self.__expected_location is not None:
+            standard_deviation_evolution = self.__expected_location.get_standard_deviation_evolution()
+            standard_deviation_evolution_with_label = list(zip(standard_deviation_evolution.T, ["X axis", "Y axis", "Z axis"]))
+            np.save(os.path.join(sim_state.get_output_dir(), f"standard_deviation_evolution.npy"), standard_deviation_evolution)
+            plot.plot_probability_evolution(
+                out_dir=sim_state.get_output_dir(),
+                file_name="standard_deviation_evolution.png",
+                title="Standard deviation evolution",
+                y_label="Standard deviation [Bohr radius]",
+                probability_evolutions=standard_deviation_evolution_with_label,
+                delta_t=sim_state.get_delta_time_h_bar_per_hartree(),
+                show_fig=self.__show_figures,
+                y_min=0.0,
+                y_max=np.max(sim_state.get_observation_box_top_corner_bohr_radii_3()) * 0.5,
+            )
+
         # Volume probabilities:
         volume_probability_evolutions = []
         for v in self.__volume_probabilities:
@@ -717,6 +745,7 @@ class MeasurementTools:
                 ipc_with_name = pc.get_integrated_probability_current_evolution_with_name()
                 integrated_probability_current_evolutions.append(ipc_with_name)
                 np.save(os.path.join(sim_state.get_output_dir(), f"integrated_probability_current_{ipc_with_name[1]}.npy"), ipc_with_name[0])
+                print(f"Transfer probability on {ipc_with_name[1]}: {ipc_with_name[0][-1]}")    # Print last element
         if len(integrated_probability_current_evolutions) > 0:
             plot.plot_probability_evolution(
                 out_dir=sim_state.get_output_dir(),
@@ -724,7 +753,7 @@ class MeasurementTools:
                 title="Integrated probability current evolution",
                 y_label="Probability",
                 probability_evolutions=integrated_probability_current_evolutions,
-                delta_t=2.0 * sim_state.get_delta_time_h_bar_per_hartree(),
+                delta_t=sim_state.get_delta_time_h_bar_per_hartree(),
                 show_fig=self.__show_figures,
                 y_min=-1.1,
                 y_max=1.1

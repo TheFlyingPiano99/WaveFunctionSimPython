@@ -4,6 +4,7 @@ extern "C" __global__
 void expected_location_kernel(
     complex<T_WF_FLOAT>* waveFunction,
     T_WF_FLOAT* expectedLocationOut,
+    T_WF_FLOAT* expectedLocationSquaredOut,
 
     T_WF_FLOAT delta_x,
     T_WF_FLOAT delta_y,
@@ -37,12 +38,23 @@ void expected_location_kernel(
     unsigned int threadId = get_block_local_idx_3d();
     sdata[threadId] = r * (conj(waveFunction[wf_idx]) * waveFunction[wf_idx]).real()
         * get_simpson_coefficient_3d<T_WF_FLOAT>(voxel) * delta_r.x * delta_r.y * delta_r.z;
-
     parallel_reduction_sequential(threadId, sdata);
-
     // Add the values calculated by the blocks and write the result into output buffer:
-    if (threadId == 0)
+    if (threadId == 0) {
         atomicAdd(&expectedLocationOut[0], sdata[0].x);
         atomicAdd(&expectedLocationOut[1], sdata[0].y);
         atomicAdd(&expectedLocationOut[2], sdata[0].z);
+    }
+
+    //----------------------------------------------------------------------------------------
+    // Calculate E[r^2]
+    sdata[threadId] = r * r * (conj(waveFunction[wf_idx]) * waveFunction[wf_idx]).real()
+        * get_simpson_coefficient_3d<T_WF_FLOAT>(voxel) * delta_r.x * delta_r.y * delta_r.z;
+    parallel_reduction_sequential(threadId, sdata);
+    // Add the values calculated by the blocks and write the result into output buffer:
+    if (threadId == 0) {
+        atomicAdd(&expectedLocationSquaredOut[0], sdata[0].x);
+        atomicAdd(&expectedLocationSquaredOut[1], sdata[0].y);
+        atomicAdd(&expectedLocationSquaredOut[2], sdata[0].z);
+    }
 }

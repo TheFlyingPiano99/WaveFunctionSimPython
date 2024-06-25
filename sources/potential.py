@@ -143,7 +143,7 @@ class PotentialWall:
     def __init__(self, wall_config: Dict):
         self.potential_hartree = try_read_param(wall_config, "potential_hartree", 20)
         self.center_bohr_radii_3 = np.array(try_read_param(wall_config, "center_bohr_radii_3", [0.0, 0.0, 0.0]))
-        self.normal_vector_3 = np.array(try_read_param(wall_config, "normal_vector_3", [1.0, 0.0, 0.0]))
+        self.normal_vector_3 = math_utils.normalize(np.array(try_read_param(wall_config, "normal_vector_3", [1.0, 0.0, 0.0])))
         self.plateau_thickness_bohr_radii = try_read_param(wall_config, "plateau_thickness_bohr_radii", 5.0)
         self.slope_thickness_bohr_radii = try_read_param(wall_config, "slope_thickness_bohr_radii", 0.0)
         self.slope_exponent = try_read_param(wall_config, "slope_exponent", 1.0)

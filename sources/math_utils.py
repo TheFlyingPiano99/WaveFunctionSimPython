@@ -165,7 +165,7 @@ def indefinite_simpson_integral(array: np.array, dt: float):
     integral = np.array(np.zeros(shape=array.size, dtype=array.dtype).tolist())
     integral[0] = 0.0
     integral[1] = (array[0] + array[1]) / 2.0
-    integral[2] = 3.0 * integral[1]
+    integral[1] = 3.0 * integral[1]
 
     for l in range(2, odd_section, 2):
         integral[l] = integral[l - 2] + array[l - 2] + 4.0 * array[l - 1] + array[l]

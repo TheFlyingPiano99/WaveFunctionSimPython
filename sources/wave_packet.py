@@ -66,10 +66,10 @@ class GaussianWavePacket(WavePacket):
         self._particle_mass_electron_rest_mass = try_read_param(config, "wave_packet.particle_mass_electron_rest_mass",
                                                                 1.0)
         self._initial_wp_position_bohr_radii_3 = np.array(
-            try_read_param(config, "wave_packet.initial_wp_position_bohr_radii_3", [0.0, 0.0, 0.0])
+            try_read_param(config, "wave_packet.initial_position_bohr_radii_3", [0.0, 0.0, 0.0])
         )
         self._initial_wp_velocity_bohr_radii_hartree_per_h_bar_3 = np.array(
-            try_read_param(config, "wave_packet.initial_wp_velocity_bohr_radii_hartree_per_h_bar_3", [0.0, 0.0, 0.0])
+            try_read_param(config, "wave_packet.initial_velocity_bohr_radii_hartree_per_h_bar_3", [0.0, 0.0, 0.0])
         )
         self._initial_wp_momentum_h_per_bohr_radii_3 = math_utils.classical_momentum(
             mass=self._particle_mass_electron_rest_mass,
@@ -85,7 +85,7 @@ class GaussianWavePacket(WavePacket):
         self._de_broglie_wave_length_bohr_radii = (
             math_utils.get_de_broglie_wave_length_bohr_radii(momentum_magnitude)
         )
-        self.__initial_wp_width_bohr_radii = try_read_param(config, "wave_packet.initial_wp_width_bohr_radii", 2.0)
+        self.__initial_wp_width_bohr_radii = try_read_param(config, "wave_packet.initial_standard_deviation_bohr_radii", 2.0)
 
     def get_initial_wp_width_bohr_radii(self):
         return self.__initial_wp_width_bohr_radii

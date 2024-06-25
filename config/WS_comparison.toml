@@ -5,28 +5,29 @@
 
 # The naming convention is as follows: <descriptive name>_<measurement unit if any>_<vector dimension count if greater than 1>
 
+# Free space simulation from Web Schrödinger
 
 [simulation]
 method = "fourier"
 order_of_approximation = 10
-delta_time_h_bar_per_hartree = 0.05
-total_iteration_count = 6000
+delta_time_h_bar_per_hartree = 0.2
+total_iteration_count = 541
 is_dynamic_potential_mode = true
 enable_wave_function_saving = false
 wave_function_save_iteration_interval = 1
-double_precision_calculation = false
+double_precision_calculation = true
 
 [wave_packet]
 particle_mass_electron_rest_mass = 1.0
-initial_position_bohr_radii_3 = [-20.0, 0.0, 0.0]
-initial_velocity_bohr_radii_hartree_per_h_bar_3 = [2.0, 0.0, 0.0]
-initial_standard_deviation_bohr_radii = 0.5
+initial_position_bohr_radii_3 = [-34.015067794, 0.0, 0.0]
+initial_velocity_bohr_radii_hartree_per_h_bar_3 = [0.60621943221906042757, 0.0, 0.0]
+initial_standard_deviation_bohr_radii = 9.4486299429
 
 [volume]
-simulated_volume_dimensions_bohr_radii_3 = [120.0, 120.0, 120.0] #Including absorbing potential regions
+simulated_volume_dimensions_bohr_radii_3 = [145.13095592, 145.13095592, 145.13095592] #Including absorbing potential regions
 number_of_voxels_3 = [256, 256, 256]         #Including absorbing potential regions
-observation_box_bottom_corner_bohr_radii_3 = [-60.0, -60.0, -60.0]   # Same as the inner boundary of the draining potential
-observation_box_top_corner_bohr_radii_3 = [60.0, 60.0, 60.0]   # Same as the inner boundary of the draining potential
+observation_box_bottom_corner_bohr_radii_3 = [-72.565, -72.565, -72.565]   # Same as the inner boundary of the draining potential
+observation_box_top_corner_bohr_radii_3 = [72.565, 72.565, 72.565]   # Same as the inner boundary of the draining potential
 
 [absorbing_boundary_condition]
 outer_potential_in_positive_xyz_direction_hartree_3 = [-100.0, -10.0, -10.0]
@@ -115,20 +116,36 @@ enable_image = true
 name = "First half"
 bottom_corner_bohr_radii_3 = [-45.0, -45.0, -45.0]
 top_corner_bohr_radii_3 = [0.0, 45.0, 45.0]
-enable_image = true
+enable_image = false
 
 [[measurement.volume_probabilities]]
 name = "Second half"
 bottom_corner_bohr_radii_3 = [0.0, -45.0, -45.0]
 top_corner_bohr_radii_3 = [45.0, 45.0, 45.0]
-enable_image = true
+enable_image = false
 
 [[measurement.plane_probability_currents]]
 name = "First plane"
+center_bohr_radii_3 = [-5.6691779657, 0.0, 0.0]
+normal_vector_3 = [1.0, 0.0, 0.0]
+size_bohr_radii_2 = [145.13, 145.13]
+resolution_2 = [256, 256]
+enable_image = true
+
+[[measurement.plane_probability_currents]]
+name = "Middle"
 center_bohr_radii_3 = [0.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
-size_bohr_radii_2 = [100.0, 100.0]
-resolution_2 = [512, 512]
+size_bohr_radii_2 = [145.13, 145.13]
+resolution_2 = [256, 256]
+enable_image = true
+
+[[measurement.plane_probability_currents]]
+name = "Second plane"
+center_bohr_radii_3 = [7.3699313555, 0.0, 0.0]
+normal_vector_3 = [1.0, 0.0, 0.0]
+size_bohr_radii_2 = [145.13, 145.13]
+resolution_2 = [256, 256]
 enable_image = true
 
 [paths]
