@@ -461,28 +461,28 @@ __device__ unsigned int get_block_local_idx_2d()
 }
 
 template<typename T>
-__device__ T get_simpson_coefficient_3d(const uint3& voxel);
+__device__ T get_simpson_coefficient_3d(const uint3& voxel, const uint3& sample_count);
 
 template<>
-__device__ float get_simpson_coefficient_3d<float>(const uint3& voxel)
+__device__ float get_simpson_coefficient_3d<float>(const uint3& voxel, const uint3& sample_count)
 {
     uint3 n = get_voxel_count_3d();    // In the integrated volume
     float sX = 1.0f;
-    if (voxel.x > 0 && voxel.x < n.x - 1) {
+    if (voxel.x > 0 && voxel.x < sample_count.x - 1) {
         if (voxel.x % 2 == 0)
             sX = 2.0f;
         else
             sX = 4.0f;
     }
     float sY = 1.0f;
-    if (voxel.y > 0 && voxel.y < n.y - 1) {
+    if (voxel.y > 0 && voxel.y < sample_count.y - 1) {
         if (voxel.y % 2 == 0)
             sY = 2.0f;
         else
             sY = 4.0f;
     }
     float sZ = 1.0f;
-    if (voxel.z > 0 && voxel.z < n.z - 1) {
+    if (voxel.z > 0 && voxel.z < sample_count.z - 1) {
         if (voxel.z % 2 == 0)
             sZ = 2.0f;
         else
@@ -492,25 +492,25 @@ __device__ float get_simpson_coefficient_3d<float>(const uint3& voxel)
 }
 
 template<>
-__device__ double get_simpson_coefficient_3d<double>(const uint3& voxel)
+__device__ double get_simpson_coefficient_3d<double>(const uint3& voxel, const uint3& sample_count)
 {
     uint3 n = get_voxel_count_3d();    // In the integrated volume
     double sX = 1.0;
-    if (voxel.x > 0 && voxel.x < n.x - 1) {
+    if (voxel.x > 0 && voxel.x < sample_count.x - 1) {
         if (voxel.x % 2 == 0)
             sX = 2.0;
         else
             sX = 4.0;
     }
     double sY = 1.0;
-    if (voxel.y > 0 && voxel.y < n.y - 1) {
+    if (voxel.y > 0 && voxel.y < sample_count.y - 1) {
         if (voxel.y % 2 == 0)
             sY = 2.0;
         else
             sY = 4.0;
     }
     double sZ = 1.0;
-    if (voxel.z > 0 && voxel.z < n.z - 1) {
+    if (voxel.z > 0 && voxel.z < sample_count.z - 1) {
         if (voxel.z % 2 == 0)
             sZ = 2.0;
         else

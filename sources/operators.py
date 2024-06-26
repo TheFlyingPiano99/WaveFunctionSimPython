@@ -7,8 +7,7 @@ import os
 
 
 def init_kinetic_operator(delta_x_3: np.array, delta_time: float, mass: float, shape: np.shape):
-    grid_size = math_utils.get_grid_size(shape)
-    block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
+    grid_size, block_size = math_utils.get_grid_size_block_size(shape)
 
     f_x = cp.fft.fftfreq(n=shape[0], d=delta_x_3[0])
     f_y = cp.fft.fftfreq(n=shape[1], d=delta_x_3[1])
@@ -44,8 +43,7 @@ def init_potential_operator(P_potential: cp.ndarray, V: cp.ndarray, delta_time:f
                                  'potential_operator_kernel',
                                  enable_cooperative_groups=False)
     shape = P_potential.shape
-    grid_size = math_utils.get_grid_size(shape)
-    block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
+    grid_size, block_size = math_utils.get_grid_size_block_size(shape)
     potential_operator_kernel(
         grid_size,
         block_size,

@@ -107,9 +107,8 @@ class GaussianWavePacket(WavePacket):
         wave_packet_kernel = cp.RawKernel(wave_packet_kernel_source,
                                           'wave_packet_kernel',
                                           enable_cooperative_groups=False)
-        grid_size = math_utils.get_grid_size(shape)
+        grid_size, block_size = math_utils.get_grid_size_block_size(shape)
 
-        block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
         # Prepare an empty tensor:
         wave_tensor = cp.zeros(shape=shape, dtype=(cp.complex128 if double_precision else cp.complex64))
         wave_packet_kernel(

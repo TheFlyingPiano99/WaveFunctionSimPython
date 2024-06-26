@@ -81,8 +81,7 @@ class AbsorbingBoundaryCondition:
                                                  'absorbing_potential_kernel',
                                                  enable_cooperative_groups=False)
         shape = V.shape
-        grid_size = math_utils.get_grid_size(shape)
-        block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
+        grid_size, block_size = math_utils.get_grid_size_block_size(shape)
         absorbing_potential_kernel(
             grid_size,
             block_size,
@@ -176,8 +175,7 @@ class PotentialWall:
                                              enable_cooperative_groups=False)
 
         shape = V.shape
-        grid_size = math_utils.get_grid_size(shape)
-        block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
+        grid_size, block_size = math_utils.get_grid_size_block_size(shape)
         potential_wall_kernel(
             grid_size,
             block_size,
@@ -313,8 +311,7 @@ def add_double_slit(
                                       enable_cooperative_groups=False)
 
     shape = V.shape
-    grid_size = math_utils.get_grid_size(shape)
-    block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
+    grid_size, block_size = math_utils.get_grid_size_block_size(shape)
     double_slit_kernel(
         grid_size,
         block_size,

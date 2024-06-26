@@ -265,8 +265,7 @@ class SimState:
                     arr=cp.asnumpy(self.__localised_potential_to_visualize_hartree))
 
         shape = self.__number_of_voxels_3
-        self.__kernel_grid_size = math_utils.get_grid_size(shape)
-        self.__kernel_block_size = (shape[0] // self.__kernel_grid_size[0], shape[1] // self.__kernel_grid_size[1], shape[2] // self.__kernel_grid_size[2])
+        self.__kernel_grid_size, self.__kernel_block_size = math_utils.get_grid_size_block_size(shape)
         if self.__simulation_method == SimulationMethod.FOURIER:
             kinetic_operator_kernel_source = (Path("sources/cuda_kernels/kinetic_operator.cu")
                                               .read_text().replace("PATH_TO_SOURCES", os.path.abspath("sources"))
@@ -346,22 +345,22 @@ class SimState:
     def get_observation_box_top_corner_voxel_3(self):
         return self.__observation_box_top_corner_voxel_3
 
-    def get_observation_box_bottom_corner_bohr_radii_3(self):
+    def get_observation_box_bottom_corner_bohr_radii_3(self) -> np.array:
         return self.__observation_box_bottom_corner_bohr_radii_3
 
-    def get_observation_box_top_corner_bohr_radii_3(self):
+    def get_observation_box_top_corner_bohr_radii_3(self) -> np.array:
         return self.__observation_box_top_corner_bohr_radii_3
 
-    def is_double_precision(self):
+    def is_double_precision(self) -> bool:
         return self.__double_precision
 
-    def transform_physical_coordinate_to_voxel_3(self, pos_bohr_radii_3: np.array):
+    def transform_physical_coordinate_to_voxel_3(self, pos_bohr_radii_3: np.array) -> np.array:
         return (math_utils.transform_center_origin_to_corner_origin_system(
             pos_bohr_radii_3,
             self.__simulated_volume_dimensions_bohr_radii_3
         ) / self.__delta_x_bohr_radii_3).astype(np.uint)
 
-    def transform_voxel_to_physical_coordinate_3(self, voxel_3: np.array):
+    def transform_voxel_to_physical_coordinate_3(self, voxel_3: np.array) -> np.array:
         return math_utils.transform_corner_origin_to_center_origin_system(
             voxel_3,
             self.__number_of_voxels_3
@@ -371,7 +370,7 @@ class SimState:
         self,
         bottom_corner_bohr_radii: np.array = None,
         top_corner_bohr_radii: np.array = None
-    ):
+    ) -> cp.ndarray:
         if not (bottom_corner_bohr_radii is None) and not (top_corner_bohr_radii is None):
             bottom_voxel_3 = self.transform_physical_coordinate_to_voxel_3(bottom_corner_bohr_radii)
             top_voxel_3 = self.transform_physical_coordinate_to_voxel_3(top_corner_bohr_radii)
@@ -390,7 +389,7 @@ class SimState:
             self,
             bottom_corner_bohr_radii: np.array = None,
             top_corner_bohr_radii: np.array = None
-    ):
+    ) -> cp.ndarray:
         if not (bottom_corner_bohr_radii is None) and not (top_corner_bohr_radii is None):
             bottom_voxel_3 = self.transform_physical_coordinate_to_voxel_3(bottom_corner_bohr_radii)
             top_voxel_3 = self.transform_physical_coordinate_to_voxel_3(top_corner_bohr_radii)
@@ -643,7 +642,6 @@ class SimState:
         return text.getvalue()
 
     def _fft_time_evolution(self):
-
         self.__wave_tensor = cp.fft.fftn(self.__wave_tensor, norm="ortho")
 
         self.__kinetic_operator_kernel(
@@ -695,6 +693,7 @@ class SimState:
         )
 
         self.__wave_tensor = cp.fft.ifftn(self.__wave_tensor, norm="ortho")
+        cp.cuda.Stream.null.synchronize()
 
     """
     def _merged_fft_time_evolution(
@@ -745,6 +744,7 @@ class SimState:
                 )
             )
             pingpong_idx = 1 - pingpong_idx
+        cp.cuda.Stream.null.synchronize()
 
     def evolve_state(self):
         if self.__simulation_method == SimulationMethod.FOURIER:

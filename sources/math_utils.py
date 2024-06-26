@@ -122,55 +122,108 @@ def rotation_matrix(axis, theta):
                      [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc]])
 
 
+"""
+Source: https://www.quora.com/How-do-you-check-if-a-number-is-a-power-of-2-in-Python
+"""
+def is_power_of_two(n: int):
+    return bin(n).count('1') == 1
+
+
+"""
+Source: https://www.geeksforgeeks.org/smallest-power-of-2-greater-than-or-equal-to-n/
+"""
+def nearest_power_of_2(n: int):
+    # Calculate log2 of N
+    a = int(math.log2(n))
+    # If 2^a is equal to N, return N
+    if 2 ** a == n:
+        return n
+    # Return 2^(a + 1)
+    return 2 ** (a + 1)
+
+
 grid_sizes = {}
 
 
-def get_grid_size(shape: np.shape):
+def get_grid_size_block_size(shape: np.shape, reduced_thread_count: bool = False):
     global grid_sizes
     key = ()
+    # Create cache key and use cache if available:
     if len(shape) == 3:
         key = (shape[0], shape[1], shape[2])
+        if key in grid_sizes:   # Use cached value
+            return tuple(grid_sizes[key]), (shape[0] // grid_sizes[key][0], shape[1] // grid_sizes[key][1], shape[2] // grid_sizes[key][2])
     elif len(shape) == 2:
         key = (shape[0], shape[1])
+        if key in grid_sizes:   # Use cached value
+            return tuple(grid_sizes[key]), (shape[0] // grid_sizes[key][0], shape[1] // grid_sizes[key][1])
     elif len(shape) == 1:
         key = (shape[0])
-    if key in grid_sizes:  # Use cached value
-        return grid_sizes[key]
-    grid_size = []
-    for i in range(len(shape)):
-        grid_size.append(64)
-        if shape[i] < 64:
-            grid_size[i] = shape[i]
-        while True:
-            if (shape[i] // grid_size[i]) * grid_size[i] == shape[i]:
-                break
-            grid_size[i] = grid_size[i] + 1
-    grid_size = tuple(grid_size)
+        if key in grid_sizes:   # Use cached value
+            return tuple(grid_sizes[key]), (shape[0] // grid_sizes[key][0])
+
+    allowed_thread_count_per_block = 64 if reduced_thread_count else 1024
+    initial_guess = 8
+    while True:
+        grid_size = []
+        block_size = []
+        thread_count = 1
+        for i in range(len(shape)):
+            grid_size.append(initial_guess)
+            if shape[i] < initial_guess:
+                grid_size[i] = shape[i]
+            # Find divisor:
+            while True:
+                if shape[i] % grid_size[i] == 0:
+                    break
+                grid_size[i] += 1
+            # Check total thread count in a single block:
+            block_dim = shape[i] // grid_size[i]
+            thread_count *= block_dim
+            block_size.append(block_dim)
+        if thread_count <= allowed_thread_count_per_block:
+            break
+        else:
+            initial_guess *= 2  # Need to find a greater divisor
+
     grid_sizes[key] = grid_size  # Cache
-    return grid_size
 
-
-simpson_coefficients = {}
-
+    print(f"For the shape {shape} grid size of {grid_size} and block size of {block_size} was calculated.")
+    return tuple(grid_size), tuple(block_size)
 
 def indefinite_simpson_integral(array: np.array, dt: float):
     n = array.size
-    if n < 3:
-        raise "Too few samples to integrate"
-    even = n % 2 == 0
-    odd_section = n
-    if even:
-        odd_section -= 1
 
+    # Early termination:
+    if n == 0:
+        return np.empty(shape=0, dtype=array.dtype)
+    if n == 1:
+        return np.array([0.0], dtype=array.dtype)
+    if n == 2:
+        return np.array([0.0, (array[0] + array[1]) / 2.0], dtype=array.dtype)
+
+    # Determine odd and even parts:
+    is_even = n % 2 == 0
+    odd_section = n
+    if is_even:
+        odd_section -= 1
+    even_section = n
+    if not is_even:
+        even_section -= 1
+
+    # Create array to accommodate the results:
     integral = np.array(np.zeros(shape=array.size, dtype=array.dtype).tolist())
+
+    # First two elements are calculated using the trapezoidal rule:
     integral[0] = 0.0
     integral[1] = (array[0] + array[1]) / 2.0
-    integral[1] = 3.0 * integral[1]
+    integral[1] = 3.0 * integral[1] # Compensate for final division
 
-    for l in range(2, odd_section, 2):
-        integral[l] = integral[l - 2] + array[l - 2] + 4.0 * array[l - 1] + array[l]
+    # Simpson coefficients: [1, 4, 1]
+    for i in range(2, odd_section, 2):  # Iterate on odd elements
+        integral[i] = integral[i - 2] + array[i - 2] + 4.0 * array[i - 1] + array[i]
 
-    for l in range(3, odd_section - 1 + (2 if even else 0), 2):
-        integral[l] = integral[l - 2] + array[l - 2] + 4.0 * array[l - 1] + array[l]
+    for i in range(3, even_section, 2): # Iterate on even elements
+        integral[i] = integral[i - 2] + array[i - 2] + 4.0 * array[i - 1] + array[i]
 
     return integral * dt / 3.0

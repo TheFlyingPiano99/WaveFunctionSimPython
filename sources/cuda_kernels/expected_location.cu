@@ -1,7 +1,7 @@
 #include "PATH_TO_SOURCES/cuda_kernels/common.cu"
 
-extern "C" __global__
-void expected_location_kernel(
+template<unsigned int sample_count_x, unsigned int sample_count_y, unsigned int sample_count_z>
+__global__ void expected_location_kernel(
     complex<T_WF_FLOAT>* waveFunction,
     T_WF_FLOAT* expectedLocationOut,
     T_WF_FLOAT* expectedLocationSquaredOut,
@@ -23,6 +23,7 @@ void expected_location_kernel(
 
     float3 delta_r = {delta_x, delta_y, delta_z};
     uint3 voxel = get_voxel_coords();   // In the integrated volume
+    uint3 sample_count = {sample_count_x, sample_count_y, sample_count_z};  // In the integrated volume
 
     // Position operator:
     T_WF_FLOAT3 r = {
@@ -36,8 +37,13 @@ void expected_location_kernel(
         {(unsigned int)voxel_count_x, (unsigned int)voxel_count_y, (unsigned int)voxel_count_z}
     );  // Have to account for the offset and the size of the measured sub-volume
     unsigned int threadId = get_block_local_idx_3d();
-    sdata[threadId] = r * (conj(waveFunction[wf_idx]) * waveFunction[wf_idx]).real()
-        * get_simpson_coefficient_3d<T_WF_FLOAT>(voxel) * delta_r.x * delta_r.y * delta_r.z;
+    if (voxel.x < sample_count_x && voxel.y < sample_count_y && voxel.z < sample_count_z) {
+        sdata[threadId] = r * (conj(waveFunction[wf_idx]) * waveFunction[wf_idx]).real()
+            * get_simpson_coefficient_3d<T_WF_FLOAT>(voxel, sample_count) * delta_r.x * delta_r.y * delta_r.z;
+    }
+    else {
+        sdata[threadId] = {(T_WF_FLOAT)0.0, (T_WF_FLOAT)0.0, (T_WF_FLOAT)0.0};
+    }
     parallel_reduction_sequential(threadId, sdata);
     // Add the values calculated by the blocks and write the result into output buffer:
     if (threadId == 0) {
@@ -48,8 +54,11 @@ void expected_location_kernel(
 
     //----------------------------------------------------------------------------------------
     // Calculate E[r^2]
-    sdata[threadId] = r * r * (conj(waveFunction[wf_idx]) * waveFunction[wf_idx]).real()
-        * get_simpson_coefficient_3d<T_WF_FLOAT>(voxel) * delta_r.x * delta_r.y * delta_r.z;
+    if (voxel.x < sample_count_x && voxel.y < sample_count_y && voxel.z < sample_count_z) {
+        sdata[threadId] = r * r * (conj(waveFunction[wf_idx]) * waveFunction[wf_idx]).real()
+            * get_simpson_coefficient_3d<T_WF_FLOAT>(voxel, sample_count) * delta_r.x * delta_r.y * delta_r.z;
+    }
+
     parallel_reduction_sequential(threadId, sdata);
     // Add the values calculated by the blocks and write the result into output buffer:
     if (threadId == 0) {
