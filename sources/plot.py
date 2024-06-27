@@ -7,7 +7,8 @@ from PIL import Image
 import os
 import cupy as cp
 
-font_size = 16 # 18 would be too big
+font_size = 16  # 18 would be too big
+
 
 def plot_probability_evolution(
         out_dir,
@@ -27,7 +28,7 @@ def plot_probability_evolution(
     plt.xlabel("Elapsed time [ħ/Hartree]")
     plt.ylabel(y_label)
     plt.title(title)
-    n = probability_evolutions[0][0].size # Assuming that all lists are of the same size
+    n = probability_evolutions[0][0].size  # Assuming that all lists are of the same size
     x = np.linspace(start=0, stop=n * delta_t, dtype=None, num=n)
     plt.xlim(0, n * delta_t)
     plt.ylim(y_min, y_max)
@@ -35,13 +36,14 @@ def plot_probability_evolution(
         plt.plot(x, cp.asnumpy(prob_data[0]), label=prob_data[1])
     plt.legend()
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, file_name))
+    if out_dir != None:
+        plt.savefig(os.path.join(out_dir, file_name))
     if show_fig:
         plt.show()
 
 
 def plot_per_axis_probability_density(
-    out_dir, title: str, data: tuple, delta_x_3: np.array, delta_t: float, index: int, potential_scale: float, show_fig=False
+        out_dir, title: str, data: tuple, delta_x_3: np.array, delta_t: float, index: int, potential_scale: float, show_fig=False
 ):
     matplotlib.rcParams.update({'font.size': font_size})
     plt.clf()  # Clear figure
@@ -55,10 +57,14 @@ def plot_per_axis_probability_density(
     plt.ylabel(f"Probability density / Potential [{1.0 / data[3][4]:.1f} Hartree]", fontsize=font_size * 0.9)
     plt.title(f"Elapsed time = {index * delta_t:.2f} ħ/Hartree = {math_utils.h_bar_per_hartree_to_fs(index * delta_t):.2f} fs")
     x_axis_values = []
-    x_axis_values.append(np.linspace(start=-data[0][0].size * delta_x_3[0] * 0.5, stop=data[0][0].size * delta_x_3[0] * 0.5, dtype=None, num=data[0][0].size))
-    x_axis_values.append(np.linspace(start=-data[1][0].size * delta_x_3[1] * 0.5, stop=data[1][0].size * delta_x_3[1] * 0.5, dtype=None, num=data[1][0].size))
-    x_axis_values.append(np.linspace(start=-data[2][0].size * delta_x_3[2] * 0.5, stop=data[2][0].size * delta_x_3[2] * 0.5, dtype=None, num=data[2][0].size))
-    x_axis_values.append(np.linspace(start=-data[3][0].size * delta_x_3[0] * 0.5, stop=data[3][0].size * delta_x_3[0] * 0.5, dtype=None, num=data[3][0].size))
+    x_axis_values.append(np.linspace(start=-data[0][0].size * delta_x_3[0] * 0.5, stop=data[0][0].size * delta_x_3[0] * 0.5, dtype=None,
+                                     num=data[0][0].size))
+    x_axis_values.append(np.linspace(start=-data[1][0].size * delta_x_3[1] * 0.5, stop=data[1][0].size * delta_x_3[1] * 0.5, dtype=None,
+                                     num=data[1][0].size))
+    x_axis_values.append(np.linspace(start=-data[2][0].size * delta_x_3[2] * 0.5, stop=data[2][0].size * delta_x_3[2] * 0.5, dtype=None,
+                                     num=data[2][0].size))
+    x_axis_values.append(np.linspace(start=-data[3][0].size * delta_x_3[0] * 0.5, stop=data[3][0].size * delta_x_3[0] * 0.5, dtype=None,
+                                     num=data[3][0].size))
     plt.xlim(data[0][2], data[0][3])
     plt.ylim(0.0, 0.25)
     for idx, prob_data in enumerate(data):
@@ -102,9 +108,11 @@ def plot_canvas(out_dir, plane_probability_density, plane_dwell_time_density, in
     plt.xlim(0, plane_probability_density.shape[0])
     plt.ylim(0, plane_probability_density.shape[1])
     plt.xticks(ticks=np.linspace(0, plane_probability_density.shape[0], 5),
-               labels=np.linspace(-plane_probability_density.shape[0] * delta_x_3[0] * 0.5, plane_probability_density.shape[0] * delta_x_3[0] * 0.5, 5))
+               labels=np.linspace(-plane_probability_density.shape[0] * delta_x_3[0] * 0.5,
+                                  plane_probability_density.shape[0] * delta_x_3[0] * 0.5, 5))
     plt.yticks(ticks=np.linspace(0, plane_probability_density.shape[1], 5),
-               labels=np.linspace(-plane_probability_density.shape[1] * delta_x_3[1] * 0.5, plane_probability_density.shape[1] * delta_x_3[1] * 0.5, 5))
+               labels=np.linspace(-plane_probability_density.shape[1] * delta_x_3[1] * 0.5,
+                                  plane_probability_density.shape[1] * delta_x_3[1] * 0.5, 5))
     plt.title(f"Elapsed time = {index * delta_t:.2f} ħ/Hartree = {math_utils.h_bar_per_hartree_to_fs(index * delta_t):.2f} fs\n ")
     plt.tight_layout()
     plt.savefig(fname=os.path.join(dir, f"measurement_plane_probability_{index:04d}.png"))
@@ -127,9 +135,11 @@ def plot_canvas(out_dir, plane_probability_density, plane_dwell_time_density, in
     plt.xlim(0, plane_dwell_time_density.shape[0])
     plt.ylim(0, plane_dwell_time_density.shape[1])
     plt.xticks(ticks=np.linspace(0, plane_dwell_time_density.shape[0], 5),
-               labels=np.linspace(-plane_dwell_time_density.shape[0] * delta_x_3[0] * 0.5, plane_dwell_time_density.shape[0] * delta_x_3[0] * 0.5, 5))
+               labels=np.linspace(-plane_dwell_time_density.shape[0] * delta_x_3[0] * 0.5,
+                                  plane_dwell_time_density.shape[0] * delta_x_3[0] * 0.5, 5))
     plt.yticks(ticks=np.linspace(0, plane_probability_density.shape[1], 5),
-               labels=np.linspace(-plane_dwell_time_density.shape[1] * delta_x_3[1] * 0.5, plane_dwell_time_density.shape[1] * delta_x_3[1] * 0.5, 5))
+               labels=np.linspace(-plane_dwell_time_density.shape[1] * delta_x_3[1] * 0.5,
+                                  plane_dwell_time_density.shape[1] * delta_x_3[1] * 0.5, 5))
     plt.title(f"Elapsed time = {index * delta_t:.2f} ħ/Hartree = {math_utils.h_bar_per_hartree_to_fs(index * delta_t):.2f} fs\n ")
     plt.tight_layout()
     plt.savefig(fname=os.path.join(dir, f"measurement_plane_dwell_time_{index:04d}.png"))

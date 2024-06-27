@@ -119,5 +119,6 @@ def initialize(use_cache: bool = True):
 
     print(sim_state.get_simulation_method_text(use_colors=True))
 
-
+    with open(os.path.join(sim_state.get_output_dir(), "config.toml"), mode="w") as config_f:
+        toml.dump(config, config_f)
     return sim_state, measurement_tools, iter_data
