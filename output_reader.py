@@ -16,7 +16,8 @@ def main():
         is_prediction = True
     # Check output folder existence:
     if not os.path.exists(out_folder):
-        raise f"No output folder with name {out_folder} found!"
+        message = f"No output folder with name {out_folder} found!"
+        raise OSError(message)
 
     # Read saved configuration:
     config = toml.load(os.path.join(out_folder, "config.toml"))

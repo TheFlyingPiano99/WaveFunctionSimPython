@@ -642,6 +642,10 @@ class SimState:
         return text.getvalue()
 
     def _fft_time_evolution(self):
+        """
+        Calculates the time development of the wave function using the Split-Operator Fourier method.
+        :return: None
+        """
         self.__wave_tensor = cp.fft.fftn(self.__wave_tensor, norm="ortho")
 
         self.__kinetic_operator_kernel(
@@ -718,6 +722,10 @@ class SimState:
     """
 
     def _power_series_time_evolution(self):
+        """
+        Calculates the time development of the wave function using the Power Series Expansion of the time development operator.
+        :return: None
+        """
         shape = self.__wave_tensor.shape
         grid_size = (64, 64, 64)
         block_size = (shape[0] // grid_size[0], shape[1] // grid_size[1], shape[2] // grid_size[2])
@@ -747,6 +755,10 @@ class SimState:
         cp.cuda.Stream.null.synchronize()
 
     def evolve_state(self):
+        """
+        Develop the wave function for a single delta_t long time step.
+        :return:
+        """
         if self.__simulation_method == SimulationMethod.FOURIER:
             self._fft_time_evolution()
         elif self.__simulation_method == SimulationMethod.POWER_SERIES:

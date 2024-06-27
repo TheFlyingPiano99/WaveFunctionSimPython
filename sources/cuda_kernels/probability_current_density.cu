@@ -51,11 +51,10 @@ __global__ void probability_current_density_kernel(
     T_WF_FLOAT dW = width / (T_WF_FLOAT)(sample_count_x - 1);
     T_WF_FLOAT dH = height / (T_WF_FLOAT)(sample_count_y - 1);
 
-    unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
-    unsigned int j = blockIdx.y * blockDim.y + threadIdx.y;
+    uint2 pixel = {blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y};
 
-    float3 f_r = center + right * (float)dW * (float)((int)i - (int)(sample_count_x / 2))
-        + up * (float)dH * (float)((int)j - (int)(sample_count_y / 2));
+    float3 f_r = center + right * (float)dW * (float)((int)pixel.x - (int)(sample_count_x / 2))
+        + up * (float)dH * (float)((int)pixel.y - (int)(sample_count_y / 2));
     T_WF_FLOAT3 r = {f_r.x, f_r.y, f_r.z};
     int planeIdx = get_array_index();
     T_WF_FLOAT pcDensity;
@@ -192,15 +191,14 @@ __global__ void probability_current_density_kernel(
         )
     ).real();
 
-    if (i < sample_count_x && j < sample_count_y) {
+    if (pixel.x < sample_count_x && pixel.y < sample_count_y) {
         probability_current_density[planeIdx] = pcDensity;
     }
 
     // Integrate:
     unsigned int threadId = get_block_local_idx_2d();
-    uint2 pixel = {blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y};
 
-    if (i < sample_count_x && j < sample_count_y) {
+    if (pixel.x < sample_count_x && pixel.y < sample_count_y) {
         sdata[threadId] = pcDensity * get_simpson_coefficient_2d<T_WF_FLOAT>(pixel, sample_count) * dW * dH;
     }
     else {

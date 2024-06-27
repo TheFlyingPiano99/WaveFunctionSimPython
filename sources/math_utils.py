@@ -235,6 +235,14 @@ def indefinite_simpson_integral(array: np.array, dt: float):
 
 
 def predict_free_space_standard_devation(delta_t:float, sigma0: float, mass: float, step_count: int)-> np.array:
+    """
+    Source: https://dx.doi.org/10.1088/0143-0807/18/3/022
+    :param delta_t: time resolution
+    :param sigma0: initial standard deviation
+    :param mass: mass of the particle
+    :param step_count: number of discrete steps to calculate the prediction
+    :return: a NumPy array of the predicted standard deviations for step_count iterations
+    """
     a = sigma0 * 2.0
     array = np.array(np.zeros(step_count, dtype=np.float64).tolist())
     for i in range(step_count):
@@ -244,6 +252,14 @@ def predict_free_space_standard_devation(delta_t:float, sigma0: float, mass: flo
 
 
 def predict_free_space_expected_location(delta_t:float, x0: float, velocity: float, step_count: int)-> np.array:
+    """
+    Source: https://dx.doi.org/10.1088/0143-0807/18/3/022
+    :param delta_t: time resolution
+    :param x0: Initial position
+    :param velocity: wave propagation velocity
+    :param step_count: number of discrete steps to calculate the prediction
+    :return: a NumPy array of the predicted standard deviations for step_count iterations
+    """
     array = np.array(np.zeros(step_count, dtype=np.float64).tolist())
     for i in range(step_count):
         t = i * delta_t

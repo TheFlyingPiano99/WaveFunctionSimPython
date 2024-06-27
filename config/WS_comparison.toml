@@ -56,7 +56,7 @@ slit_count = 0
 slit_spacing_bohr_radii = 5.0
 slit_width_bohr_radii = 2.0
 slit_rotation_radian = 0.0
-enable = true
+enable = false
 visible=true
 
 [[potential.walls]]
@@ -129,7 +129,7 @@ name = "First plane"
 center_bohr_radii_3 = [-5.6691779657, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
 size_bohr_radii_2 = [80.0, 80.0]
-resolution_2 = [256, 256]
+resolution_2 = [512, 512]
 enable_image = true
 
 [[measurement.plane_probability_currents]]
@@ -137,7 +137,7 @@ name = "Middle"
 center_bohr_radii_3 = [0.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
 size_bohr_radii_2 = [80.0, 80.0]
-resolution_2 = [256, 256]
+resolution_2 = [512, 512]
 enable_image = true
 
 [[measurement.plane_probability_currents]]
@@ -145,7 +145,7 @@ name = "Second plane"
 center_bohr_radii_3 = [7.3699313555, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
 size_bohr_radii_2 = [80.0, 80.0]
-resolution_2 = [256, 256]
+resolution_2 = [512, 512]
 enable_image = true
 
 [paths]
