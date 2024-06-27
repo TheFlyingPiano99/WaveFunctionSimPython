@@ -232,3 +232,20 @@ def indefinite_simpson_integral(array: np.array, dt: float):
         integral[i] = integral[i - 2] + array[i - 2] + 4.0 * array[i - 1] + array[i]
 
     return integral * dt / 3.0
+
+
+def predict_free_space_standard_devation(delta_t:float, sigma0: float, mass: float, step_count: int)-> np.array:
+    a = sigma0 * 2.0
+    array = np.array(np.zeros(step_count, dtype=np.float64).tolist())
+    for i in range(step_count):
+        t = i * delta_t
+        array[i] = math.sqrt(a**2 + 4.0 * (1.0 / mass**2) * t**2 / a**2)
+    return array / 2.0
+
+
+def predict_free_space_expected_location(delta_t:float, x0: float, velocity: float, step_count: int)-> np.array:
+    array = np.array(np.zeros(step_count, dtype=np.float64).tolist())
+    for i in range(step_count):
+        t = i * delta_t
+        array[i] = x0 + t * velocity
+    return array

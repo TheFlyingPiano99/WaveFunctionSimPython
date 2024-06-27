@@ -5,16 +5,26 @@ import numpy as np
 import toml
 import sources.config_read_helper as config_helper
 import sources.plot as plot
-
+import sources.math_utils as math_utils
 
 def main():
     arguments = sys.argv
     out_folder = arguments[1]
+    is_prediction = False
+    # Check flags:
+    if "-p" in arguments or "-pred" in arguments:
+        is_prediction = True
+    # Check output folder existence:
     if not os.path.exists(out_folder):
         raise f"No output folder with name {out_folder} found!"
 
+    # Read saved configuration:
     config = toml.load(os.path.join(out_folder, "config.toml"))
     delta_t = config_helper.try_read_param(config, "simulation.delta_time_h_bar_per_hartree", 1.0)
+    position = np.array(config_helper.try_read_param(config, "wave_packet.initial_position_bohr_radii_3", [0.0, 0.0, 0.0]))
+    velocity = np.array(config_helper.try_read_param(config, "wave_packet.initial_velocity_bohr_radii_hartree_per_h_bar_3", [0.0, 0.0, 0.0]))
+    mass = config_helper.try_read_param(config, "wave_packet.particle_mass_electron_rest_mass", 1.0)
+    sigma = np.array(config_helper.try_read_param(config, "wave_packet.initial_standard_deviation_bohr_radii_3", [1.0, 1.0, 1.0]))
     print(f"delta_t = {delta_t} h-bar/Hartree")
     simulated_size_bohr_radii_3 = np.array(config_helper.try_read_param(config, "volume.simulated_volume_dimensions_bohr_radii_3", [120.0, 120.0, 120.0]))
     print(f"Simulated volume size: {simulated_size_bohr_radii_3} Bohr radii")
@@ -28,11 +38,37 @@ def main():
     print(f"Observation box top corner = {observation_box_top_corner_bohr_radii_3} Bohr radii")
     observation_box_size = observation_box_top_corner_bohr_radii_3 - observation_box_bottom_corner_bohr_radii_3
 
+    # Plot output:
     print("\nExpected location:\n")
     f = os.path.join(out_folder, "expected_location_evolution.npy")
     print(f)
     location = np.load(f)
     expected_location_evolution_with_label = list(zip(location.T, ["X axis", "Y axis", "Z axis"]))
+    if is_prediction:
+        expected_location_evolution_with_label.append(
+            [math_utils.predict_free_space_expected_location(
+                delta_t=delta_t,
+                step_count=expected_location_evolution_with_label[0][0].size,
+                velocity=velocity[0],
+                x0=position[0],
+            ),"X axis (pred.)", "dotted"]
+        )
+    expected_location_evolution_with_label.append(
+        [math_utils.predict_free_space_expected_location(
+            delta_t=delta_t,
+            step_count=expected_location_evolution_with_label[0][0].size,
+            velocity=velocity[1],
+            x0=position[1],
+        ), "Y axis (pred.)", "dotted"]
+    )
+    expected_location_evolution_with_label.append(
+        [math_utils.predict_free_space_expected_location(
+            delta_t=delta_t,
+            step_count=expected_location_evolution_with_label[0][0].size,
+            velocity=velocity[2],
+            x0=position[2],
+        ), "Z axis (pred.)", "dotted"]
+    )
     plot.plot_probability_evolution(
         out_dir=None,
         file_name=None,
@@ -50,6 +86,31 @@ def main():
     print(f)
     deviation = np.load(f)
     standard_deviation_with_label = list(zip(deviation.T, ["X axis", "Y axis", "Z axis"]))
+    if is_prediction:
+        standard_deviation_with_label.append(
+            [math_utils.predict_free_space_standard_devation(
+                delta_t=delta_t,
+                mass=mass,
+                step_count=standard_deviation_with_label[0][0].size,
+                sigma0=sigma[0],
+            ), "X axis (pred.)", "dotted"]
+        )
+    standard_deviation_with_label.append(
+        [math_utils.predict_free_space_standard_devation(
+            delta_t=delta_t,
+            mass=mass,
+            step_count=standard_deviation_with_label[0][0].size,
+            sigma0=sigma[1],
+        ), "Y axis (pred.)", "dotted"]
+    )
+    standard_deviation_with_label.append(
+        [math_utils.predict_free_space_standard_devation(
+            delta_t=delta_t,
+            mass=mass,
+            step_count=standard_deviation_with_label[0][0].size,
+            sigma0=sigma[2],
+        ), "Z axis (pred.)", "dotted"]
+    )
     plot.plot_probability_evolution(
         out_dir=None,
         file_name=None,

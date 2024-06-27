@@ -33,7 +33,10 @@ def plot_probability_evolution(
     plt.xlim(0, n * delta_t)
     plt.ylim(y_min, y_max)
     for prob_data in probability_evolutions:
-        plt.plot(x, cp.asnumpy(prob_data[0]), label=prob_data[1])
+        lstyle = "solid"
+        if len(prob_data) > 2:
+            lstyle = prob_data[2]
+        plt.plot(x, cp.asnumpy(prob_data[0]), label=prob_data[1], linestyle=lstyle)
     plt.legend()
     plt.tight_layout()
     if out_dir != None:
