@@ -125,14 +125,18 @@ def rotation_matrix(axis, theta):
 """
 Source: https://www.quora.com/How-do-you-check-if-a-number-is-a-power-of-2-in-Python
 """
+
+
 def is_power_of_two(n: int):
     return bin(n).count('1') == 1
 
 
-"""
-Source: https://www.geeksforgeeks.org/smallest-power-of-2-greater-than-or-equal-to-n/
-"""
 def nearest_power_of_2(n: int):
+    """
+    Source: https://www.geeksforgeeks.org/smallest-power-of-2-greater-than-or-equal-to-n/
+    :param n:
+    :return: Nearest power of two that is not less than n
+    """
     # Calculate log2 of N
     a = int(math.log2(n))
     # If 2^a is equal to N, return N
@@ -151,19 +155,19 @@ def get_grid_size_block_size(shape: np.shape, reduced_thread_count: bool = False
     # Create cache key and use cache if available:
     if len(shape) == 3:
         key = (shape[0], shape[1], shape[2])
-        if key in grid_sizes:   # Use cached value
+        if key in grid_sizes:  # Use cached value
             return tuple(grid_sizes[key]), (shape[0] // grid_sizes[key][0], shape[1] // grid_sizes[key][1], shape[2] // grid_sizes[key][2])
     elif len(shape) == 2:
         key = (shape[0], shape[1])
-        if key in grid_sizes:   # Use cached value
+        if key in grid_sizes:  # Use cached value
             return tuple(grid_sizes[key]), (shape[0] // grid_sizes[key][0], shape[1] // grid_sizes[key][1])
     elif len(shape) == 1:
         key = (shape[0])
-        if key in grid_sizes:   # Use cached value
+        if key in grid_sizes:  # Use cached value
             return tuple(grid_sizes[key]), (shape[0] // grid_sizes[key][0])
 
-    allowed_thread_count_per_block = 64 if reduced_thread_count else 1024
-    initial_guess = 8
+    allowed_thread_count_per_block = 512 if reduced_thread_count else 1024
+    initial_guess = 2
     while True:
         grid_size = []
         block_size = []
@@ -191,6 +195,7 @@ def get_grid_size_block_size(shape: np.shape, reduced_thread_count: bool = False
     print(f"For the shape {shape} grid size of {grid_size} and block size of {block_size} was calculated.")
     return tuple(grid_size), tuple(block_size)
 
+
 def indefinite_simpson_integral(array: np.array, dt: float):
     n = array.size
 
@@ -217,13 +222,13 @@ def indefinite_simpson_integral(array: np.array, dt: float):
     # First two elements are calculated using the trapezoidal rule:
     integral[0] = 0.0
     integral[1] = (array[0] + array[1]) / 2.0
-    integral[1] = 3.0 * integral[1] # Compensate for final division
+    integral[1] = 3.0 * integral[1]  # Compensate for final division
 
     # Simpson coefficients: [1, 4, 1]
     for i in range(2, odd_section, 2):  # Iterate on odd elements
         integral[i] = integral[i - 2] + array[i - 2] + 4.0 * array[i - 1] + array[i]
 
-    for i in range(3, even_section, 2): # Iterate on even elements
+    for i in range(3, even_section, 2):  # Iterate on even elements
         integral[i] = integral[i - 2] + array[i - 2] + 4.0 * array[i - 1] + array[i]
 
     return integral * dt / 3.0

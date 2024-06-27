@@ -73,8 +73,9 @@ class VolumeProbability:
     __kernel_grid_size: np.array
     __kernel_block_size: np.array
     __bottom_voxel: np.array
-    __voxel_count: np.array
+    __sample_count: np.array
     __cuda_stream: cp.cuda.Stream
+    __shared_mem_bytes: int
 
     def __init__(
             self,
@@ -105,39 +106,40 @@ class VolumeProbability:
                                             .replace("T_WF_FLOAT",
                                                      "double" if sim_state.is_double_precision() else "float"))
 
-        self.__voxel_count = top_voxel - self.__bottom_voxel
+        self.__sample_count = top_voxel - self.__bottom_voxel
         for i in range(3):
             # Offset boundary if even voxels are included. (Because of the Simpson integration scheme.)
-            if (self.__voxel_count[i] % 2 == 0):
+            if (self.__sample_count[i] % 2 == 0):
                 print(
                     Fore.RED + f"Volume probability \"{self.__name}\": truncating volume probability area along {i}. axis!" + Style.RESET_ALL)
-                self.__voxel_count[i] -= 1
+                self.__sample_count[i] -= 1
                 top_voxel[i] -= 1
         kernel_shape = (
-            math_utils.nearest_power_of_2(self.__voxel_count[0]),
-            math_utils.nearest_power_of_2(self.__voxel_count[1]),
-            math_utils.nearest_power_of_2(self.__voxel_count[2]),
+            math_utils.nearest_power_of_2(self.__sample_count[0]),
+            math_utils.nearest_power_of_2(self.__sample_count[1]),
+            math_utils.nearest_power_of_2(self.__sample_count[2]),
         )
         self.__kernel_grid_size, self.__kernel_block_size = math_utils.get_grid_size_block_size(kernel_shape, reduced_thread_count=True)
-        func_name = f"volume_probability_kernel< {self.__voxel_count[0]}, {self.__voxel_count[1]}, {self.__voxel_count[2]} >"
+        N = sim_state.get_number_of_voxels_3()
+        func_name = f"volume_probability_kernel< {self.__sample_count[0]}, {self.__sample_count[1]}, {self.__sample_count[2]}, {N[0]}, {N[1]}, {N[2]} >"
         self.__volume_probability_kernel = cp.RawModule(
             code=volume_probability_kernel_source,
             name_expressions=[func_name],
         ).get_function(func_name)
-        dtype = cp.float64 if sim_state.is_double_precision() else cp.float32
-        self.__probability_buffer = cp.array([0.0], dtype=dtype)
+        float_type = cp.float64 if sim_state.is_double_precision() else cp.float32
+        self.__probability_buffer = cp.array([0.0], dtype=float_type)
         if self.__enable_image:
             print(
                 f"{self.__name} bottom voxel (included in calc.): ({self.__bottom_voxel[0]}, {self.__bottom_voxel[1]}, {self.__bottom_voxel[2]})")
             print(f"{self.__name} top voxel (included in calc.): ({top_voxel[0] - 1}, {top_voxel[1] - 1}, {top_voxel[2] - 1})")
             print(
-                f"{self.__name} integral voxel count: {self.__kernel_grid_size[0] * self.__kernel_block_size[0]}, {self.__kernel_grid_size[1] * self.__kernel_block_size[1]}, {self.__kernel_grid_size[2] * self.__kernel_block_size[2]}"
+                f"{self.__name} integral sample count: {self.__sample_count[0]}, {self.__sample_count[1]}, {self.__sample_count[2]}"
             )
-            bottom_r = sim_state.transform_voxel_to_physical_coordinate_3(self.__bottom_voxel)
-            top_r = sim_state.transform_voxel_to_physical_coordinate_3(top_voxel)
-            print(f"{self.__name} integral bottom pos: ({bottom_r[0]}, {bottom_r[1]}, {bottom_r[2]}) Bohr radii")
-            print(f"{self.__name} integral top pos: ({top_r[0]}, {top_r[1]}, {top_r[2]}) Bohr radii")
         self.__cuda_stream = cp.cuda.Stream()
+        self.__shared_mem_bytes = (cp.dtype(float_type).itemsize
+                                   * self.__kernel_block_size[0]
+                                   * self.__kernel_block_size[1]
+                                   * self.__kernel_block_size[2])
 
     def get_name(self):
         return self.__name
@@ -152,7 +154,6 @@ class VolumeProbability:
         with self.__cuda_stream:
             wave_function = sim_state.get_wave_function()
             delta_r = sim_state.get_delta_x_bohr_radii_3()
-            N = sim_state.get_number_of_voxels_3()
             dp = sim_state.is_double_precision()
             self.__probability_buffer[0] = 0.0
             self.__volume_probability_kernel(
@@ -169,14 +170,8 @@ class VolumeProbability:
                     cp.uint32(self.__bottom_voxel[0]),
                     cp.uint32(self.__bottom_voxel[1]),
                     cp.uint32(self.__bottom_voxel[2]),
-
-                    cp.uint32(N[0]),
-                    cp.uint32(N[1]),
-                    cp.uint32(N[2]),
-                )
-            )
-            self.__probability_evolution = np.append(
-                arr=self.__probability_evolution, values=self.__probability_buffer[0]
+                ),
+                shared_mem=self.__shared_mem_bytes
             )
 
     def get_probability_evolution_with_name(self):
@@ -186,7 +181,11 @@ class VolumeProbability:
         self.__probability_evolution = np.empty(shape=0, dtype=np.float64)
 
     def synchronize(self):
-        self.__cuda_stream.synchronize()
+        with self.__cuda_stream:
+            self.__probability_evolution = np.append(
+                arr=self.__probability_evolution, values=self.__probability_buffer[0]
+            )
+
 
 class PlaneProbabilityCurrent:
     __name: str
@@ -195,7 +194,7 @@ class PlaneProbabilityCurrent:
     __enable_image: np.array
     __kernel: cp.RawKernel
     __size_bohr_radii_2: np.array
-    __resolution_2: np.array
+    __sample_count_2: np.array
     __probability_current_density: cp.ndarray
     __probability_current_buffer: cp.array
     __probability_current_evolution: np.array
@@ -216,33 +215,36 @@ class PlaneProbabilityCurrent:
         self.__enable_image = try_read_param(config, "enable_image", "measurement.plane_probability_currents")
         self.__size_bohr_radii_2 = np.array(
             try_read_param(config, "size_bohr_radii_2", [60.0, 60.0], "measurement.plane_probability_currents"))
-        self.__resolution_2 = np.array(try_read_param(config, "resolution_2", [512, 512], "measurement.plane_probability_currents"))
-        self.__resolution_2 += np.array([1, 1], dtype=self.__resolution_2.dtype)  # Add one because of the inclusive requirement of Simpson
+        self.__sample_count_2 = np.array(try_read_param(config, "resolution_2", [512, 512], "measurement.plane_probability_currents"))
+        self.__sample_count_2 += np.array([1, 1], dtype=self.__sample_count_2.dtype)  # Add one because of the inclusive requirement of Simpson
         for i in range(2):
             # Correct even voxel count to odd. (Because of the Simpson integration scheme)
-            if self.__resolution_2[i] % 2 == 0:
-                self.__resolution_2[i] -= 1
+            if self.__sample_count_2[i] % 2 == 0:
+                self.__sample_count_2[i] -= 1
+        kernel_shape = (
+            math_utils.nearest_power_of_2(self.__sample_count_2[0]),
+            math_utils.nearest_power_of_2(self.__sample_count_2[1])
+        )
+        self.__grid_size, self.__block_size = math_utils.get_grid_size_block_size(kernel_shape, reduced_thread_count=True)
 
         probability_current_density_kernel = (
             Path("sources/cuda_kernels/probability_current_density.cu").read_text().replace("PATH_TO_SOURCES",
                                                                                             os.path.abspath("sources"))
             .replace("T_WF_FLOAT",
                      "double" if sim_state.is_double_precision() else "float"))
-        self.__kernel = cp.RawKernel(
-            probability_current_density_kernel,
-            "probability_current_density_kernel"
-        )
+        N = sim_state.get_number_of_voxels_3()
+        func_name = f"probability_current_density_kernel<{self.__sample_count_2[0]}, {self.__sample_count_2[1]}, {N[0]}, {N[1]}, {N[2]}>"
+        self.__kernel = cp.RawModule(
+            code=probability_current_density_kernel,
+            name_expressions=[func_name]
+        ).get_function(func_name)
         float_type = (cp.float64 if sim_state.is_double_precision() else cp.float32)
-        self.__probability_current_density = cp.zeros(shape=[self.__resolution_2[0], self.__resolution_2[1]], dtype=float_type)
+        self.__probability_current_density = cp.zeros(shape=[self.__sample_count_2[0], self.__sample_count_2[1]], dtype=float_type)
         self.__probability_current_buffer = cp.array([0.0], dtype=float_type)
         self.__probability_current_evolution = np.empty(shape=0, dtype=float_type)
         self.__delta_t = sim_state.get_delta_time_h_bar_per_hartree()
-        self.__grid_size, self.__block_size = math_utils.get_grid_size_block_size(self.__resolution_2)
-        self.__shared_memory_bytes = self.__block_size[0] * self.__block_size[1] * cp.dtype(float_type).itemsize
-        print(f"Shared mem size = {self.__shared_memory_bytes} bytes")
-        print(f"Block count = {self.__grid_size}")
-        print(f"Thread count = {self.__block_size}")
         self.__cuda_stream = cp.cuda.Stream()
+        self.__shared_memory_bytes = self.__block_size[0] * self.__block_size[1] * cp.dtype(float_type).itemsize
 
     def get_name(self):
         return self.__name
@@ -280,17 +282,10 @@ class PlaneProbabilityCurrent:
                     cp.float32(self.__normal_vector_3[2]),
 
                     cp.float32(self.__size_bohr_radii_2[0]),
-                    cp.float32(self.__size_bohr_radii_2[1]),
-
-                    cp.uint32(sim_state.get_number_of_voxels_3()[0]),
-                    cp.uint32(sim_state.get_number_of_voxels_3()[1]),
-                    cp.uint32(sim_state.get_number_of_voxels_3()[2]),
+                    cp.float32(self.__size_bohr_radii_2[1])
                 ),
                 shared_mem=self.__shared_memory_bytes
             )
-
-            self.__probability_current_evolution = (
-                np.append(arr=self.__probability_current_evolution, values=self.__probability_current_buffer[0]))
 
     def get_probability_current_evolution_with_name(self):
         return self.__probability_current_evolution, self.__name
@@ -301,7 +296,10 @@ class PlaneProbabilityCurrent:
         ), self.__name
 
     def synchronize(self):
-        self.__cuda_stream.synchronize()
+        with self.__cuda_stream:
+            self.__probability_current_evolution = (
+                np.append(arr=self.__probability_current_evolution, values=self.__probability_current_buffer[0]))
+
 
 class ExpectedLocation:
     __enable_image: bool
@@ -314,6 +312,7 @@ class ExpectedLocation:
     __kernel_block_size: np.array
     __bottom_voxel: np.array
     __cuda_stream: cp.cuda.Stream
+    __shared_memory_bytes: int
 
     def __init__(self, config: Dict, sim_state: SimState):
         self.__enable_image = try_read_param(config, "measurement.expected_location.enable_image", False)
@@ -333,6 +332,7 @@ class ExpectedLocation:
             math_utils.nearest_power_of_2(sample_count[2]),
         )
         self.__kernel_grid_size, self.__kernel_block_size = math_utils.get_grid_size_block_size(kernel_shape, reduced_thread_count=True)
+        print(f"Expected location integral sample count: {sample_count[0]}, {sample_count[1]}, {sample_count[2]}")
         kernel_source = (Path("sources/cuda_kernels/expected_location.cu").read_text()
                          .replace("PATH_TO_SOURCES", os.path.abspath("sources"))
                          .replace("T_WF_FLOAT", "double" if sim_state.is_double_precision() else "float"))
@@ -342,10 +342,11 @@ class ExpectedLocation:
             code=kernel_source,
             name_expressions=[func_name],
         ).get_function(func_name)
-        self.__expected_location_buffer = cp.array([0.0, 0.0, 0.0], dtype=cp.float64 if sim_state.is_double_precision() else cp.float32)
-        self.__expected_location_squared_buffer = cp.array([0.0, 0.0, 0.0], dtype=cp.float64 if sim_state.is_double_precision() else cp.float32)
+        float_type = cp.float64 if sim_state.is_double_precision() else cp.float32
+        self.__expected_location_buffer = cp.array([0.0, 0.0, 0.0], dtype=float_type)
+        self.__expected_location_squared_buffer = cp.array([0.0, 0.0, 0.0], dtype=float_type)
         self.__cuda_stream = cp.cuda.Stream()
-
+        self.__shared_memory_bytes = 3 * cp.dtype(float_type).itemsize * self.__kernel_block_size[0] * self.__kernel_block_size[1] * self.__kernel_block_size[2]
     def is_enable_image(self):
         return self.__enable_image
 
@@ -382,9 +383,12 @@ class ExpectedLocation:
                     cp.int32(N[0]),
                     cp.int32(N[1]),
                     cp.int32(N[2])
-                )
+                ),
+                shared_mem=self.__shared_memory_bytes
             )
 
+    def synchronize(self):
+        with self.__cuda_stream:
             e_r = cp.asnumpy(self.__expected_location_buffer).reshape((1, 3))
             e_r_2 = cp.asnumpy(self.__expected_location_squared_buffer).reshape((1, 3))
             self.__expected_location_evolution = np.concatenate(
@@ -399,8 +403,6 @@ class ExpectedLocation:
                 axis=0
             )
 
-    def synchronize(self):
-        self.__cuda_stream.synchronize()
 
     def get_expected_location_evolution(self):
         return self.__expected_location_evolution
@@ -618,12 +620,26 @@ class MeasurementTools:
         if iter_data.i % sim_state.get_wave_function_save_interval() == 0:
             if not os.path.exists(os.path.join(sim_state.get_output_dir(), f"wave_function")):
                 os.makedirs(os.path.join(sim_state.get_output_dir(), f"wave_function"), exist_ok=True)
+            os.makedirs(os.path.join(sim_state.get_output_dir(), f"wave_function_raw"), exist_ok=True)
             try:
-                cp.save(arr=sim_state.get_view_into_wave_function(),
-                        file=os.path.join(sim_state.get_output_dir(), f"wave_function/wave_function_{iter_data.i:04d}.npy"))
+                wf = sim_state.get_view_into_wave_function()
+                # Save as Numpy .npy file:
+                cp.save(arr=wf,
+                        file=os.path.join(sim_state.get_output_dir(), f"wave_function/wave_function_{iter_data.i:06d}.npy"))
+                # Save as raw binary file:
+                type_str = "float64" if sim_state.is_double_precision() else "float32"
+                (wf.view(dtype=type_str).astype(type_str)
+                 .tofile(os.path.join(sim_state.get_output_dir(), f"wave_function_raw/wave_function_{iter_data.i:06d}.bin")))
+                print(f"\nSaved raw binary wave tensor with dimensions: {wf.shape} voxels,\ndelta_r = {sim_state.get_delta_x_bohr_radii_3()} Bohr radii,\ndelta_t = {sim_state.get_delta_time_h_bar_per_hartree()} h-bar/Hartree,\n"
+                      f"Bytes / complex value: bytes = {wf.dtype.itemsize} Byte\n"
+                      f"The index of the complex valued elements can be calculated like:\n"
+                      "index = x * dimensions.y * dimensions.z * bytes + y * dimensions.z * bytes + z * bytes\n"
+                      "Each element is a two component floating point vector of real and imaginary parts.\n"
+                      )
+
             except IOError:
                 print(Fore.RED + "\nERROR: Failed writing file: " + os.path.join(sim_state.get_output_dir(),
-                                                                                 f"wave_function/wave_function_{iter_data.i:04d}.npy") + Style.RESET_ALL)
+                                                                                 f"wave_function/wave_function_{iter_data.i:06d}.bin") + Style.RESET_ALL)
 
     def measure_and_render(self, sim_state: SimState, iter_data: IterData):
         # Save wave function:

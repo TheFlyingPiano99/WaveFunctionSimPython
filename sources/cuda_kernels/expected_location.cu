@@ -23,7 +23,7 @@ __global__ void expected_location_kernel(
 
     float3 delta_r = {delta_x, delta_y, delta_z};
     uint3 voxel = get_voxel_coords();   // In the integrated volume
-    uint3 sample_count = {sample_count_x, sample_count_y, sample_count_z};  // In the integrated volume
+    constexpr uint3 sample_count = {sample_count_x, sample_count_y, sample_count_z};  // In the integrated volume
 
     // Position operator:
     T_WF_FLOAT3 r = {

@@ -520,21 +520,20 @@ __device__ double get_simpson_coefficient_3d<double>(const uint3& voxel, const u
 }
 
 template<typename T>
-__device__ T get_simpson_coefficient_2d(const uint2& pixel);
+__device__ T get_simpson_coefficient_2d(const uint2& pixel, const uint2& sample_count);
 
 template<>
-__device__ float get_simpson_coefficient_2d<float>(const uint2& pixel)
+__device__ float get_simpson_coefficient_2d<float>(const uint2& pixel, const uint2& sample_count)
 {
-    uint2 n = get_voxel_count_2d();    // In the integrated volume
     float sX = 1.0f;
-    if (pixel.x > 0 && pixel.x < n.x - 1) {
+    if (pixel.x > 0 && pixel.x < sample_count.x - 1) {
         if (pixel.x % 2 == 0)
             sX = 2.0f;
         else
             sX = 4.0f;
     }
     float sY = 1.0f;
-    if (pixel.y > 0 && pixel.y < n.y - 1) {
+    if (pixel.y > 0 && pixel.y < sample_count.y - 1) {
         if (pixel.y % 2 == 0)
             sY = 2.0f;
         else
@@ -544,18 +543,17 @@ __device__ float get_simpson_coefficient_2d<float>(const uint2& pixel)
 }
 
 template<>
-__device__ double get_simpson_coefficient_2d<double>(const uint2& pixel)
+__device__ double get_simpson_coefficient_2d<double>(const uint2& pixel, const uint2& sample_count)
 {
-    uint2 n = get_voxel_count_2d();    // In the integrated volume
     double sX = 1.0;
-    if (pixel.x > 0 && pixel.x < n.x - 1) {
+    if (pixel.x > 0 && pixel.x < sample_count.x - 1) {
         if (pixel.x % 2 == 0)
             sX = 2.0;
         else
             sX = 4.0;
     }
     double sY = 1.0;
-    if (pixel.y > 0 && pixel.y < n.y - 1) {
+    if (pixel.y > 0 && pixel.y < sample_count.y - 1) {
         if (pixel.y % 2 == 0)
             sY = 2.0;
         else

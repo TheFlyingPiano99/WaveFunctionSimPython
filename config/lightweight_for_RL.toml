@@ -12,9 +12,9 @@ order_of_approximation = 10
 delta_time_h_bar_per_hartree = 0.05
 total_iteration_count = 6000
 is_dynamic_potential_mode = true
-enable_wave_function_saving = false
-wave_function_save_iteration_interval = 1
-double_precision_calculation = false
+enable_wave_function_saving = true
+wave_function_save_iteration_interval = 100
+double_precision_calculation = true
 
 [wave_packet]
 particle_mass_electron_rest_mass = 1.0
@@ -24,17 +24,17 @@ initial_standard_deviation_bohr_radii_3 = [2.0, 2.0, 2.0]
 
 [volume]
 simulated_volume_dimensions_bohr_radii_3 = [120.0, 120.0, 120.0] #Including absorbing potential regions
-number_of_voxels_3 = [256, 256, 256]         #Including absorbing potential regions
-observation_box_bottom_corner_bohr_radii_3 = [-60.0, -60.0, -60.0]   # Same as the inner boundary of the draining potential
-observation_box_top_corner_bohr_radii_3 = [60.0, 60.0, 60.0]   # Same as the inner boundary of the draining potential
+number_of_voxels_3 = [512, 256, 256]         #Including absorbing potential regions
+observation_box_bottom_corner_bohr_radii_3 = [-50.0, -50.0, -50.0]   # Same as the inner boundary of the draining potential
+observation_box_top_corner_bohr_radii_3 = [50.0, 50.0, 50.0]   # Same as the inner boundary of the draining potential
 
 [absorbing_boundary_condition]
-outer_potential_in_positive_xyz_direction_hartree_3 = [-100.0, -10.0, -10.0]
-outer_potential_in_negative_xyz_direction_hartree_3 = [-100.0, -10.0, -10.0]
+outer_potential_in_positive_xyz_direction_hartree_3 = [-50.0, -10.0, -10.0]
+outer_potential_in_negative_xyz_direction_hartree_3 = [-50.0, -10.0, -10.0]
 start_offset = 1.0
 slope_exponent_in_positive_xyz_direction_3 = [3.0, 3.0, 3.0]    # e: f(x) = x^e,    x in [0, 1]
 slope_exponent_in_negative_xyz_direction_3 = [3.0, 3.0, 3.0]    # e: f(x) = x^e,    x in [0, 1]
-enable = false
+enable = true
 
 [potential.pre_initialized_potential]
 path = ""
@@ -113,14 +113,14 @@ enable_image = true
 
 [[measurement.volume_probabilities]]
 name = "First half"
-bottom_corner_bohr_radii_3 = [-45.0, -45.0, -45.0]
-top_corner_bohr_radii_3 = [0.0, 45.0, 45.0]
+bottom_corner_bohr_radii_3 = [-50.0, -50.0, -50.0]
+top_corner_bohr_radii_3 = [0.0, 50.0, 50.0]
 enable_image = true
 
 [[measurement.volume_probabilities]]
 name = "Second half"
-bottom_corner_bohr_radii_3 = [0.0, -45.0, -45.0]
-top_corner_bohr_radii_3 = [45.0, 45.0, 45.0]
+bottom_corner_bohr_radii_3 = [0.0, -50.0, -50.0]
+top_corner_bohr_radii_3 = [50.0, 50.0, 50.0]
 enable_image = true
 
 [[measurement.plane_probability_currents]]

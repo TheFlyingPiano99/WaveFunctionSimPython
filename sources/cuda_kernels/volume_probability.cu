@@ -1,7 +1,14 @@
 #include "PATH_TO_SOURCES/cuda_kernels/common.cu"
 
 
-template<unsigned int sample_count_x, unsigned int sample_count_y, unsigned int sample_count_z>
+template<
+    unsigned int sample_count_x,    // Fot the integrated volume only
+    unsigned int sample_count_y,
+    unsigned int sample_count_z,
+    unsigned int voxel_count_x, // For the whole simulated volume
+    unsigned int voxel_count_y,
+    unsigned int voxel_count_z
+>
 __global__ void volume_probability_kernel(
     complex<T_WF_FLOAT>* wave_function,
     T_WF_FLOAT* probabilityOut,
@@ -12,20 +19,13 @@ __global__ void volume_probability_kernel(
 
     unsigned int bottom_voxel_x,    // Offset of the integrated volume inside the simulated volume
     unsigned int bottom_voxel_y,
-    unsigned int bottom_voxel_z,
-
-    unsigned int voxel_count_x, // For the whole simulated volume
-    unsigned int voxel_count_y,
-    unsigned int voxel_count_z
-
+    unsigned int bottom_voxel_z
 )
 {
-
     extern __shared__ T_WF_FLOAT sdata[];
-
     T_WF_FLOAT3 delta_r = {delta_x, delta_y, delta_z};
     uint3 voxel = get_voxel_coords();   // In the integrated volume
-    uint3 sample_count = {sample_count_x, sample_count_y, sample_count_z};
+    constexpr uint3 sample_count = {sample_count_x, sample_count_y, sample_count_z};
     unsigned int wf_idx = get_array_index(
         {bottom_voxel_x + voxel.x, bottom_voxel_y + voxel.y, bottom_voxel_z + voxel.z},
         {voxel_count_x, voxel_count_y, voxel_count_z}
