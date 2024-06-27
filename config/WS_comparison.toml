@@ -25,7 +25,7 @@ initial_standard_deviation_bohr_radii_3 = [9.4486299429, 6.4486299429, 4.4486299
 
 [volume]
 simulated_volume_dimensions_bohr_radii_3 = [145.13095592, 145.13095592, 145.13095592] #Including absorbing potential regions
-number_of_voxels_3 = [256, 256, 256]         #Including absorbing potential regions
+number_of_voxels_3 = [512, 256, 256]         #Including absorbing potential regions
 observation_box_bottom_corner_bohr_radii_3 = [-72.565, -72.565, -72.565]   # Same as the inner boundary of the draining potential
 observation_box_top_corner_bohr_radii_3 = [72.565, 72.565, 72.565]   # Same as the inner boundary of the draining potential
 
@@ -43,20 +43,20 @@ enable = false
 visible = true
 
 [[potential.walls]]
-potential_hartree = 200
-center_bohr_radii_3 = [10.0, 0.0, 0.0]
+potential_hartree = 7.0
+center_bohr_radii_3 = [0.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
-plateau_thickness_bohr_radii = 10.0
+plateau_thickness_bohr_radii = 2.7
 slope_thickness_bohr_radii = 0.0
 slope_exponent = 1.5    # e: f(x) = x^e,    x in [0, 1]
 velocity_bohr_radius_hartree_per_h_bar_3 = [0.0, 0.0, 0.0]
 angular_velocity_rad_hartree_per_h_bar_3 = [0.0, 0.0, 0.0]
 potential_change_rate_hartree_sqr_per_h_bar = 0.0
-slit_count = 3
+slit_count = 0
 slit_spacing_bohr_radii = 5.0
 slit_width_bohr_radii = 2.0
 slit_rotation_radian = 0.0
-enable = false
+enable = true
 visible=true
 
 [[potential.walls]]
