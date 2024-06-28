@@ -42,6 +42,7 @@ class WavePacket:
     _initial_momentum_h_per_bohr_radii_3: np.array = np.array([0.0, 0.0, 0.0])
     _particle_mass_electron_rest_mass: float = 1.0
     _de_broglie_wave_length_bohr_radii: float
+    __path: str
 
 
     def get_initial_wp_position_bohr_radii_3(self):
@@ -64,8 +65,8 @@ class GaussianWavePacket(WavePacket):
 
     def __init__(self, config: Dict):
         super().__init__()
-        self._particle_mass_electron_rest_mass = try_read_param(config, "wave_packet.particle_mass_electron_rest_mass",
-                                                                1.0)
+        self.__path = try_read_param(config, "wave_packet.path", "")
+        self._particle_mass_electron_rest_mass = try_read_param(config, "wave_packet.particle_mass_electron_rest_mass", 1.0)
         self._initial_position_bohr_radii_3 = np.array(
             try_read_param(config, "wave_packet.initial_position_bohr_radii_3", [0.0, 0.0, 0.0])
         )
@@ -99,6 +100,10 @@ class GaussianWavePacket(WavePacket):
             shape: np.shape,
             double_precision: bool = False
     ):
+        if len(self.__path) > 0:    # Load pre-initialized wave function
+            wave_tensor = np.fromfile(self.__path, dtype=np.complex128 if double_precision else np.complex64).reshape(shape)
+            return cp.asarray(wave_tensor)
+
         wave_packet_kernel_source = (Path("sources/cuda_kernels/gaussian_wave_packet.cu").read_text().replace(
             "PATH_TO_SOURCES", os.path.abspath("sources"))
                                      .replace("T_WF_FLOAT",

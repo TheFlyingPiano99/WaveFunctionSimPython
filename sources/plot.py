@@ -35,7 +35,7 @@ def plot_probability_evolution(
     :return: The created figure
     """
     plt.figure()
-    plt.clf()  # Clear figure
+    plt.clf()
     # Path:
     matplotlib.rcParams.update({'font.size': font_size})
     plt.grid(True)

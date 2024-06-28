@@ -301,7 +301,6 @@ class PlaneProbabilityCurrent:
         self.__cuda_stream.synchronize()
         self.__probability_current_evolution = (
             np.append(arr=self.__probability_current_evolution, values=self.__probability_current_buffer[0]))
-        #print(f"\n{self.__name} current: {self.__probability_current_evolution[-1]}")
 
 
 class ExpectedLocation:
@@ -498,7 +497,7 @@ class MeasurementTools:
     __per_axis_image_capture_interval: int = 50
     __volume_probabilities: list[VolumeProbability] = []
     __plane_probability_currents: list[PlaneProbabilityCurrent] = []
-    __show_figures: bool = True
+    __show_figures: bool = False
     __expected_location: ExpectedLocation = None
 
     def _resolve_naming_conflicts(self, list, new_item):

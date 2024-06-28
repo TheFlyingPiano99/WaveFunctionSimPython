@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import cupy as cp
 import sources.math_utils as math_utils
@@ -10,14 +12,47 @@ from colorama import Fore, Style
 
 
 class PreInitializedPotential:
-    path: str
-    enable: bool
-    visible: bool
+    __path: str
+    __enable: bool
+    __visible: bool
+    __float_type: np.dtype
 
     def __init__(self, config: Dict):
-        self.path = try_read_param(config, "potential.pre_initialized_potential.path", "")
-        self.enable = try_read_param(config, "potential.pre_initialized_potential.enable", False)
-        self.visible = try_read_param(config, "potential.pre_initialized_potential.visible", True)
+        self.__path = try_read_param(config, "potential.pre_initialized_potential.path", "")
+        self.__enable = try_read_param(config, "potential.pre_initialized_potential.enable", False)
+        if len(self.__path) == 0:
+            self.__enable = False
+        self.__visible = try_read_param(config, "potential.pre_initialized_potential.visible", True)
+        type_str = try_read_param(config, "potential.pre_initialized_potential.float_type", "float64")
+        if type_str == "float64":
+            self.__float_type = np.float64
+        elif type_str == "float32":
+            self.__float_type = np.float32
+        elif type_str == "complex64":
+            self.__float_type = np.complex64
+        elif type_str == "complex128":
+            self.__float_type = np.complex128
+        else:
+            self.__float_type = np.float64
+            print(Fore.RED + f"Unrecognised float type for the pre-initialized potential \"{self.__path}\"!\n"
+                             "Available options are: float32, float64, complex64, complex128"
+                             f"Falling back to float64." + Style.RESET_ALL)
+
+    def is_enabled(self):
+        return self.__enable
+
+    def is_visible(self):
+        return self.__visible
+
+    def add_potential(self, V: cp.ndarray):
+        array = np.fromfile(self.__path, dtype=self.__float_type).reshape(V.shape)
+        if self.__float_type in [np.float32, np.float64]:   # Convert loaded real values to complex values
+            imag_array = np.zeros(shape=array.shape, dtype=array.dtype)
+            complex_potential = array + 1j * imag_array
+            V += cp.asarray(complex_potential.astype(V.dtype))
+        else:
+            V += cp.asarray(array.astype(V.dtype))  # Already complex valued
+        return V
 
 class AbsorbingBoundaryCondition:
     boundary_bottom_corner_bohr_radii_3: np.array

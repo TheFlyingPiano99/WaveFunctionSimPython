@@ -162,15 +162,14 @@ class SimState:
 
         print(f"Observation box bottom corner voxel: ({self.__observation_box_bottom_corner_voxel_3[0]}, {self.__observation_box_bottom_corner_voxel_3[1]}, {self.__observation_box_bottom_corner_voxel_3[2]})")
         print(f"Observation box top corner voxel: ({self.__observation_box_top_corner_voxel_3[0]}, {self.__observation_box_top_corner_voxel_3[1]}, {self.__observation_box_top_corner_voxel_3[2]})")
-
         print(f"Observation box voxel dimensions: ({self.__observation_box_dimensions_voxel_3[0]}, {self.__observation_box_dimensions_voxel_3[1]}, {self.__observation_box_dimensions_voxel_3[2]})")
 
         # Load potential descriptions:
         # Set pre initialized potential path (can be empty string):
         self.__pre_initialized_potential = potential.PreInitializedPotential(config)
 
-        if (len(self.__pre_initialized_potential.path) == 0) or not os.path.exists(self.__pre_initialized_potential.path):
-            self.__pre_initialized_potential.enable = False     # Force disable if unavailable
+        if self.__pre_initialized_potential.is_enabled():
+            self.__is_dynamic_potential_mode = False    # Overwrite dynamic mode if pre-initialized potential is present
 
         # Init absorbing potential:
         self.__absorbing_boundary_condition = potential.AbsorbingBoundaryCondition(
@@ -227,18 +226,9 @@ class SimState:
                 shape=self.__number_of_voxels_3, dtype=cp.complex64
             )
 
-            if self.__pre_initialized_potential.enable:
+            if self.__pre_initialized_potential.is_enabled():
                     print("Loading pre-initialized potential")
-                    try:
-                        pre_init_pot = cp.asarray(np.load(file=self.__pre_initialized_potential.path))
-                        if pre_init_pot.shape == self.__localised_potential_hartree.shape:
-                            self.__localised_potential_hartree += pre_init_pot
-                            if self.__pre_initialized_potential.visible:
-                                self.__localised_potential_to_visualize_hartree += pre_init_pot
-                        else:
-                            print(Fore.RED + "Pre-initialized potential has the wrong tensor shape!" + Style.RESET_ALL)
-                    except IOError:
-                        print(Fore.RED + "Found pre-initialized potential but failed to load!" + Style.RESET_ALL)
+                    self.__localised_potential_hartree = self.__pre_initialized_potential.add_potential(self.__localised_potential_hartree)
 
             print("Creating draining potential.")
             self.__localised_potential_hartree = self.__absorbing_boundary_condition.add_potential(
@@ -302,6 +292,13 @@ class SimState:
                 cp.zeros(shape=self.__wave_tensor.shape, dtype=self.__wave_tensor.dtype),
                 cp.zeros(shape=self.__wave_tensor.shape, dtype=self.__wave_tensor.dtype)
             ]  # s is used as a pair of pingpong buffers to store power series elements
+
+        # Save as raw binary file:
+        type_str = "float32"
+        os.makedirs(os.path.join(self.__output_dir, "potential_raw"), exist_ok=True)
+        (self.__localised_potential_hartree.view(dtype=type_str).astype(type_str)
+         .tofile(os.path.join(self.__output_dir, f"potential_raw/potential.bin")))
+
 
     def get_delta_time_h_bar_per_hartree(self):
         return self.__delta_time_h_bar_per_hartree
