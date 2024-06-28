@@ -181,7 +181,7 @@ class VolumeProbability:
         self.__probability_evolution = np.empty(shape=0, dtype=np.float64)
 
     def synchronize(self):
-#        with self.__cuda_stream:
+        #with self.__cuda_stream:
         self.__probability_evolution = np.append(
             arr=self.__probability_evolution, values=self.__probability_buffer[0]
         )
@@ -256,7 +256,7 @@ class PlaneProbabilityCurrent:
         return self.__enable_image
 
     def calculate(self, sim_state: SimState):
-#        with self.__cuda_stream:
+        #with self.__cuda_stream:
         self.__probability_current_buffer[0] = 0.0  # Clear buffer
         self.__probability_current_density.fill(0.0)
         dp = sim_state.is_double_precision()
@@ -297,8 +297,7 @@ class PlaneProbabilityCurrent:
         ), self.__name
 
     def synchronize(self):
-#        with self.__cuda_stream:
-        self.__cuda_stream.synchronize()
+        #with self.__cuda_stream:
         self.__probability_current_evolution = (
             np.append(arr=self.__probability_current_evolution, values=self.__probability_current_buffer[0]))
 
@@ -680,6 +679,7 @@ class MeasurementTools:
         ):
             self.__volumetric.render_to_png(out_dir=sim_state.get_output_dir(), index=iter_data.i)
 
+        # Calculate:
         for volume in self.__volume_probabilities:
             if volume.is_enable_image():
                 volume.calculate(sim_state)
