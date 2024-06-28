@@ -20,10 +20,24 @@ def plot_probability_evolution(
         show_fig=False,
         y_min=0.0,
         y_max=1.0
-):
+) -> plt.Figure:
+    """
+    Creates a plot of the provided probability_evolutions.
+    :param out_dir:
+    :param probability_evolutions:
+    :param delta_t:
+    :param file_name:
+    :param title:
+    :param y_label:
+    :param show_fig:
+    :param y_min:
+    :param y_max:
+    :return: The created figure
+    """
+    plt.figure()
+    plt.clf()  # Clear figure
     # Path:
     matplotlib.rcParams.update({'font.size': font_size})
-    plt.clf()  # Clear figure
     plt.grid(True)
     plt.xlabel("Elapsed time [ħ/Hartree]")
     plt.ylabel(y_label)
@@ -33,17 +47,20 @@ def plot_probability_evolution(
     plt.xlim(0, n * delta_t)
     plt.ylim(y_min, y_max)
     for prob_data in probability_evolutions:
-        lstyle = "solid"
+        l_style = "solid"
         if len(prob_data) > 2:
-            lstyle = prob_data[2]
-        plt.plot(x, cp.asnumpy(prob_data[0]), label=prob_data[1], linestyle=lstyle)
+            l_style = prob_data[2]
+        plt.plot(x, cp.asnumpy(prob_data[0]), label=prob_data[1], linestyle=l_style)
     plt.legend()
     plt.tight_layout()
     if out_dir != None:
         plt.savefig(os.path.join(out_dir, file_name))
     if show_fig:
-        plt.show()
-
+        try:
+            plt.show()
+        except OSError:
+            pass
+    return plt.gcf()
 
 def plot_per_axis_probability_density(
         out_dir, title: str, data: tuple, delta_x_3: np.array, delta_t: float, index: int, potential_scale: float, show_fig=False

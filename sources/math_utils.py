@@ -166,7 +166,7 @@ def get_grid_size_block_size(shape: np.shape, reduced_thread_count: bool = False
         if key in grid_sizes:  # Use cached value
             return tuple(grid_sizes[key]), (shape[0] // grid_sizes[key][0])
 
-    allowed_thread_count_per_block = 512 if reduced_thread_count else 1024
+    allowed_thread_count_per_block = 256 if reduced_thread_count else 1024
     initial_guess = 2
     while True:
         grid_size = []

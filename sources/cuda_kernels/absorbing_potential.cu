@@ -59,11 +59,11 @@ void absorbing_potential_kernel(
     if (dB.x < 0.0f && dB.y < 0.0f && dB.z < 0.0f) {     // (-,-,- ; .,.,.)
         // Calculate blending parameters:
         float alfa = atanf(dB.y / dB.x);
-        float u = alfa / M_PI * 2.0f;
+        float u = alfa / M_PI_f * 2.0f;
         float beta = atanf(-dB.z / sqrtf(dB.x*dB.x + dB.y*dB.y));
-        float v = beta / M_PI * 2.0f;
+        float v = beta / M_PI_f * 2.0f;
         // Blend parameters:
-        float maxD = mix(box_half - (fabsf(bottom) + offset_neg), u, v);
+        float maxD = mix(box_half - (abs(bottom) + offset_neg), u, v);
         float exponent = mix(exponent_neg, u, v);
         float max_pot = mix(potential_neg, u, v);
         potential = powf(max(length(dB) - offset, 0.0f) / maxD, exponent) * max_pot;
@@ -71,48 +71,48 @@ void absorbing_potential_kernel(
     else if (dB.x < 0.0f && dB.y < 0.0f && dT.z > 0.0f) {     // (-,-,. ; .,.,+)
         // Calculate blending parameters:
         float alfa = atanf(dB.y / dB.x);
-        float u = alfa / M_PI * 2.0f;
+        float u = alfa / M_PI_f * 2.0f;
         float beta = atanf(dT.z / sqrtf(dB.x*dB.x + dB.y*dB.y));
-        float v = beta / M_PI * 2.0f;
+        float v = beta / M_PI_f * 2.0f;
         // Blend parameters:
-        float maxD = mix(box_half - (fabsf({bottom.x, bottom.y, top.z}) + float3{offset_neg.x, offset_neg.y, offset_pos.z}), u, v);
+        float maxD = mix(box_half - (abs(float3{bottom.x, bottom.y, top.z}) + float3{offset_neg.x, offset_neg.y, offset_pos.z}), u, v);
         float exponent = mix({exponent_neg.x, exponent_neg.y, exponent_pos.z}, u, v);
         float max_pot = mix({potential_neg.x, potential_neg.y, potential_pos.z}, u, v);
-        potential = powf(max(length({dB.x, dB.y, dT.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{dB.x, dB.y, dT.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     else if (dB.y < 0.0f && dT.x > 0.0f && dT.z > 0.0f) {     // (.,-,. ; +,.,+)
         // Calculate blending parameters:
         float alfa = atanf(-dB.y / dT.x);
-        float u = alfa / M_PI * 2.0f;
+        float u = alfa / M_PI_f * 2.0f;
         float beta = atanf(dT.z / sqrtf(dT.x*dT.x + dB.y*dB.y));
-        float v = beta / M_PI * 2.0f;
+        float v = beta / M_PI_f * 2.0f;
         // Blend parameters:
-        float maxD = mix(box_half - (fabsf({top.x, bottom.y, top.z}) + float3{offset_pos.x, offset_neg.y, offset_pos.z}), u, v);
+        float maxD = mix(box_half - (abs(float3{top.x, bottom.y, top.z}) + float3{offset_pos.x, offset_neg.y, offset_pos.z}), u, v);
         float exponent = mix({exponent_pos.x, exponent_neg.y, exponent_pos.z}, u, v);
         float max_pot = mix({potential_pos.x, potential_neg.y, potential_pos.z}, u, v);
-        potential = powf(max(length({dT.x, dB.y, dT.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{dT.x, dB.y, dT.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     else if (dB.y < 0.0f && dB.z < 0.0f && dT.x > 0.0f) {     // (.,-,- ; +,.,.)
         // Calculate blending parameters:
         float alfa = atanf(-dB.y / dT.x);
-        float u = alfa / M_PI * 2.0f;
+        float u = alfa / M_PI_f * 2.0f;
         float beta = atanf(-dB.z / sqrtf(dT.x*dT.x + dB.y*dB.y));
-        float v = beta / M_PI * 2.0f;
+        float v = beta / M_PI_f * 2.0f;
         // Blend parameters:
-        float maxD = mix(box_half - (fabsf({top.x, bottom.y, bottom.z}) + float3{offset_pos.x, offset_neg.y, offset_neg.z}), u, v);
+        float maxD = mix(box_half - (abs(float3{top.x, bottom.y, bottom.z}) + float3{offset_pos.x, offset_neg.y, offset_neg.z}), u, v);
         float exponent = mix({exponent_pos.x, exponent_neg.y, exponent_neg.z}, u, v);
         float max_pot = mix({potential_pos.x, potential_neg.y, potential_neg.z}, u, v);
-        potential = powf(max(length({dT.x, dB.y, dB.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{dT.x, dB.y, dB.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     // Corners of the top plate:
     else if (dT.x > 0.0f && dT.y > 0.0f && dT.z > 0.0f) {   // (.,.,. ; +,+,+)
         // Calculate blending parameters:
         float alfa = atanf(dT.y / dT.x);
-        float u = alfa / M_PI * 2.0f;
+        float u = alfa / M_PI_f * 2.0f;
         float beta = atanf(dT.z / sqrtf(dT.x*dT.x + dT.y*dT.y));
-        float v = beta / M_PI * 2.0f;
+        float v = beta / M_PI_f * 2.0f;
         // Blend parameters:
-        float maxD = mix(box_half - (fabsf(top) + offset_pos), u, v);
+        float maxD = mix(box_half - (abs(top) + offset_pos), u, v);
         float exponent = mix(exponent_pos, u, v);
         float max_pot = mix(potential_pos, u, v);
         potential = powf(max(length(dT) - offset, 0.0f) / maxD, exponent) * max_pot;
@@ -120,161 +120,161 @@ void absorbing_potential_kernel(
     else if (dB.z < 0.0f && dT.x > 0.0f && dT.y > 0.0f) {   // (.,.,- ; +,+,.)
         // Calculate blending parameters:
         float alfa = atanf(dT.y / dT.x);
-        float u = alfa / M_PI * 2.0f;
+        float u = alfa / M_PI_f * 2.0f;
         float beta = atanf(-dB.z / sqrtf(dT.x*dT.x + dT.y*dT.y));
-        float v = beta / M_PI * 2.0f;
+        float v = beta / M_PI_f * 2.0f;
         // Blend parameters:
-        float maxD = mix(box_half - (fabsf({top.x, top.y, bottom.z}) + float3{offset_pos.x, offset_pos.y, offset_neg.z}), u, v);
+        float maxD = mix(box_half - (abs(float3{top.x, top.y, bottom.z}) + float3{offset_pos.x, offset_pos.y, offset_neg.z}), u, v);
         float exponent = mix({exponent_pos.x, exponent_pos.y, exponent_neg.z}, u, v);
         float max_pot = mix({potential_pos.x, potential_pos.y, potential_neg.z}, u, v);
-        potential = powf(max(length({dT.x, dT.y, dB.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{dT.x, dT.y, dB.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     else if (dB.x < 0.0f && dB.z < 0.0f && dT.y > 0.0f) {   // (-,.,- ; .,+,.)
         // Calculate blending parameters:
         float alfa = atanf(dT.y / -dB.x);
-        float u = alfa / M_PI * 2.0f;
+        float u = alfa / M_PI_f * 2.0f;
         float beta = atanf(-dB.z / sqrtf(dB.x*dB.x + dT.y*dT.y));
-        float v = beta / M_PI * 2.0f;
+        float v = beta / M_PI_f * 2.0f;
         // Blend parameters:
-        float maxD = mix(box_half - (fabsf({bottom.x, top.y, bottom.z}) + float3{offset_neg.x, offset_pos.y, offset_neg.z}), u, v);
+        float maxD = mix(box_half - (abs(float3{bottom.x, top.y, bottom.z}) + float3{offset_neg.x, offset_pos.y, offset_neg.z}), u, v);
         float exponent = mix({exponent_neg.x, exponent_pos.y, exponent_neg.z}, u, v);
         float max_pot = mix({potential_neg.x, potential_pos.y, potential_neg.z}, u, v);
-        potential = powf(max(length({dB.x, dT.y, dB.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{dB.x, dT.y, dB.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     else if (dB.x < 0.0f && dT.y > 0.0f && dT.z > 0.0f) {   // (-,.,. ; .,+,+)
         // Calculate blending parameters:
         float alfa = atanf(dT.y / -dB.x);
-        float u = alfa / M_PI * 2.0f;
+        float u = alfa / M_PI_f * 2.0f;
         float beta = atanf(dT.z / sqrtf(dB.x*dB.x + dT.y*dT.y));
-        float v = beta / M_PI * 2.0f;
+        float v = beta / M_PI_f * 2.0f;
         // Blend parameters:
-        float maxD = mix(box_half - (fabsf({bottom.x, top.y, top.z}) + float3{offset_neg.x, offset_pos.y, offset_pos.z}), u, v);
+        float maxD = mix(box_half - (abs(float3{bottom.x, top.y, top.z}) + float3{offset_neg.x, offset_pos.y, offset_pos.z}), u, v);
         float exponent = mix({exponent_neg.x, exponent_pos.y, exponent_pos.z}, u, v);
         float max_pot = mix({potential_neg.x, potential_pos.y, potential_pos.z}, u, v);
-        potential = powf(max(length({dB.x, dT.y, dT.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{dB.x, dT.y, dT.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     // Bottom edges:
     else if (dB.x < 0.0f && dB.y < 0.0f && dB.z > 0.0f && dT.z < 0.0f) {    // (-,-,+ ; .,.,-)
         // Calculate blending parameter:
         float alfa = atanf(dB.y / dB.x);
-        float u = alfa / M_PI * 2.0f;
+        float u = alfa / M_PI_f * 2.0f;
         // Blend parameters:
-        float maxD = mix(box_half - (fabsf({bottom.x, bottom.y, 0.0f}) + float3{offset_neg.x, offset_neg.y, 0.0f}), u, 0.0f);
+        float maxD = mix(box_half - (abs(float3{bottom.x, bottom.y, 0.0f}) + float3{offset_neg.x, offset_neg.y, 0.0f}), u, 0.0f);
         float exponent = mix({exponent_neg.x, exponent_neg.y, 0.0f}, u, 0.0f);
         float max_pot = mix({potential_neg.x, potential_neg.y, 0.0f}, u, 0.0f);
-        potential = powf(max(length({dB.x, dB.y, 0.0f}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{dB.x, dB.y, 0.0f}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     else if (dB.x > 0.0f && dB.y < 0.0f && dT.x < 0.0f && dT.z > 0.0f) {    // (+,-,. ; -,.,+)
         // Calculate blending parameter:
         float beta = atanf(dT.z / -dB.y);
-        float v = beta / M_PI * 2.0f;
+        float v = beta / M_PI_f * 2.0f;
         // Blend parameters
-        float maxD = mix(box_half - (fabsf({0.0f, bottom.y, top.z}) + float3{0.0f, offset_neg.y, offset_pos.z}), 0.0f, v);
+        float maxD = mix(box_half - (abs(float3{0.0f, bottom.y, top.z}) + float3{0.0f, offset_neg.y, offset_pos.z}), 0.0f, v);
         float exponent = mix({0.0f, exponent_neg.y, exponent_pos.z}, 1.0f, v);
         float max_pot = mix({0.0f, potential_neg.y, potential_pos.z}, 1.0f, v);
-        potential = powf(max(length({0.0f, dB.y, dT.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{0.0f, dB.y, dT.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     else if (dB.y < 0.0f && dB.z > 0.0f && dT.x > 0.0f && dT.z < 0.0f) {    // (.,-,+ ; +,.,-)
         // Calculate blending parameter:
         float alfa = atanf(-dB.y / dT.x);
-        float u = alfa / M_PI * 2.0f;
+        float u = alfa / M_PI_f * 2.0f;
         // Blend parameters
-        float maxD = mix(box_half - (fabsf({top.x, bottom.y, 0.0f}) + float3{offset_pos.x, offset_neg.y, 0.0f}), u, 0.0f);
+        float maxD = mix(box_half - (abs(float3{top.x, bottom.y, 0.0f}) + float3{offset_pos.x, offset_neg.y, 0.0f}), u, 0.0f);
         float exponent = mix({exponent_pos.x, exponent_neg.y, 0.0f}, u, 0.0f);
         float max_pot = mix({potential_pos.x, potential_neg.y, 0.0f}, u, 0.0f);
-        potential = powf(max(length({dT.x, dB.y, 0.0f}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{dT.x, dB.y, 0.0f}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     else if (dB.x > 0.0f && dB.y < 0.0f && dB.z < 0.0f && dT.x < 0.0f) {    // (+,-,- ; -,.,.)
         // Calculate blending parameter:
         float beta = atanf(dB.z / dB.y);
-        float v = beta / M_PI * 2.0f;
+        float v = beta / M_PI_f * 2.0f;
         // Blend parameters
-        float maxD = mix(box_half - (fabsf({0.0f, bottom.y, bottom.z}) + float3{0.0f, offset_neg.y, offset_neg.z}), 0.0f, v);
+        float maxD = mix(box_half - (abs(float3{0.0f, bottom.y, bottom.z}) + float3{0.0f, offset_neg.y, offset_neg.z}), 0.0f, v);
         float exponent = mix({0.0f, exponent_neg.y, exponent_neg.z}, 1.0f, v);
         float max_pot = mix({0.0f, potential_neg.y, potential_neg.z}, 1.0f, v);
-        potential = powf(max(length({0.0f, dB.y, dB.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{0.0f, dB.y, dB.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     // "Pillar" edges:
     else if (dB.x < 0.0f && dB.y > 0.0f && dB.z < 0.0f && dT.y < 0.0f) {    // (-,+,- ; .,-,.)
         // Calculate blending parameter:
         float beta = atanf(dB.z / dB.x);
-        float v = beta / M_PI * 2.0f;
+        float v = beta / M_PI_f * 2.0f;
         // Blend parameters
-        float maxD = mix(box_half - (fabsf({bottom.x, 0.0f, bottom.z}) + float3{offset_neg.x, 0.0f, offset_neg.z}), 0.0f, v);
+        float maxD = mix(box_half - (abs(float3{bottom.x, 0.0f, bottom.z}) + float3{offset_neg.x, 0.0f, offset_neg.z}), 0.0f, v);
         float exponent = mix({exponent_neg.x, 0.0f, exponent_neg.z}, 0.0f, v);
         float max_pot = mix({potential_neg.x, 0.0f, potential_neg.z}, 0.0f, v);
-        potential = powf(max(length({dB.x, 0.0f, dB.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{dB.x, 0.0f, dB.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     else if (dB.x < 0.0f && dB.y > 0.0f && dT.y < 0.0f && dT.z > 0.0f) {    // (-,+,. ; .,-,+)
         // Calculate blending parameter:
         float beta = atanf(dT.z / -dB.x);
-        float v = beta / M_PI * 2.0f;
+        float v = beta / M_PI_f * 2.0f;
         // Blend parameters
-        float maxD = mix(box_half - (fabsf({bottom.x, 0.0f, top.z}) + float3{offset_neg.x, 0.0f, offset_pos.z}), 0.0f, v);
+        float maxD = mix(box_half - (abs(float3{bottom.x, 0.0f, top.z}) + float3{offset_neg.x, 0.0f, offset_pos.z}), 0.0f, v);
         float exponent = mix({exponent_neg.x, 0.0f, exponent_pos.z}, 0.0f, v);
         float max_pot = mix({potential_neg.x, 0.0f, potential_pos.z}, 0.0f, v);
-        potential = powf(max(length({dB.x, 0.0f, dT.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{dB.x, 0.0f, dT.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     else if (dB.y > 0.0f && dT.x > 0.0f && dT.y < 0.0f && dT.z > 0.0f) {    // (.,+,. ; +,-,+)
         // Calculate blending parameter:
         float beta = atanf(dT.z / dT.x);
-        float v = beta / M_PI * 2.0f;
+        float v = beta / M_PI_f * 2.0f;
         // Blend parameters
-        float maxD = mix(box_half - (fabsf({top.x, 0.0f, top.z}) + float3{offset_pos.x, 0.0f, offset_pos.z}), 0.0f, v);
+        float maxD = mix(box_half - (abs(float3{top.x, 0.0f, top.z}) + float3{offset_pos.x, 0.0f, offset_pos.z}), 0.0f, v);
         float exponent = mix({exponent_pos.x, 0.0f, exponent_pos.z}, 0.0f, v);
         float max_pot = mix({potential_pos.x, 0.0f, potential_pos.z}, 0.0f, v);
-        potential = powf(max(length({dT.x, 0.0f, dT.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{dT.x, 0.0f, dT.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     else if (dB.y > 0.0f && dB.z < 0.0f && dT.x > 0.0f && dT.y < 0.0f) {    // (.,+,- ; +,-,.)
         // Calculate blending parameter:
         float beta = atanf(-dB.z / dT.x);
-        float v = beta / M_PI * 2.0f;
+        float v = beta / M_PI_f * 2.0f;
         // Blend parameters
-        float maxD = mix(box_half - (fabsf({top.x, 0.0f, bottom.z}) + float3{offset_pos.x, 0.0f, offset_neg.z}), 0.0f, v);
+        float maxD = mix(box_half - (abs(float3{top.x, 0.0f, bottom.z}) + float3{offset_pos.x, 0.0f, offset_neg.z}), 0.0f, v);
         float exponent = mix({exponent_pos.x, 0.0f, exponent_neg.z}, 0.0f, v);
         float max_pot = mix({potential_pos.x, 0.0f, potential_neg.z}, 0.0f, v);
-        potential = powf(max(length({dT.x, 0.0f, dB.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{dT.x, 0.0f, dB.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     // Top plane edges:
     else if (dB.x < 0.0f && dB.z > 0.0f && dT.y > 0.0f && dT.z < 0.0f) {    // (-,.,+ ; .,+,-)
         // Calculate blending parameter:
         float alfa = atanf(dT.y / -dB.x);
-        float u = alfa / M_PI * 2.0f;
+        float u = alfa / M_PI_f * 2.0f;
         // Blend parameters
-        float maxD = mix(box_half - (fabsf({bottom.x, top.y, 0.0f}) + float3{offset_neg.x, offset_pos.y, 0.0f}), u, 0.0f);
+        float maxD = mix(box_half - (abs(float3{bottom.x, top.y, 0.0f}) + float3{offset_neg.x, offset_pos.y, 0.0f}), u, 0.0f);
         float exponent = mix({exponent_neg.x, exponent_pos.y, 0.0f}, u, 0.0f);
         float max_pot = mix({potential_neg.x, potential_pos.y, 0.0f}, u, 0.0f);
-        potential = powf(max(length({dB.x, dT.y, 0.0f}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{dB.x, dT.y, 0.0f}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     else if (dB.x > 0.0f && dT.x < 0.0f && dT.y > 0.0f && dT.z > 0.0f) {    // (+,.,. ; -,+,+)
         // Calculate blending parameter:
         float beta = atanf(dT.z / dT.y);
-        float v = beta / M_PI * 2.0f;
+        float v = beta / M_PI_f * 2.0f;
         // Blend parameters
-        float maxD = mix(box_half - (fabsf({0.0f, top.y, top.z}) + float3{0.0f, offset_pos.y, offset_pos.z}), 1.0f, v);
+        float maxD = mix(box_half - (abs(float3{0.0f, top.y, top.z}) + float3{0.0f, offset_pos.y, offset_pos.z}), 1.0f, v);
         float exponent = mix({0.0f, exponent_pos.y, exponent_pos.z}, 1.0f, v);
         float max_pot = mix({0.0f, potential_pos.y, potential_pos.z}, 1.0f, v);
-        potential = powf(max(length({0.0f, dT.y, dT.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{0.0f, dT.y, dT.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     else if (dB.z > 0.0f && dT.x > 0.0f && dT.y > 0.0f && dT.z < 0.0f) {    // (.,.,+ ; +,+,-)
         // Calculate blending parameter:
         float alfa = atanf(dT.y / dT.x);
-        float u = alfa / M_PI * 2.0f;
+        float u = alfa / M_PI_f * 2.0f;
         // Blend parameters
-        float maxD = mix(box_half - (fabsf({top.x, top.y, 0.0f}) + float3{offset_pos.x, offset_pos.y, 0.0f}), u, 0.0f);
+        float maxD = mix(box_half - (abs(float3{top.x, top.y, 0.0f}) + float3{offset_pos.x, offset_pos.y, 0.0f}), u, 0.0f);
         float exponent = mix({exponent_pos.x, exponent_pos.y, 0.0f}, u, 0.0f);
         float max_pot = mix({potential_pos.x, potential_pos.y, 0.0f}, u, 0.0f);
-        potential = powf(max(length({dT.x, dT.y, 0.0f}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{dT.x, dT.y, 0.0f}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     else if (dB.x > 0.0f && dB.z < 0.0f && dT.x < 0.0f && dT.y > 0.0f) {    // (+,.,- ; -,+,.)
         // Calculate blending parameter:
         float beta = atanf(-dB.z / dT.y);
-        float v = beta / M_PI * 2.0f;
+        float v = beta / M_PI_f * 2.0f;
         // Blend parameters
-        float maxD = mix(box_half - (fabsf({0.0f, top.y, bottom.z}) + float3{0.0f, offset_pos.y, offset_neg.z}), 0.0f, v);
+        float maxD = mix(box_half - (abs(float3{0.0f, top.y, bottom.z}) + float3{0.0f, offset_pos.y, offset_neg.z}), 0.0f, v);
         float exponent = mix({0.0f, exponent_pos.y, exponent_neg.z}, 0.0f, v);
         float max_pot = mix({0.0f, potential_pos.y, potential_neg.z}, 0.0f, v);
-        potential = powf(max(length({0.0f, dT.y, dB.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
+        potential = powf(max(length(float3{0.0f, dT.y, dB.z}) - offset, 0.0f) / maxD, exponent) * max_pot;
     }
     // Box sides:
     else if (dB.x > 0.0f && dB.y < 0.0f && dB.z > 0.0f && dT.x < 0.0f && dT.z < 0.0f) {    // (+,-,+ ; -,.,-)

@@ -34,7 +34,7 @@ void potential_wall_kernel(
     float3 center = {center_x, center_y, center_z};
     float3 normal = {normal_x, normal_y, normal_z};
 
-    float3 r = mul(delta_r, transform_corner_origin_to_center_origin_system({(float)voxel.x, (float)voxel.y, (float)voxel.z}));
+    float3 r = mul(delta_r, transform_corner_origin_to_center_origin_system(float3{(float)voxel.x, (float)voxel.y, (float)voxel.z}));
     float d = fabsf(dot(normal, diff(r, center)));  // distance
     float3 up = {0.0f, 1.0f, 0.0f};
     if (fabsf(dot(normal, up)) > 0.99f){    // normal and up vectors are almost parallel

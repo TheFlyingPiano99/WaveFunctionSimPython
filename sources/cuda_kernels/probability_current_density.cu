@@ -200,15 +200,20 @@ __global__ void probability_current_density_kernel(
 
     if (pixel.x < sample_count_x && pixel.y < sample_count_y) {
         sdata[threadId] = pcDensity * get_simpson_coefficient_2d<T_WF_FLOAT>(pixel, sample_count) * dW * dH;
+        //sdata[threadId] = 1.0;
     }
     else {
         sdata[threadId] = (T_WF_FLOAT)0;
     }
 
     // Reduction in shared memory:
-    parallel_reduction_sequential(threadId, sdata);
+    parallel_reduction_sequential_2d(threadId, sdata);
 
     // Add the values calculated by the blocks and write the result into probabilityCurrentOut
-    if (threadId == 0)
-        atomicAdd(probabilityCurrentOut, sdata[0]);
+    if (threadId == 0 && sdata[0] != 0) {
+        atomicAdd(&probabilityCurrentOut[0], sdata[0]);
+        //if (fabsf(center_x - 0.0) < 0.01f) {
+        //    printf(" B: (%d, %d, %d) p: %.14f ", blockIdx.x, blockIdx.y, blockIdx.z, sdata[0]);
+        //}
+    }
 }

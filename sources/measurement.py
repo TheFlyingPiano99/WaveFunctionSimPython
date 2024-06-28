@@ -135,7 +135,7 @@ class VolumeProbability:
             print(
                 f"{self.__name} integral sample count: {self.__sample_count[0]}, {self.__sample_count[1]}, {self.__sample_count[2]}"
             )
-        self.__cuda_stream = cp.cuda.Stream()
+        self.__cuda_stream = cp.cuda.Stream(non_blocking=True)
         self.__shared_mem_bytes = (cp.dtype(float_type).itemsize
                                    * self.__kernel_block_size[0]
                                    * self.__kernel_block_size[1]
@@ -151,28 +151,28 @@ class VolumeProbability:
         return self.__enable_image
 
     def calculate(self, sim_state: SimState):
-        with self.__cuda_stream:
-            wave_function = sim_state.get_wave_function()
-            delta_r = sim_state.get_delta_x_bohr_radii_3()
-            dp = sim_state.is_double_precision()
-            self.__probability_buffer[0] = 0.0
-            self.__volume_probability_kernel(
-                self.__kernel_grid_size,
-                self.__kernel_block_size,
-                (
-                    wave_function,
-                    self.__probability_buffer,
+        #with self.__cuda_stream:
+        wave_function = sim_state.get_wave_function()
+        delta_r = sim_state.get_delta_x_bohr_radii_3()
+        dp = sim_state.is_double_precision()
+        self.__probability_buffer[0] = 0.0
+        self.__volume_probability_kernel(
+            self.__kernel_grid_size,
+            self.__kernel_block_size,
+            (
+                wave_function,
+                self.__probability_buffer,
 
-                    cp.float64(delta_r[0]) if dp else cp.float32(delta_r[0]),
-                    cp.float64(delta_r[1]) if dp else cp.float32(delta_r[1]),
-                    cp.float64(delta_r[2]) if dp else cp.float32(delta_r[2]),
+                cp.float64(delta_r[0]) if dp else cp.float32(delta_r[0]),
+                cp.float64(delta_r[1]) if dp else cp.float32(delta_r[1]),
+                cp.float64(delta_r[2]) if dp else cp.float32(delta_r[2]),
 
-                    cp.uint32(self.__bottom_voxel[0]),
-                    cp.uint32(self.__bottom_voxel[1]),
-                    cp.uint32(self.__bottom_voxel[2]),
-                ),
-                shared_mem=self.__shared_mem_bytes
-            )
+                cp.uint32(self.__bottom_voxel[0]),
+                cp.uint32(self.__bottom_voxel[1]),
+                cp.uint32(self.__bottom_voxel[2]),
+            ),
+            shared_mem=self.__shared_mem_bytes
+        )
 
     def get_probability_evolution_with_name(self):
         return self.__probability_evolution, self.__name
@@ -181,10 +181,10 @@ class VolumeProbability:
         self.__probability_evolution = np.empty(shape=0, dtype=np.float64)
 
     def synchronize(self):
-        with self.__cuda_stream:
-            self.__probability_evolution = np.append(
-                arr=self.__probability_evolution, values=self.__probability_buffer[0]
-            )
+#        with self.__cuda_stream:
+        self.__probability_evolution = np.append(
+            arr=self.__probability_evolution, values=self.__probability_buffer[0]
+        )
 
 
 class PlaneProbabilityCurrent:
@@ -243,9 +243,9 @@ class PlaneProbabilityCurrent:
         self.__probability_current_buffer = cp.array([0.0], dtype=float_type)
         self.__probability_current_evolution = np.empty(shape=0, dtype=float_type)
         self.__delta_t = sim_state.get_delta_time_h_bar_per_hartree()
-        self.__cuda_stream = cp.cuda.Stream()
+        self.__cuda_stream = cp.cuda.Stream(non_blocking=True)
         self.__shared_memory_bytes = self.__block_size[0] * self.__block_size[1] * cp.dtype(float_type).itemsize
-
+        print(f"{self.__name} used thread count: {self.__sample_count_2[0] * self.__sample_count_2[1]}")
     def get_name(self):
         return self.__name
 
@@ -256,36 +256,37 @@ class PlaneProbabilityCurrent:
         return self.__enable_image
 
     def calculate(self, sim_state: SimState):
-        with self.__cuda_stream:
-            self.__probability_current_buffer[0] = 0.0  # Clear buffer
-            dp = sim_state.is_double_precision()
-            self.__kernel(
-                self.__grid_size,
-                self.__block_size,
-                (
-                    sim_state.get_wave_function(),
-                    self.__probability_current_density,
-                    self.__probability_current_buffer,
+#        with self.__cuda_stream:
+        self.__probability_current_buffer[0] = 0.0  # Clear buffer
+        self.__probability_current_density.fill(0.0)
+        dp = sim_state.is_double_precision()
+        self.__kernel(
+            self.__grid_size,
+            self.__block_size,
+            (
+                sim_state.get_wave_function(),
+                self.__probability_current_density,
+                self.__probability_current_buffer,
 
-                    cp.float64(sim_state.get_particle_mass()) if dp else cp.float32(sim_state.get_particle_mass()),
+                cp.float64(sim_state.get_particle_mass()) if dp else cp.float32(sim_state.get_particle_mass()),
 
-                    cp.float64(sim_state.get_delta_x_bohr_radii_3()[0]) if dp else cp.float32(sim_state.get_delta_x_bohr_radii_3()[0]),
-                    cp.float64(sim_state.get_delta_x_bohr_radii_3()[1]) if dp else cp.float32(sim_state.get_delta_x_bohr_radii_3()[1]),
-                    cp.float64(sim_state.get_delta_x_bohr_radii_3()[2]) if dp else cp.float32(sim_state.get_delta_x_bohr_radii_3()[2]),
+                cp.float64(sim_state.get_delta_x_bohr_radii_3()[0]) if dp else cp.float32(sim_state.get_delta_x_bohr_radii_3()[0]),
+                cp.float64(sim_state.get_delta_x_bohr_radii_3()[1]) if dp else cp.float32(sim_state.get_delta_x_bohr_radii_3()[1]),
+                cp.float64(sim_state.get_delta_x_bohr_radii_3()[2]) if dp else cp.float32(sim_state.get_delta_x_bohr_radii_3()[2]),
 
-                    cp.float32(self.__center_bohr_radii_3[0]),
-                    cp.float32(self.__center_bohr_radii_3[1]),
-                    cp.float32(self.__center_bohr_radii_3[2]),
+                cp.float32(self.__center_bohr_radii_3[0]),
+                cp.float32(self.__center_bohr_radii_3[1]),
+                cp.float32(self.__center_bohr_radii_3[2]),
 
-                    cp.float32(self.__normal_vector_3[0]),
-                    cp.float32(self.__normal_vector_3[1]),
-                    cp.float32(self.__normal_vector_3[2]),
+                cp.float32(self.__normal_vector_3[0]),
+                cp.float32(self.__normal_vector_3[1]),
+                cp.float32(self.__normal_vector_3[2]),
 
-                    cp.float32(self.__size_bohr_radii_2[0]),
-                    cp.float32(self.__size_bohr_radii_2[1])
-                ),
-                shared_mem=self.__shared_memory_bytes
-            )
+                cp.float32(self.__size_bohr_radii_2[0]),
+                cp.float32(self.__size_bohr_radii_2[1])
+            ),
+            shared_mem=self.__shared_memory_bytes
+        )
 
     def get_probability_current_evolution_with_name(self):
         return self.__probability_current_evolution, self.__name
@@ -296,9 +297,11 @@ class PlaneProbabilityCurrent:
         ), self.__name
 
     def synchronize(self):
-        with self.__cuda_stream:
-            self.__probability_current_evolution = (
-                np.append(arr=self.__probability_current_evolution, values=self.__probability_current_buffer[0]))
+#        with self.__cuda_stream:
+        self.__cuda_stream.synchronize()
+        self.__probability_current_evolution = (
+            np.append(arr=self.__probability_current_evolution, values=self.__probability_current_buffer[0]))
+        #print(f"\n{self.__name} current: {self.__probability_current_evolution[-1]}")
 
 
 class ExpectedLocation:
@@ -336,8 +339,8 @@ class ExpectedLocation:
         kernel_source = (Path("sources/cuda_kernels/expected_location.cu").read_text()
                          .replace("PATH_TO_SOURCES", os.path.abspath("sources"))
                          .replace("T_WF_FLOAT", "double" if sim_state.is_double_precision() else "float"))
-
-        func_name = f"expected_location_kernel<{sample_count[0]}, {sample_count[1]}, {sample_count[2]}>"
+        n = sim_state.get_number_of_voxels_3()
+        func_name = f"expected_location_kernel<{sample_count[0]}, {sample_count[1]}, {sample_count[2]}, {n[0]}, {n[1]}, {n[2]}>"
         self.__kernel = cp.RawModule(
             code=kernel_source,
             name_expressions=[func_name],
@@ -345,63 +348,58 @@ class ExpectedLocation:
         float_type = cp.float64 if sim_state.is_double_precision() else cp.float32
         self.__expected_location_buffer = cp.array([0.0, 0.0, 0.0], dtype=float_type)
         self.__expected_location_squared_buffer = cp.array([0.0, 0.0, 0.0], dtype=float_type)
-        self.__cuda_stream = cp.cuda.Stream()
+        self.__cuda_stream = cp.cuda.Stream(non_blocking=True)
         self.__shared_memory_bytes = 3 * cp.dtype(float_type).itemsize * self.__kernel_block_size[0] * self.__kernel_block_size[1] * self.__kernel_block_size[2]
     def is_enable_image(self):
         return self.__enable_image
 
     def calculate(self, sim_state: SimState):
-        with self.__cuda_stream:
-            self.__expected_location_buffer[0] = 0.0
-            self.__expected_location_buffer[1] = 0.0
-            self.__expected_location_buffer[2] = 0.0
+#        with self.__cuda_stream:
+        self.__expected_location_buffer[0] = 0.0
+        self.__expected_location_buffer[1] = 0.0
+        self.__expected_location_buffer[2] = 0.0
 
-            self.__expected_location_squared_buffer[0] = 0.0
-            self.__expected_location_squared_buffer[1] = 0.0
-            self.__expected_location_squared_buffer[2] = 0.0
+        self.__expected_location_squared_buffer[0] = 0.0
+        self.__expected_location_squared_buffer[1] = 0.0
+        self.__expected_location_squared_buffer[2] = 0.0
 
-            wave_function = sim_state.get_wave_function()
-            delta_r = sim_state.get_delta_x_bohr_radii_3()
-            N = sim_state.get_number_of_voxels_3()
-            dp = sim_state.is_double_precision()
-            self.__kernel(
-                self.__kernel_grid_size,
-                self.__kernel_block_size,
-                (
-                    wave_function,
-                    self.__expected_location_buffer,
-                    self.__expected_location_squared_buffer,
+        wave_function = sim_state.get_wave_function()
+        delta_r = sim_state.get_delta_x_bohr_radii_3()
+        dp = sim_state.is_double_precision()
+        self.__kernel(
+            self.__kernel_grid_size,
+            self.__kernel_block_size,
+            (
+                wave_function,
+                self.__expected_location_buffer,
+                self.__expected_location_squared_buffer,
 
-                    (cp.float64(delta_r[0]) if dp else cp.float32(delta_r[0])),
-                    (cp.float64(delta_r[1]) if dp else cp.float32(delta_r[1])),
-                    (cp.float64(delta_r[2]) if dp else cp.float32(delta_r[2])),
+                (cp.float64(delta_r[0]) if dp else cp.float32(delta_r[0])),
+                (cp.float64(delta_r[1]) if dp else cp.float32(delta_r[1])),
+                (cp.float64(delta_r[2]) if dp else cp.float32(delta_r[2])),
 
-                    cp.int32(self.__bottom_voxel[0]),
-                    cp.int32(self.__bottom_voxel[1]),
-                    cp.int32(self.__bottom_voxel[2]),
-
-                    cp.int32(N[0]),
-                    cp.int32(N[1]),
-                    cp.int32(N[2])
-                ),
-                shared_mem=self.__shared_memory_bytes
-            )
+                cp.int32(self.__bottom_voxel[0]),
+                cp.int32(self.__bottom_voxel[1]),
+                cp.int32(self.__bottom_voxel[2])
+            ),
+            shared_mem=self.__shared_memory_bytes
+        )
 
     def synchronize(self):
-        with self.__cuda_stream:
-            e_r = cp.asnumpy(self.__expected_location_buffer).reshape((1, 3))
-            e_r_2 = cp.asnumpy(self.__expected_location_squared_buffer).reshape((1, 3))
-            self.__expected_location_evolution = np.concatenate(
-                (self.__expected_location_evolution, e_r),
-                axis=0
-            )
-            self.__standard_deviation_evolution = np.concatenate(
-                (
-                    self.__standard_deviation_evolution,
-                    np.sqrt(e_r_2 - np.power(e_r, 2))
-                ),
-                axis=0
-            )
+#        with self.__cuda_stream:
+        e_r = cp.asnumpy(self.__expected_location_buffer).reshape((1, 3))
+        e_r_2 = cp.asnumpy(self.__expected_location_squared_buffer).reshape((1, 3))
+        self.__expected_location_evolution = np.concatenate(
+            (self.__expected_location_evolution, e_r),
+            axis=0
+        )
+        self.__standard_deviation_evolution = np.concatenate(
+            (
+                self.__standard_deviation_evolution,
+                np.sqrt(e_r_2 - np.power(e_r, 2))
+            ),
+            axis=0
+        )
 
 
     def get_expected_location_evolution(self):
@@ -616,30 +614,34 @@ class MeasurementTools:
         if try_read_param(config, "measurement.expected_location.enable_image", False):
             self.__expected_location = ExpectedLocation(config, sim_state)
 
+        if sim_state.is_wave_function_saving():
+            wf = sim_state.get_view_into_wave_function()
+            print(
+                f"\nBinary wave tensor parameters:\n"
+                f"Dimensions: {wf.shape} voxels,\ndelta_r = {sim_state.get_delta_x_bohr_radii_3()} Bohr radii,\ndelta_t = {sim_state.get_delta_time_h_bar_per_hartree()} h-bar/Hartree,\n"
+                f"Bytes / complex value: bytes = {wf.dtype.itemsize} Byte\n"
+                f"The index of the complex valued elements can be calculated like:\n"
+                "index = x * dimensions.y * dimensions.z * bytes + y * dimensions.z * bytes + z * bytes\n"
+                "Each element is a two component floating point vector of real and imaginary parts.\n"
+            )
+
     def write_wave_function_to_file(self, sim_state: SimState, iter_data: IterData):
         if iter_data.i % sim_state.get_wave_function_save_interval() == 0:
-            if not os.path.exists(os.path.join(sim_state.get_output_dir(), f"wave_function")):
-                os.makedirs(os.path.join(sim_state.get_output_dir(), f"wave_function"), exist_ok=True)
+            os.makedirs(os.path.join(sim_state.get_output_dir(), f"wave_function_npy"), exist_ok=True)
             os.makedirs(os.path.join(sim_state.get_output_dir(), f"wave_function_raw"), exist_ok=True)
             try:
                 wf = sim_state.get_view_into_wave_function()
                 # Save as Numpy .npy file:
                 cp.save(arr=wf,
-                        file=os.path.join(sim_state.get_output_dir(), f"wave_function/wave_function_{iter_data.i:06d}.npy"))
+                        file=os.path.join(sim_state.get_output_dir(), f"wave_function_npy/wave_function_{iter_data.i:06d}.npy"))
                 # Save as raw binary file:
                 type_str = "float64" if sim_state.is_double_precision() else "float32"
                 (wf.view(dtype=type_str).astype(type_str)
                  .tofile(os.path.join(sim_state.get_output_dir(), f"wave_function_raw/wave_function_{iter_data.i:06d}.bin")))
-                print(f"\nSaved raw binary wave tensor with dimensions: {wf.shape} voxels,\ndelta_r = {sim_state.get_delta_x_bohr_radii_3()} Bohr radii,\ndelta_t = {sim_state.get_delta_time_h_bar_per_hartree()} h-bar/Hartree,\n"
-                      f"Bytes / complex value: bytes = {wf.dtype.itemsize} Byte\n"
-                      f"The index of the complex valued elements can be calculated like:\n"
-                      "index = x * dimensions.y * dimensions.z * bytes + y * dimensions.z * bytes + z * bytes\n"
-                      "Each element is a two component floating point vector of real and imaginary parts.\n"
-                      )
 
             except IOError:
                 print(Fore.RED + "\nERROR: Failed writing file: " + os.path.join(sim_state.get_output_dir(),
-                                                                                 f"wave_function/wave_function_{iter_data.i:06d}.bin") + Style.RESET_ALL)
+                                                                                 f"wave_function_raw/wave_function_{iter_data.i:06d}.bin") + Style.RESET_ALL)
 
     def measure_and_render(self, sim_state: SimState, iter_data: IterData):
         # Save wave function:
@@ -704,6 +706,17 @@ class MeasurementTools:
 
 
     def finish(self, sim_state: SimState):
+        type_str = "float64" if sim_state.is_double_precision() else "float32"
+
+        f_npy = "measurable_npy"
+        f_bin = "measurable_raw"
+        f_img = "images"
+
+        # Create folders if nonexistent:
+        os.makedirs(os.path.join(sim_state.get_output_dir(), f_npy), exist_ok=True)
+        os.makedirs(os.path.join(sim_state.get_output_dir(), f_bin), exist_ok=True)
+        os.makedirs(os.path.join(sim_state.get_output_dir(), f_img), exist_ok=True)
+
         # Animations:
         if self.__enable_volumetric_animation:
             self.__animation_writer_volumetric.finish()
@@ -714,9 +727,12 @@ class MeasurementTools:
         if self.__expected_location is not None:
             expected_location_evolution = self.__expected_location.get_expected_location_evolution()
             expected_location_evolution_with_label = list(zip(expected_location_evolution.T, ["X axis", "Y axis", "Z axis"]))
-            np.save(os.path.join(sim_state.get_output_dir(), f"expected_location_evolution.npy"), expected_location_evolution)
+            np.save(os.path.join(sim_state.get_output_dir(), f_npy, "expected_location_evolution.npy"), expected_location_evolution)
+            # Save raw binary file:
+            (expected_location_evolution.view(dtype=type_str).astype(type_str)
+             .tofile(os.path.join(sim_state.get_output_dir(), f_bin, "expected_location_evolution.bin")))
             plot.plot_probability_evolution(
-                out_dir=sim_state.get_output_dir(),
+                out_dir=os.path.join(sim_state.get_output_dir(), f_img),
                 file_name="expected_location_evolution.png",
                 title="Expected location evolution",
                 y_label="Expected location [Bohr radius]",
@@ -731,9 +747,12 @@ class MeasurementTools:
         if self.__expected_location is not None:
             standard_deviation_evolution = self.__expected_location.get_standard_deviation_evolution()
             standard_deviation_evolution_with_label = list(zip(standard_deviation_evolution.T, ["X axis", "Y axis", "Z axis"]))
-            np.save(os.path.join(sim_state.get_output_dir(), f"standard_deviation_evolution.npy"), standard_deviation_evolution)
+            np.save(os.path.join(sim_state.get_output_dir(), f_npy, "standard_deviation_evolution.npy"), standard_deviation_evolution)
+            # Save raw binary file:
+            (standard_deviation_evolution.view(dtype=type_str).astype(type_str)
+             .tofile(os.path.join(sim_state.get_output_dir(), f_bin, "standard_deviation_evolution.bin")))
             plot.plot_probability_evolution(
-                out_dir=sim_state.get_output_dir(),
+                out_dir=os.path.join(sim_state.get_output_dir(), f_img),
                 file_name="standard_deviation_evolution.png",
                 title="Standard deviation evolution",
                 y_label="Standard deviation [Bohr radius]",
@@ -750,7 +769,10 @@ class MeasurementTools:
             if v.is_enable_image():
                 prob_with_name = v.get_probability_evolution_with_name()
                 volume_probability_evolutions.append(prob_with_name)
-                np.save(os.path.join(sim_state.get_output_dir(), f"volume_probability_evolution_{prob_with_name[1]}.npy"), prob_with_name[0])
+                np.save(os.path.join(sim_state.get_output_dir(), f_npy, f"volume_probability_evolution_{prob_with_name[1]}.npy"), prob_with_name[0])
+                # Save raw binary file:
+                (prob_with_name[0].view(dtype=type_str).astype(type_str)
+                    .tofile(os.path.join(sim_state.get_output_dir(), f_bin, f"volume_probability_evolution_{prob_with_name[1]}.bin")))
                 dwell_time = math_utils.indefinite_simpson_integral(prob_with_name[0], sim_state.get_delta_time_h_bar_per_hartree())
                 print(f"Dwell time in {prob_with_name[1]}: {dwell_time[-1]:.5f} ħ/Hartree")
         if len(volume_probability_evolutions) > 0:
@@ -761,7 +783,7 @@ class MeasurementTools:
                 sum = np.add(sum, np.array(evolution[0].tolist()))
             volume_probability_evolutions.append([sum, "Sum"])
             plot.plot_probability_evolution(
-                out_dir=sim_state.get_output_dir(),
+                out_dir=os.path.join(sim_state.get_output_dir(), f_img),
                 file_name="volume_probability_evolution.png",
                 title="Volume probability evolution",
                 y_label="Probability",
@@ -778,10 +800,14 @@ class MeasurementTools:
             if pc.is_enable_image():
                 pc_with_name = pc.get_probability_current_evolution_with_name()
                 probability_current_evolutions.append(pc_with_name)
-                np.save(os.path.join(sim_state.get_output_dir(), f"probability_current_evolution_{pc_with_name[1]}.npy"), pc_with_name[0])
+                np.save(os.path.join(sim_state.get_output_dir(), f_npy, f"probability_current_evolution_{pc_with_name[1]}.npy"), pc_with_name[0])
+                # Save as raw binary file:
+                (pc_with_name[0].view(dtype=type_str).astype(type_str)
+                    .tofile(os.path.join(sim_state.get_output_dir(), f_bin, f"probability_current_evolution_{pc_with_name[1]}.bin")))
+
         if len(probability_current_evolutions) > 0:
             plot.plot_probability_evolution(
-                out_dir=sim_state.get_output_dir(),
+                out_dir=os.path.join(sim_state.get_output_dir(), f_img),
                 file_name="probability_current_evolution.png",
                 title="Probability current evolution",
                 y_label="Probability current",
@@ -798,11 +824,15 @@ class MeasurementTools:
             if pc.is_enable_image():
                 ipc_with_name = pc.get_integrated_probability_current_evolution_with_name()
                 integrated_probability_current_evolutions.append(ipc_with_name)
-                np.save(os.path.join(sim_state.get_output_dir(), f"integrated_probability_current_{ipc_with_name[1]}.npy"), ipc_with_name[0])
+                np.save(os.path.join(sim_state.get_output_dir(), f_npy, f"integrated_probability_current_{ipc_with_name[1]}.npy"), ipc_with_name[0])
                 print(f"Transfer probability on {ipc_with_name[1]}: {ipc_with_name[0][-1]:.5f}")    # Print last element
+                # Save as raw binary file:
+                (ipc_with_name[0].view(dtype=type_str).astype(type_str)
+                 .tofile(os.path.join(sim_state.get_output_dir(), f_bin, f"integrated_probability_current_{ipc_with_name[1]}.bin")))
+
         if len(integrated_probability_current_evolutions) > 0:
             plot.plot_probability_evolution(
-                out_dir=sim_state.get_output_dir(),
+                out_dir=os.path.join(sim_state.get_output_dir(), f_img),
                 file_name="integrated_probability_current_evolution.png",
                 title="Integrated probability current evolution",
                 y_label="Probability",

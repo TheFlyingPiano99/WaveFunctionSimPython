@@ -35,7 +35,7 @@ outer_potential_in_negative_xyz_direction_hartree_3 = [-100.0, -10.0, -10.0]
 start_offset = 1.0
 slope_exponent_in_positive_xyz_direction_3 = [3.0, 3.0, 3.0]    # e: f(x) = x^e,    x in [0, 1]
 slope_exponent_in_negative_xyz_direction_3 = [3.0, 3.0, 3.0]    # e: f(x) = x^e,    x in [0, 1]
-enable = false
+enable = true
 
 [potential.pre_initialized_potential]
 path = ""
@@ -47,7 +47,7 @@ potential_hartree = 7.0
 center_bohr_radii_3 = [0.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
 plateau_thickness_bohr_radii = 2.7
-slope_thickness_bohr_radii = 0.0
+slope_thickness_bohr_radii = 0.5
 slope_exponent = 1.5    # e: f(x) = x^e,    x in [0, 1]
 velocity_bohr_radius_hartree_per_h_bar_3 = [0.0, 0.0, 0.0]
 angular_velocity_rad_hartree_per_h_bar_3 = [0.0, 0.0, 0.0]
@@ -56,7 +56,7 @@ slit_count = 0
 slit_spacing_bohr_radii = 5.0
 slit_width_bohr_radii = 2.0
 slit_rotation_radian = 0.0
-enable = false
+enable = true
 visible=true
 
 [[potential.walls]]
@@ -75,12 +75,6 @@ slit_width_bohr_radii = 0.5
 slit_rotation_radian = 0.0
 enable = false
 visible=true
-
-#[linear_potential_gradient]
-#center_bohr_radii_3 = [0.0, 40.0, 0.0]
-#gradient_direction = [0.0, 1.0, 0.0]
-#gradient_magnitude_hartree_per_bohr_radius = 0.25
-#visible = true
 
 [measurement.volumetric]
 camera_rotation_speed = -0.5
@@ -126,10 +120,18 @@ enable_image = true
 
 [[measurement.plane_probability_currents]]
 name = "First plane"
-center_bohr_radii_3 = [-5.6691779657, 0.0, 0.0]
+center_bohr_radii_3 = [-5.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
 size_bohr_radii_2 = [80.0, 80.0]
-resolution_2 = [512, 512]
+resolution_2 = [255, 255]
+enable_image = true
+
+[[measurement.plane_probability_currents]]
+name = "Second plane"
+center_bohr_radii_3 = [5.0, 0.0, 0.0]
+normal_vector_3 = [1.0, 0.0, 0.0]
+size_bohr_radii_2 = [80.0, 80.0]
+resolution_2 = [255, 255]
 enable_image = true
 
 [[measurement.plane_probability_currents]]
@@ -137,15 +139,7 @@ name = "Middle"
 center_bohr_radii_3 = [0.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
 size_bohr_radii_2 = [80.0, 80.0]
-resolution_2 = [512, 512]
-enable_image = true
-
-[[measurement.plane_probability_currents]]
-name = "Second plane"
-center_bohr_radii_3 = [7.3699313555, 0.0, 0.0]
-normal_vector_3 = [1.0, 0.0, 0.0]
-size_bohr_radii_2 = [80.0, 80.0]
-resolution_2 = [512, 512]
+resolution_2 = [255, 255]
 enable_image = true
 
 [paths]

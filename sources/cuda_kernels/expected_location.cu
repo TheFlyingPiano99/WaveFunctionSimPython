@@ -1,6 +1,14 @@
 #include "PATH_TO_SOURCES/cuda_kernels/common.cu"
 
-template<unsigned int sample_count_x, unsigned int sample_count_y, unsigned int sample_count_z>
+template<
+    unsigned int sample_count_x,    // In the integrated volume
+    unsigned int sample_count_y,
+    unsigned int sample_count_z,
+    int voxel_count_x,  // For the whole simulated volume
+    int voxel_count_y,
+    int voxel_count_z
+
+>
 __global__ void expected_location_kernel(
     complex<T_WF_FLOAT>* waveFunction,
     T_WF_FLOAT* expectedLocationOut,
@@ -12,11 +20,7 @@ __global__ void expected_location_kernel(
 
     int bottom_voxel_x,
     int bottom_voxel_y,
-    int bottom_voxel_z,
-
-    int voxel_count_x,  // For the whole simulated volume
-    int voxel_count_y,
-    int voxel_count_z
+    int bottom_voxel_z
 )
 {
     extern __shared__ T_WF_FLOAT3 sdata[];

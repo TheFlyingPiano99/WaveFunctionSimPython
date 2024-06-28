@@ -36,6 +36,9 @@ This might take a while.
   ```
   python wavefunctionsim.py
   ```
+- After the plugins are installed, you can also use the `run_script.sh` (Linux/MacOS) or `run_script.bat` (Windows)
+to skip the step of manually activating the virtual environment.
+
 ## Generating documentation
 To generate code docuemntation from the root directory of the project run:
 ```
@@ -56,6 +59,14 @@ Always read the prompts of the program!
 
 ### Accessing the simulation results
 The output images and videos get written into the `<project folder>/output/` folder.
-
+You can also use the `wfreader.py` utility script located in the root directory of the project.
+Run the following script to view the output:
+```
+python wfreader.py [<path to output folder>] [-h] [-p]
+```
+If no output folder is specified, the default `output` folder will be used.
+The optional `-h` flag prints help text.
+The optional `-p` flag enables the visualization of the predicted expected location and standard deviation of a Gauss WP in free space.
+This can be used to check the differences between the analytic model and the numeric approximation. 
 
 
