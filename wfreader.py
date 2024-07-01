@@ -36,7 +36,11 @@ def main():
         raise OSError(message)
 
     # Read saved configuration:
-    config = toml.load(os.path.join(out_folder, "config.toml"))
+    try:
+        config = toml.load(os.path.join(out_folder, "config.toml"))
+    except IOError:
+        print("Failed loading config file!\nExiting application.")
+        return
     delta_t = config_helper.try_read_param(config, "simulation.delta_time_h_bar_per_hartree", 1.0)
     position = np.array(config_helper.try_read_param(config, "wave_packet.initial_position_bohr_radii_3", [0.0, 0.0, 0.0]))
     velocity = np.array(config_helper.try_read_param(config, "wave_packet.initial_velocity_bohr_radii_hartree_per_h_bar_3", [0.0, 0.0, 0.0]))
@@ -57,158 +61,173 @@ def main():
     figures = []
 
     # Plot output:
-    print("\nExpected location:\n")
-    f = os.path.join(out_folder, f_npy, "expected_location_evolution.npy")
-    print(f)
-    location = np.load(f)
-    expected_location_evolution_with_label = list(zip(location.T, ["X axis", "Y axis", "Z axis"]))
-    if is_prediction:
-        expected_location_evolution_with_label.append(
-            [math_utils.predict_free_space_expected_location(
-                delta_t=delta_t,
-                step_count=expected_location_evolution_with_label[0][0].size,
-                velocity=velocity[0],
-                x0=position[0],
-            ),"X axis (pred.)", "dotted"]
-        )
-        expected_location_evolution_with_label.append(
-            [math_utils.predict_free_space_expected_location(
-                delta_t=delta_t,
-                step_count=expected_location_evolution_with_label[0][0].size,
-                velocity=velocity[1],
-                x0=position[1],
-            ), "Y axis (pred.)", "dotted"]
-        )
-        expected_location_evolution_with_label.append(
-            [math_utils.predict_free_space_expected_location(
-                delta_t=delta_t,
-                step_count=expected_location_evolution_with_label[0][0].size,
-                velocity=velocity[2],
-                x0=position[2],
-            ), "Z axis (pred.)", "dotted"]
-        )
-    figures.append(plot.plot_probability_evolution(
-        out_dir=None,
-        file_name=None,
-        title="Expected location evolution",
-        y_label="Expected location [Bohr radius]",
-        probability_evolutions=expected_location_evolution_with_label,
-        delta_t=delta_t,
-        show_fig=False,
-        y_min=np.min(observation_box_bottom_corner_bohr_radii_3),
-        y_max=np.max(observation_box_top_corner_bohr_radii_3),
-    ))
-
-    print("\nStandard deviation:\n")
-    f = os.path.join(out_folder, f_npy, "standard_deviation_evolution.npy")
-    print(f)
-    deviation = np.load(f)
-    standard_deviation_with_label = list(zip(deviation.T, ["X axis", "Y axis", "Z axis"]))
-    if is_prediction:
-        standard_deviation_with_label.append(
-            [math_utils.predict_free_space_standard_devation(
-                delta_t=delta_t,
-                mass=mass,
-                step_count=standard_deviation_with_label[0][0].size,
-                sigma0=sigma[0],
-            ), "X axis (pred.)", "dotted"]
-        )
-        standard_deviation_with_label.append(
-            [math_utils.predict_free_space_standard_devation(
-                delta_t=delta_t,
-                mass=mass,
-                step_count=standard_deviation_with_label[0][0].size,
-                sigma0=sigma[1],
-            ), "Y axis (pred.)", "dotted"]
-        )
-        standard_deviation_with_label.append(
-            [math_utils.predict_free_space_standard_devation(
-                delta_t=delta_t,
-                mass=mass,
-                step_count=standard_deviation_with_label[0][0].size,
-                sigma0=sigma[2],
-            ), "Z axis (pred.)", "dotted"]
-        )
-    figures.append(
-        plot.plot_probability_evolution(
+    try:
+        print("\nExpected location:\n")
+        f = os.path.join(out_folder, f_npy, "expected_location_evolution.npy")
+        print(f)
+        location = np.load(f)
+        expected_location_evolution_with_label = list(zip(location.T, ["X axis", "Y axis", "Z axis"]))
+        if is_prediction:
+            expected_location_evolution_with_label.append(
+                [math_utils.predict_free_space_expected_location(
+                    delta_t=delta_t,
+                    step_count=expected_location_evolution_with_label[0][0].size,
+                    velocity=velocity[0],
+                    x0=position[0],
+                ),"X axis (pred.)", "dotted"]
+            )
+            expected_location_evolution_with_label.append(
+                [math_utils.predict_free_space_expected_location(
+                    delta_t=delta_t,
+                    step_count=expected_location_evolution_with_label[0][0].size,
+                    velocity=velocity[1],
+                    x0=position[1],
+                ), "Y axis (pred.)", "dotted"]
+            )
+            expected_location_evolution_with_label.append(
+                [math_utils.predict_free_space_expected_location(
+                    delta_t=delta_t,
+                    step_count=expected_location_evolution_with_label[0][0].size,
+                    velocity=velocity[2],
+                    x0=position[2],
+                ), "Z axis (pred.)", "dotted"]
+            )
+        figures.append(plot.plot_probability_evolution(
             out_dir=None,
             file_name=None,
-            title="Standard deviation evolution",
-            y_label="Standard deviation [Bohr radius]",
-            probability_evolutions=standard_deviation_with_label,
+            title="Expected location evolution",
+            y_label="Expected location [Bohr radius]",
+            probability_evolutions=expected_location_evolution_with_label,
             delta_t=delta_t,
             show_fig=False,
-            y_min=0.0,
-            y_max=np.max(observation_box_top_corner_bohr_radii_3) * 0.5,
+            y_min=np.min(observation_box_bottom_corner_bohr_radii_3),
+            y_max=np.max(observation_box_top_corner_bohr_radii_3),
+        ))
+    except:
+        pass
+
+    try:
+        print("\nStandard deviation:\n")
+        f = os.path.join(out_folder, f_npy, "standard_deviation_evolution.npy")
+        print(f)
+        deviation = np.load(f)
+        standard_deviation_with_label = list(zip(deviation.T, ["X axis", "Y axis", "Z axis"]))
+        if is_prediction:
+            standard_deviation_with_label.append(
+                [math_utils.predict_free_space_standard_devation(
+                    delta_t=delta_t,
+                    mass=mass,
+                    step_count=standard_deviation_with_label[0][0].size,
+                    sigma0=sigma[0],
+                ), "X axis (pred.)", "dotted"]
+            )
+            standard_deviation_with_label.append(
+                [math_utils.predict_free_space_standard_devation(
+                    delta_t=delta_t,
+                    mass=mass,
+                    step_count=standard_deviation_with_label[0][0].size,
+                    sigma0=sigma[1],
+                ), "Y axis (pred.)", "dotted"]
+            )
+            standard_deviation_with_label.append(
+                [math_utils.predict_free_space_standard_devation(
+                    delta_t=delta_t,
+                    mass=mass,
+                    step_count=standard_deviation_with_label[0][0].size,
+                    sigma0=sigma[2],
+                ), "Z axis (pred.)", "dotted"]
+            )
+        figures.append(
+            plot.plot_probability_evolution(
+                out_dir=None,
+                file_name=None,
+                title="Standard deviation evolution",
+                y_label="Standard deviation [Bohr radius]",
+                probability_evolutions=standard_deviation_with_label,
+                delta_t=delta_t,
+                show_fig=False,
+                y_min=0.0,
+                y_max=np.max(observation_box_top_corner_bohr_radii_3) * 0.5,
+            )
         )
-    )
+    except:
+        pass
 
-    print("\nProbability currents:\n")
-    prob_current_evolutions = []
-    for f in glob.glob(os.path.join(out_folder, f_npy, "probability_current_evolution_*.npy")):
-        print(f)
-        prob_current = np.load(f)
-        print(f"Sample count: {prob_current.size}")
-        name = f.strip(os.path.join(out_folder, f_npy, "probability_current_evolution_")).strip(".npy")
-        prob_current_evolutions.append([prob_current, name])
-    figures.append(plot.plot_probability_evolution(
-        out_dir=None,
-        probability_evolutions=prob_current_evolutions,
-        file_name=None,
-        delta_t=delta_t,
-        title="Probability current evolution",
-        y_label="Probability current",
-        show_fig=False,
-        y_min=-1.0,
-        y_max=1.0,
-    ))
+    try:
+        print("\nProbability currents:\n")
+        prob_current_evolutions = []
+        for f in glob.glob(os.path.join(out_folder, f_npy, "probability_current_evolution_*.npy")):
+            print(f)
+            prob_current = np.load(f)
+            print(f"Sample count: {prob_current.size}")
+            name = f.strip(os.path.join(out_folder, f_npy, "probability_current_evolution_")).strip(".npy")
+            prob_current_evolutions.append([prob_current, name])
+        figures.append(plot.plot_probability_evolution(
+            out_dir=None,
+            probability_evolutions=prob_current_evolutions,
+            file_name=None,
+            delta_t=delta_t,
+            title="Probability current evolution",
+            y_label="Probability current",
+            show_fig=False,
+            y_min=-1.0,
+            y_max=1.0,
+        ))
+    except:
+        pass
 
-    print("\nIntegrated probability currents:\n")
-    int_prob_current_evolutions = []
-    for f in glob.glob(os.path.join(out_folder, f_npy, "integrated_probability_current_*.npy")):
-        print(f)
-        int_prob_current = np.load(f)
-        print(f"Sample count: {int_prob_current.size}")
-        name = f.strip(os.path.join(out_folder, f_npy, "integrated_probability_current_")).strip(".npy")
-        int_prob_current_evolutions.append([int_prob_current, name])
-    figures.append(plot.plot_probability_evolution(
-        out_dir=None,
-        probability_evolutions=int_prob_current_evolutions,
-        file_name=None,
-        title="Integrated probability current evolution",
-        y_label="Probability",
-        delta_t=delta_t,
-        show_fig=False,
-        y_min=-1.1,
-        y_max=1.1,
-    ))
+    try:
+        print("\nIntegrated probability currents:\n")
+        int_prob_current_evolutions = []
+        for f in glob.glob(os.path.join(out_folder, f_npy, "integrated_probability_current_*.npy")):
+            print(f)
+            int_prob_current = np.load(f)
+            print(f"Sample count: {int_prob_current.size}")
+            name = f.strip(os.path.join(out_folder, f_npy, "integrated_probability_current_")).strip(".npy")
+            int_prob_current_evolutions.append([int_prob_current, name])
+        figures.append(plot.plot_probability_evolution(
+            out_dir=None,
+            probability_evolutions=int_prob_current_evolutions,
+            file_name=None,
+            title="Integrated probability current evolution",
+            y_label="Probability",
+            delta_t=delta_t,
+            show_fig=False,
+            y_min=-1.1,
+            y_max=1.1,
+        ))
+    except:
+        pass
 
-    print("\nVolume probabilities:\n")
-    prob_evolutions = []
-    for f in glob.glob(os.path.join(out_folder, f_npy, "volume_probability_evolution_*.npy")):
-        print(f)
-        prob = np.load(f)
-        print(f"Sample count: {prob.size}")
-        name = f.strip(os.path.join(out_folder, f_npy, "volume_probability_evolution_")).strip(".npy")
-        prob_evolutions.append([prob, name])
-    sum = np.array(
-        np.zeros(shape=prob_evolutions[0][0].shape, dtype=prob_evolutions[0][0].dtype).tolist()
-    )
-    for evolution in prob_evolutions:
-        sum = np.add(sum, np.array(evolution[0].tolist()))
-    prob_evolutions.append([sum, "Sum"])
+    try:
+        print("\nVolume probabilities:\n")
+        prob_evolutions = []
+        for f in glob.glob(os.path.join(out_folder, f_npy, "volume_probability_evolution_*.npy")):
+            print(f)
+            prob = np.load(f)
+            print(f"Sample count: {prob.size}")
+            name = f.strip(os.path.join(out_folder, f_npy, "volume_probability_evolution_")).strip(".npy")
+            prob_evolutions.append([prob, name])
+        sum = np.array(
+            np.zeros(shape=prob_evolutions[0][0].shape, dtype=prob_evolutions[0][0].dtype).tolist()
+        )
+        for evolution in prob_evolutions:
+            sum = np.add(sum, np.array(evolution[0].tolist()))
+        prob_evolutions.append([sum, "Sum"])
 
-    figures.append(plot.plot_probability_evolution(
-        out_dir=None,
-        probability_evolutions=prob_evolutions,
-        file_name=None,
-        delta_t=delta_t,
-        title="Volume probability evolution",
-        y_label="Probability",
-        show_fig=False,
-        y_min=-0.1,
-        y_max=1.1,
-    ))
+        figures.append(plot.plot_probability_evolution(
+            out_dir=None,
+            probability_evolutions=prob_evolutions,
+            file_name=None,
+            delta_t=delta_t,
+            title="Volume probability evolution",
+            y_label="Probability",
+            show_fig=False,
+            y_min=-0.1,
+            y_max=1.1,
+        ))
+    except:
+        pass
 
     qt_viewer.start_app(figures)
 

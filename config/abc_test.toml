@@ -5,35 +5,35 @@
 
 # The naming convention is as follows: <descriptive name>_<measurement unit if any>_<vector dimension count if greater than 1>
 
-# Simulation with nicer parameters
+# Simulation to test the Absorbing Boundary Condition (ABC)
 
 [simulation]
 method = "fourier"
 order_of_approximation = 10 # Only used for the Power Series Method
 delta_time_h_bar_per_hartree = 0.1
 total_iteration_count = 1000
-is_dynamic_potential_mode = true
-enable_wave_function_saving = true
+is_dynamic_potential_mode = false
+enable_wave_function_saving = false
 wave_function_save_iteration_interval = 100
 double_precision_calculation = true
 
 [wave_packet]
 path = ""   # Can load pre-initialized wave function from file. (Other WP parameters will be discarded.)
 particle_mass_electron_rest_mass = 1.0
-initial_position_bohr_radii_3 = [-30.0, 0.0, 0.0]
+initial_position_bohr_radii_3 = [30.0, 0.0, 0.0]
 initial_velocity_bohr_radii_hartree_per_h_bar_3 = [1.0, 0.0, 0.0]
 initial_standard_deviation_bohr_radii_3 = [8.0, 8.0, 8.0]
 
 [volume]
 simulated_volume_dimensions_bohr_radii_3 = [128.0, 128.0, 128.0] #Including absorbing potential regions
 number_of_voxels_3 = [512, 256, 256]         #Including absorbing potential regions
-observation_box_bottom_corner_bohr_radii_3 = [-50.0, -50.0, -50.0]   # Same as the inner boundary of the draining potential
-observation_box_top_corner_bohr_radii_3 = [50.0, 50.0, 50.0]   # Same as the inner boundary of the draining potential
+observation_box_bottom_corner_bohr_radii_3 = [-60.0, -60.0, -60.0]   # Same as the inner boundary of the draining potential
+observation_box_top_corner_bohr_radii_3 = [60.0, 60.0, 60.0]   # Same as the inner boundary of the draining potential
 
 [absorbing_boundary_condition]
-outer_potential_in_positive_xyz_direction_hartree_3 = [-100.0, -10.0, -10.0]
-outer_potential_in_negative_xyz_direction_hartree_3 = [-100.0, -10.0, -10.0]
-start_offset = 1.0
+outer_potential_in_positive_xyz_direction_hartree_3 = [-50.0, -10.0, -10.0]
+outer_potential_in_negative_xyz_direction_hartree_3 = [-50.0, -10.0, -10.0]
+start_offset = 0.0
 slope_exponent_in_positive_xyz_direction_3 = [3.0, 3.0, 3.0]    # e: f(x) = x^e,    x in [0, 1]
 slope_exponent_in_negative_xyz_direction_3 = [3.0, 3.0, 3.0]    # e: f(x) = x^e,    x in [0, 1]
 enable = true
@@ -58,7 +58,7 @@ slit_count = 0
 slit_spacing_bohr_radii = 5.0
 slit_width_bohr_radii = 2.0
 slit_rotation_radian = 0.0
-enable = true
+enable = false
 visible=true
 
 [[potential.walls]]
@@ -112,27 +112,27 @@ enable_image = true
 name = "First half"
 bottom_corner_bohr_radii_3 = [-50.0, -50.0, -50.0]
 top_corner_bohr_radii_3 = [0.0, 50.0, 50.0]
-enable_image = true
+enable_image = false
 
 [[measurement.volume_probabilities]]
 name = "Second half"
 bottom_corner_bohr_radii_3 = [0.0, -50.0, -50.0]
 top_corner_bohr_radii_3 = [50.0, 50.0, 50.0]
-enable_image = true
+enable_image = false
 
 [[measurement.plane_probability_currents]]
-name = "First plane"
-center_bohr_radii_3 = [-5.0, 0.0, 0.0]
+name = "Positive boundary"
+center_bohr_radii_3 = [60.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
-size_bohr_radii_2 = [80.0, 80.0]
+size_bohr_radii_2 = [120.0, 120.0]
 resolution_2 = [255, 255]
 enable_image = true
 
 [[measurement.plane_probability_currents]]
-name = "Second plane"
-center_bohr_radii_3 = [5.0, 0.0, 0.0]
+name = "Negative boundary"
+center_bohr_radii_3 = [-60.0, 0.0, 0.0]
 normal_vector_3 = [1.0, 0.0, 0.0]
-size_bohr_radii_2 = [80.0, 80.0]
+size_bohr_radii_2 = [120.0, 120.0]
 resolution_2 = [255, 255]
 enable_image = true
 
